@@ -1,9 +1,9 @@
-cmake_minimum_required (VERSION 3.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 
 #########################################
 # Project
 #########################################
-PROJECT (
+project(
   Macro
     LANGUAGES
       CXX
@@ -62,3 +62,7 @@ target_compile_features(
     $<TARGET_PROPERTY:exception::Exception,INTERFACE_COMPILE_FEATURES>
     $<TARGET_PROPERTY:p3::common::ModuleSystem,INTERFACE_COMPILE_FEATURES>
 )
+
+if(${BUILD_TESTING})
+  add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/tests")
+endif()
