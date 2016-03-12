@@ -1,4 +1,7 @@
-set(THIS_GROUP cad_macro)
+set(TEST_TARGET cad::Macro)
+
+string(REPLACE "::" "_" THIS_GROUP ${TEST_TARGET})
+
 set(TEST_GROUP test_${THIS_GROUP})
 set(TEST_FOLDER "Test Cad-Macro")
 set(CHECK_GROUP check-${THIS_GROUP})
@@ -59,7 +62,7 @@ if(${BUILD_TESTING})
           ON
         CACHE
         BOOL
-        "If TRUE the tests for ${THIS_GROUP} ${TEST} will be configured"
+        "If TRUE the tests for ${TEST_TARGET} ${TEST} will be configured"
       )
 
       if(${${TEST_NAME_UPPER}} OR ${TEST_GROUP_UPPER})

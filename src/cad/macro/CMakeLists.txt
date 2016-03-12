@@ -3,3 +3,5 @@ target_sources(
     PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/MacroInitializer.cpp
 )
+
+add_subdirectory("ast")
