@@ -4,7 +4,122 @@
 #include "cad/macro/parser/Token.h"
 
 using namespace cad::macro::parser;
-TEST_CASE("String Token", "[Tokenizer]") {
+
+std::vector<std::string> tokens_to_strings(const std::vector<Token>& tokens) {
+  std::vector<std::string> stokens;
+  stokens.reserve(tokens.size());
+
+  for(const auto& t : tokens) {
+    stokens.push_back(t.token);
+  }
+  return stokens;
+}
+
+TEST_CASE("Syntax Free") {
+  SECTION("Valid Syntax") {
+    std::vector<std::string> expected = {"var", "a", ";"};
+    const std::string raw_macro = "var a;";
+    auto tokens = tokenizer::tokenize(raw_macro);
+
+    REQUIRE(tokens_to_strings(tokens) == expected);
+  }
+  SECTION("Invalid Syntax") {
+    std::vector<std::string> expected = {"var", "a"};
+    const std::string raw_macro = "var a";
+    auto tokens = tokenizer::tokenize(raw_macro);
+
+    REQUIRE(tokens_to_strings(tokens) == expected);
+  }
+}
+
+TEST_CASE("Special Tokens") {
+  SECTION("=") {
+    std::vector<std::string> expected = {"="};
+    const std::string raw_macro = "=";
+    auto tokens = tokenizer::tokenize(raw_macro);
+
+    REQUIRE(tokens_to_strings(tokens) == expected);
+  }
+  SECTION("==") {
+    std::vector<std::string> expected = {"=="};
+    const std::string raw_macro = "==";
+    auto tokens = tokenizer::tokenize(raw_macro);
+
+    REQUIRE(tokens_to_strings(tokens) == expected);
+  }
+  SECTION("===") {
+    std::vector<std::string> expected = {"==", "="};
+    const std::string raw_macro = "===";
+    auto tokens = tokenizer::tokenize(raw_macro);
+
+    REQUIRE(tokens_to_strings(tokens) == expected);
+  }
+  SECTION("(") {
+    std::vector<std::string> expected = {"("};
+    const std::string raw_macro = "(";
+    auto tokens = tokenizer::tokenize(raw_macro);
+
+    REQUIRE(tokens_to_strings(tokens) == expected);
+  }
+  SECTION("()") {
+    std::vector<std::string> expected = {"(", ")"};
+    const std::string raw_macro = "()";
+    auto tokens = tokenizer::tokenize(raw_macro);
+
+    REQUIRE(tokens_to_strings(tokens) == expected);
+  }
+  SECTION("(,)") {
+    std::vector<std::string> expected = {"(", ",", ")"};
+    const std::string raw_macro = "(,)";
+    auto tokens = tokenizer::tokenize(raw_macro);
+
+    REQUIRE(tokens_to_strings(tokens) == expected);
+  }
+}
+
+TEST_CASE("String Tokens") {
+  SECTION("Escape") {
+    std::vector<std::string> expected = {"\"Herbert is a \\\" nice guy\""};
+    const std::string raw_macro = "\"Herbert is a \\\" nice guy\"";
+    auto tokens = tokenizer::tokenize(raw_macro);
+
+    REQUIRE(tokens_to_strings(tokens) == expected);
+  }
+  SECTION("Escapex2") {
+    std::vector<std::string> expected = {"\"Herbert is a \\\\\"", "nice", "guy",
+                                         "\""};
+    const std::string raw_macro = "\"Herbert is a \\\\\" nice guy\"";
+    auto tokens = tokenizer::tokenize(raw_macro);
+
+    REQUIRE(tokens_to_strings(tokens) == expected);
+  }
+  SECTION("Escapex3") {
+    std::vector<std::string> expected = {"\"Herbert is a \\\\\\\" nice guy\""};
+    const std::string raw_macro = "\"Herbert is a \\\\\\\" nice guy\"";
+    auto tokens = tokenizer::tokenize(raw_macro);
+
+    REQUIRE(tokens_to_strings(tokens) == expected);
+  }
+}
+
+TEST_CASE("Float Tokens") {
+  SECTION("Normal Float Tokens") {
+    std::vector<std::string> expected = {"4.2"};
+    const std::string raw_macro = "4.2";
+    auto tokens = tokenizer::tokenize(raw_macro);
+
+    REQUIRE(tokens_to_strings(tokens) == expected);
+  }
+  SECTION("Short Float Tokens") {
+    std::vector<std::string> expected = {".2"};
+    const std::string raw_macro = ".2";
+    auto tokens = tokenizer::tokenize(raw_macro);
+
+    REQUIRE(tokens_to_strings(tokens) == expected);
+  }
+}
+
+TEST_CASE("Format") {
   std::vector<std::string> expected = {
       "var",    "a",    "=",   "true",   ";",                   // Line  2
       "var",    "b",    "=",   "2",      ";",                   // Line  3
@@ -24,7 +139,7 @@ TEST_CASE("String Token", "[Tokenizer]") {
       "}"                                                       // Line 24
   };
 
-  SECTION("well fromated") {
+  SECTION("Well Fromated") {
     const std::string raw_macro = "\n"
                                   "var a = true;            \n"
                                   "var b = 2;               \n"
@@ -53,16 +168,9 @@ TEST_CASE("String Token", "[Tokenizer]") {
 
     auto tokens = tokenizer::tokenize(raw_macro);
 
-    std::vector<std::string> stokens;
-    stokens.reserve(tokens.size());
-    for(const auto& t : tokens) {
-      stokens.push_back(t.token);
-    }
-
-    REQUIRE(stokens == expected);
+    REQUIRE(tokens_to_strings(tokens) == expected);
   }
-
-  SECTION("compact formated") {
+  SECTION("Compact Formated") {
     const std::string raw_macro = "var a=true;"
                                   "var b=2;"
                                   "var c=\" 3\";"
@@ -82,12 +190,14 @@ TEST_CASE("String Token", "[Tokenizer]") {
 
     auto tokens = tokenizer::tokenize(raw_macro);
 
-    std::vector<std::string> stokens;
-    stokens.reserve(tokens.size());
-    for(const auto& t : tokens) {
-      stokens.push_back(t.token);
-    }
-
-    REQUIRE(stokens == expected);
+    REQUIRE(tokens_to_strings(tokens) == expected);
   }
-};
+}
+
+TEST_CASE("Token Info") {
+  std::vector<Token> expected = {{1, 1, "1"}, {2, 4, "2"}, {4, 3, "4"}};
+  const std::string raw_macro = "1\n   2\n\n\t 4";
+  auto tokens = tokenizer::tokenize(raw_macro);
+
+  REQUIRE(tokens == expected);
+}

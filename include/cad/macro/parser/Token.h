@@ -14,6 +14,8 @@ struct Token {
   Token();
   Token(size_t line, size_t column, std::string token);
 };
+bool operator==(const Token& first, const Token& second);
+std::ostream& operator<<(std::ostream& os, const Token& token);
 }
 }
 }

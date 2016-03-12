@@ -32,20 +32,35 @@ void token_begin(Macro macro, Position& position) {
     case '\n':
     case '\r':
       ++position.line;
-      position.column = 1;
+      position.column = 0;
       break;
     default:
       end = 0;  // We are done!
     }
 
-    if(end > 0) {
+    if(end > 0) {  // no need to advance - we are at an unprocessed character
       ++position.string;
     }
   }
 }
 
+bool float_token_end(Macro macro, Position& position) {
+  std::regex regex("(\\d*(\\.\\d+))");
+  std::smatch match;
+  std::regex_search(macro.begin() + position.string, macro.end(), match, regex);
+
+  if(match.empty()) {
+    return false;
+  } else {
+    if(match.position(1) == 0) {
+      position.column += match.position(1) + match[1].length();
+      position.string += match.position(1) + match[1].length();
+    }
+    return true;
+  }
+}
 void normal_token_end(Macro macro, Position& position) {
-  std::regex regex("([^a-zA-Z0-9])", std::regex::extended);
+  std::regex regex("([^a-zA-Z0-9])");
   std::smatch match;
   std::regex_search(macro.begin() + position.string, macro.end(), match, regex);
 
@@ -64,20 +79,16 @@ void normal_token_end(Macro macro, Position& position) {
 }
 
 void token_end(Macro macro, Position& position) {
-  if(position.string + 2 <= macro.size()) {
-    if((macro[position.string] == '&' && macro[position.string + 1] == '&') ||
-       (macro[position.string] == '|' && macro[position.string + 1] == '|') ||
-       (macro[position.string] == '=' && macro[position.string + 1] == '=') ||
-       (macro[position.string] == '<' && macro[position.string + 1] == '=') ||
-       (macro[position.string] == '>' && macro[position.string + 1] == '=')) {
-      position.column += 2;
-      position.string += 2;
-    } else if(macro[position.string] == '>' || macro[position.string] == '<') {
-      position.column += 1;
-      position.string += 1;
-    } else {
-      normal_token_end(macro, position);
-    }
+  const auto current = macro[position.string];
+  const auto next =
+      (position.string + 1 <= macro.size()) ? macro[position.string + 1] : '\0';
+
+  if((current == '&' && next == '&') || (current == '|' && next == '|') ||
+     (current == '=' && next == '=') || (current == '<' && next == '=') ||
+     (current == '>' && next == '=')) {
+    position.column += 2;
+    position.string += 2;
+  } else if(float_token_end(macro, position)) {
   } else {
     normal_token_end(macro, position);
   }
@@ -85,7 +96,7 @@ void token_end(Macro macro, Position& position) {
 
 Token next_string_token(Macro macro, Position& position) {
   const auto start = position.string;
-  char last_token = ' ';
+  char last_token = '\0';
   auto end = macro.size();
 
   while(position.string < end) {
@@ -97,11 +108,13 @@ Token next_string_token(Macro macro, Position& position) {
     case '\v':
     case '\f':
       ++position.column;
+      last_token = macro[position.string];
       break;
     case '\n':
     case '\r':
       ++position.line;
       position.column = 1;
+      last_token = macro[position.string];
       break;
     case '"':
       if(last_token != '\\') {
@@ -109,12 +122,20 @@ Token next_string_token(Macro macro, Position& position) {
         end = 0;
       }
       ++position.column;
+      last_token = macro[position.string];
+      break;
+    case '\\':
+      if(last_token != '\\') {
+        ++position.string;
+      }
+      last_token = '\0';  // We consumed the last escape
+      ++position.column;
       break;
     default:
       ++position.column;
+      last_token = macro[position.string];
       continue;
     }
-    last_token = macro[position.string];
   }
 
   const auto ret = Token(position.line, position.column,
@@ -138,7 +159,7 @@ Token next_token(Macro macro, Position& position) {
 
 std::vector<Token> tokenize(Macro macro) {
   std::vector<Token> tokens;
-  Position position = {0, 0, 0};
+  Position position = {1, 0, 0};
   token_begin(macro, position);
 
   while(position.string < macro.size()) {
