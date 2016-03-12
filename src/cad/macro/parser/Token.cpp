@@ -13,6 +13,7 @@ Token::Token(size_t l, size_t c, std::string t)
     , column(c)
     , token(std::move(t)) {
 }
+
 bool operator==(const Token& first, const Token& second) {
   if(&first == &second) {
     return true;
@@ -21,8 +22,9 @@ bool operator==(const Token& first, const Token& second) {
            first.token == second.token;
   }
 }
+
 std::ostream& operator<<(std::ostream& os, const Token& token) {
-  os << "{line: " << token.line << " column: " << token.column
+  os << "Token{line: " << token.line << " column: " << token.column
      << " token: " << token.token << "}";
   return os;
 }
