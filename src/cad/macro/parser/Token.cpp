@@ -14,6 +14,23 @@ Token::Token(size_t l, size_t c, std::string t)
     , token(std::move(t)) {
 }
 
+bool operator!=(const Token& first, const std::string& second) {
+  return !(first == second);
+}
+bool operator==(const Token& first, const std::string& second) {
+  return first.token == second;
+}
+
+bool operator!=(const Token& first, const char* const second) {
+  return !(first == second);
+}
+bool operator==(const Token& first, const char* const second) {
+  return first.token == second;
+}
+
+bool operator!=(const Token& first, const Token& second) {
+  return !(first == second);
+}
 bool operator==(const Token& first, const Token& second) {
   if(&first == &second) {
     return true;

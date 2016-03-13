@@ -2,7 +2,6 @@
 
 namespace cad {
 namespace macro {
-
 IndentBuffer::IndentBuffer(std::streambuf* const s, const long indention_step,
                            const long indention)
     : indention_(indention)
