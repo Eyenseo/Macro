@@ -195,7 +195,7 @@ TEST_CASE("Format") {
 }
 
 TEST_CASE("Token Info") {
-  std::vector<Token> expected = {{1, 1, "1"}, {2, 4, "2"}, {4, 3, "4"}};
+  std::vector<Token> expected = {{1, 1, "1"}, {2, 3, "2"}, {4, 2, "4"}};
   const std::string raw_macro = "1\n   2\n\n\t 4";
   auto tokens = tokenizer::tokenize(raw_macro);
 

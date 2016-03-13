@@ -147,11 +147,13 @@ Token next_token(Macro macro, Position& position) {
   if(macro[position.string] == '\"') {
     return next_string_token(macro, position);
   } else {
-    const auto start = position.string;
+    Position tmp = position;
 
-    token_end(macro, position);
-    const auto ret = Token(position.line, position.column,
-                           macro.substr(start, position.string - start));
+    token_end(macro, tmp);
+    const auto ret =
+        Token(position.line, position.column,
+              macro.substr(position.string, tmp.string - position.string));
+    position = tmp;
     return ret;
   }
 }
@@ -159,7 +161,7 @@ Token next_token(Macro macro, Position& position) {
 
 std::vector<Token> tokenize(Macro macro) {
   std::vector<Token> tokens;
-  Position position = {1, 0, 0};
+  Position position = {1, 1, 0};
   token_begin(macro, position);
 
   while(position.string < macro.size()) {
