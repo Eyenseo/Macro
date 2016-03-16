@@ -45,7 +45,7 @@ void token_begin(Macro macro, Position& position) {
 }
 
 bool float_token_end(Macro macro, Position& position) {
-  std::regex regex("(\\d*(\\.\\d+))");
+  const static std::regex regex("(\\d*(\\.\\d+))");
   std::smatch match;
   std::regex_search(macro.begin() + position.string, macro.end(), match, regex);
 
@@ -60,7 +60,7 @@ bool float_token_end(Macro macro, Position& position) {
   }
 }
 void normal_token_end(Macro macro, Position& position) {
-  std::regex regex("([^a-zA-Z0-9])");
+  const static std::regex regex("([^a-zA-Z0-9_])");
   std::smatch match;
   std::regex_search(macro.begin() + position.string, macro.end(), match, regex);
 

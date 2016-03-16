@@ -201,3 +201,31 @@ TEST_CASE("Token Info") {
 
   REQUIRE(tokens == expected);
 }
+
+TEST_CASE("Token Comparison") {
+  SECTION("True Equal") {
+    Token a(0, 0, "");
+    Token b(0, 0, "");
+    REQUIRE(a == b);
+  }
+  SECTION("False Equal - line") {
+    Token a(0, 0, "");
+    Token b(1, 0, "");
+    REQUIRE_FALSE(a == b);
+  }
+  SECTION("False Equal - column") {
+    Token a(0, 0, "");
+    Token b(0, 2, "");
+    REQUIRE_FALSE(a == b);
+  }
+  SECTION("False Equal - token") {
+    Token a(0, 0, "");
+    Token b(0, 0, "Foo");
+    REQUIRE_FALSE(a == b);
+  }
+  SECTION("False Equal - all") {
+    Token a(0, 0, "");
+    Token b(1, 1, "Foo");
+    REQUIRE_FALSE(a == b);
+  }
+}

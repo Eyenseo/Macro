@@ -15,7 +15,7 @@ IndentBuffer::IndentBuffer(std::streambuf* const s, const long indention_step)
 }
 
 IndentBuffer::IndentBuffer(std::streambuf* const s)
-    : IndentBuffer(s, 2) {
+    : IndentBuffer(s, 4) {
 }
 
 IndentBuffer::~IndentBuffer() {

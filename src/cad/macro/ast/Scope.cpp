@@ -1,5 +1,7 @@
 #include "cad/macro/ast/Scope.h"
 
+#include "cad/macro/ast/Define.h"
+
 #include "cad/macro/IndentStream.h"
 
 namespace cad {
@@ -9,27 +11,30 @@ Scope::Scope(parser::Token token)
     : AST(std::move(token)) {
 }
 
-
-void Scope::print_scope(std::ostream& os, const Scope& scope) {
+void Scope::print_internals(std::ostream& os) const {
   IndentStream indent_os(os);
-
-  indent_os << "Scope {\n";
-  indent_os.indent() << "line: " << scope.token_.line
-                     << " column: " << scope.token_.column
-                     << " token: " << scope.token_.token << "\n";
-  for(auto& v : scope.nodes_) {
-    print_var(indent_os, v);
+  for(auto& v : nodes) {
+    v.match([&os](const EntryFunction& n) { os << n; },
+            [&os](const Executable& n) { os << n; },
+            [&os](const Function& n) { os << n; },
+            [&os](const Return& n) { os << n; },
+            [&os](const Scope& n) { os << n; },
+            [&os](const Define& n) { os << n; });
   }
-  indent_os.dedent() << "}\n";
 }
 
-void Scope::print_var(IndentStream& os, const Var& var) {
-  var.match([&os](const Define& v) { os << v; },
-            [&os](const Function& v) { os << v; },
-            [&os](const EntryFunction& v) { os << v; },
-            [&os](const Scope& v) { print_scope(os, v); });
+bool Scope::operator==(const Scope& other) const {
+  if(this == &other) {
+    return true;
+  } else if(AST::operator==(other)) {
+    return nodes == other.nodes;
+  }
+  return false;
 }
 
+bool Scope::operator!=(const Scope& other) const {
+  return !(*this == other);
+}
 
 bool operator==(const Scope& first, const AST& ast) {
   auto second = dynamic_cast<const Scope*>(&ast);

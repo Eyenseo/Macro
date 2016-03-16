@@ -13,14 +13,11 @@ struct Token {
 
   Token();
   Token(size_t line, size_t column, std::string token);
+
+  bool operator==(const Token& other) const;
+  bool operator!=(const Token& other) const;
+  std::ostream& operator<<(std::ostream& os);
 };
-bool operator==(const Token& first, const Token& second);
-bool operator!=(const Token& first, const Token& second);
-bool operator==(const Token& first, const std::string& second);
-bool operator!=(const Token& first, const std::string& second);
-bool operator==(const Token& first, const char* const second);
-bool operator!=(const Token& first, const char* const second);
-std::ostream& operator<<(std::ostream& os, const Token& token);
 }
 }
 }

@@ -5,8 +5,26 @@
 namespace cad {
 namespace macro {
 namespace ast {
+AST::AST() {
+}
 AST::AST(parser::Token token)
-    : token_(std::move(token)) {
+    : token(std::move(token)) {
+}
+
+bool AST::operator==(const AST& other) const {
+  if(this == &other) {
+    return true;
+  } else {
+    return token == other.token;
+  }
+}
+
+bool AST::operator!=(const AST& other) const {
+  return !(*this == other);
+}
+std::ostream& AST::operator<<(std::ostream& os) {
+  print_token(os, "AST");
+  return os;
 }
 }
 }

@@ -8,6 +8,7 @@ set(CHECK_GROUP check-${THIS_GROUP})
 
 set(
   TEST_TARGETS
+    AST
     Tokenizer
     Parser
 )

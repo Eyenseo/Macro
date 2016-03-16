@@ -5,7 +5,10 @@
 namespace cad {
 namespace macro {
 namespace parser {
-Token::Token() {
+Token::Token()
+    : line(0)
+    , column(0)
+    , token("") {
 }
 
 Token::Token(size_t l, size_t c, std::string t)
@@ -14,35 +17,21 @@ Token::Token(size_t l, size_t c, std::string t)
     , token(std::move(t)) {
 }
 
-bool operator!=(const Token& first, const std::string& second) {
-  return !(first == second);
-}
-bool operator==(const Token& first, const std::string& second) {
-  return first.token == second;
-}
-
-bool operator!=(const Token& first, const char* const second) {
-  return !(first == second);
-}
-bool operator==(const Token& first, const char* const second) {
-  return first.token == second;
-}
-
-bool operator!=(const Token& first, const Token& second) {
-  return !(first == second);
-}
-bool operator==(const Token& first, const Token& second) {
-  if(&first == &second) {
+bool Token::operator==(const Token& other) const {
+  if(this == &other) {
     return true;
   } else {
-    return first.line == second.line && first.column == second.column &&
-           first.token == second.token;
+    return line == other.line && column == other.column && token == other.token;
   }
 }
 
-std::ostream& operator<<(std::ostream& os, const Token& token) {
-  os << "Token{line: " << token.line << " column: " << token.column
-     << " token: " << token.token << "}";
+bool Token::operator!=(const Token& other) const {
+  return !(*this == other);
+}
+
+std::ostream& Token::operator<<(std::ostream& os) {
+  os << "Token{line: " << line << " column: " << column << " token: " << token
+     << "}";
   return os;
 }
 }

@@ -1,0 +1,72 @@
+set(THIS_TEST AST)
+set(THIS_TEST_TARGET ${TEST_GROUP}-${THIS_TEST})
+
+add_custom_target(
+  check-${THIS_TEST_TARGET}
+    ${CMAKE_COMMAND}
+      -E env CTEST_OUTPUT_ON_FAILURE=1
+    ${CMAKE_CTEST_COMMAND}
+      -C $<CONFIG>
+    WORKING_DIRECTORY
+      ${CMAKE_CURRENT_BINARY_DIR}
+)
+set_property(
+  TARGET
+    check-${THIS_TEST_TARGET}
+  PROPERTY
+    FOLDER
+      ${TEST_FOLDER}
+)
+
+add_executable(
+  ${THIS_TEST_TARGET}
+    "${CMAKE_CURRENT_SOURCE_DIR}/${THIS_TEST}.cpp"
+    $<TARGET_OBJECTS:Catch::Catch-Main>
+)
+add_test(
+  NAME
+    ${THIS_TEST_TARGET}
+  COMMAND
+    ${THIS_TEST_TARGET}
+)
+add_dependencies(
+  ${TEST_GROUP}
+    ${THIS_TEST_TARGET}
+)
+add_dependencies(
+  check-${THIS_TEST_TARGET}
+    ${THIS_TEST_TARGET}
+)
+set_property(
+  TARGET
+    ${THIS_TEST_TARGET}
+  PROPERTY
+    FOLDER
+      ${TEST_FOLDER}
+)
+target_link_libraries(
+  ${THIS_TEST_TARGET}
+  PRIVATE
+    cad::Core
+    ${TEST_TARGET}
+)
+target_include_directories(
+  ${THIS_TEST_TARGET}
+  PRIVATE
+    $<TARGET_PROPERTY:Catch::Catch-Main,INTERFACE_INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:cad::Core,INTERFACE_INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:${TEST_TARGET},INTERFACE_INCLUDE_DIRECTORIES>
+)
+target_compile_options(
+  ${THIS_TEST_TARGET}
+  PRIVATE
+    $<TARGET_PROPERTY:Catch::Catch-Main,INTERFACE_COMPILE_OPTIONS>
+    $<TARGET_PROPERTY:${TEST_TARGET},INTERFACE_COMPILE_OPTIONS>
+)
+target_compile_features(
+  ${THIS_TEST_TARGET}
+  PRIVATE
+    $<TARGET_PROPERTY:Catch::Catch-Main,INTERFACE_COMPILE_FEATURES>
+    $<TARGET_PROPERTY:${TEST_TARGET},INTERFACE_COMPILE_FEATURES>
+)
+
