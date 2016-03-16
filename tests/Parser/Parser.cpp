@@ -49,7 +49,7 @@ TEST_CASE("Define") {
       Define def({1, 1, "def"});
       EntryFunction fun({1, 5, "main"});
       fun.scope = make_unique<Scope>(Token(1, 12, "{"));
-      def.definition = Define::Definition(std::move(fun));
+      def.definition.emplace(std::move(fun));
       expected.nodes.push_back(std::move(def));
     }
 
@@ -65,7 +65,7 @@ TEST_CASE("Define") {
       Define def({1, 1, "def"});
       Function fun({1, 5, "fun"});
       fun.scope = make_unique<Scope>(Token(1, 11, "{"));
-      def.definition = Define::Definition(std::move(fun));
+      def.definition.emplace(std::move(fun));
       expected.nodes.push_back(std::move(def));
     }
 
@@ -80,7 +80,7 @@ TEST_CASE("Define") {
     {
       Define def({1, 1, "var"});
       Variable var({1, 5, "foo"});
-      def.definition = Define::Definition(std::move(var));
+      def.definition.emplace(std::move(var));
       expected.nodes.push_back(std::move(def));
     }
 
@@ -100,10 +100,10 @@ TEST_CASE("Define") {
       Define var_def(var.token);
 
       fun.parameter.push_back(var);
-      var_def.definition = Define::Definition(Variable(var));
+      var_def.definition.emplace(Variable(var));
       scope.nodes.push_back(std::move(var_def));
       fun.scope = make_unique<Scope>(scope);
-      def.definition = Define::Definition(std::move(fun));
+      def.definition.emplace(std::move(fun));
       expected.nodes.push_back(std::move(def));
     }
 
@@ -125,13 +125,13 @@ TEST_CASE("Define") {
       Define var2_def(var2.token);
 
       fun.parameter.push_back(var1);
-      var1_def.definition = Define::Definition(Variable(var1));
+      var1_def.definition.emplace(Variable(var1));
       scope.nodes.push_back(std::move(var1_def));
       fun.parameter.push_back(var2);
-      var2_def.definition = Define::Definition(Variable(var2));
+      var2_def.definition.emplace(Variable(var2));
       scope.nodes.push_back(std::move(var2_def));
       fun.scope = make_unique<Scope>(scope);
-      def.definition = Define::Definition(std::move(fun));
+      def.definition.emplace(std::move(fun));
       expected.nodes.push_back(std::move(def));
     }
 
@@ -233,7 +233,7 @@ TEST_CASE("Return") {
       Return ret({1, 1, "return"});
       Variable foo({1, 8, "foo"});
 
-      ret.output = Return::Output(std::move(foo));
+      ret.output.emplace(std::move(foo));
       expected.nodes.push_back(std::move(ret));
     }
 
@@ -249,7 +249,7 @@ TEST_CASE("Return") {
       Return ret({1, 1, "return"});
       Executable fun({1, 8, "fun"});
 
-      ret.output = Return::Output(std::move(fun));
+      ret.output.emplace(std::move(fun));
       expected.nodes.push_back(std::move(ret));
     }
 

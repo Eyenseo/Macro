@@ -140,7 +140,7 @@ core::optional<T> parse_function_internals(const std::vector<Token>& tokens,
     v.match(
         [&fun_scope](ast::Variable p) {
           ast::Define def(p.token);
-          def.definition = ast::Define::Definition(std::move(p));
+          def.definition.emplace(std::move(p));
           fun_scope->nodes.emplace_back(std::move(def));
         },
         [](const ast::executable::Executable&) {
@@ -205,9 +205,9 @@ core::optional<ast::Define> parse_definition(const std::vector<Token>& tokens,
     ast::Define def(tokens.at(token));
 
     if(auto entry_function = parse_entry_function_definition(tokens, tmp)) {
-      def.definition = ast::Define::Definition(std::move(*entry_function));
+      def.definition.emplace(std::move(*entry_function));
     } else if(auto function = parse_function_definition(tokens, tmp)) {
-      def.definition = ast::Define::Definition(std::move(*function));
+      def.definition.emplace(std::move(*function));
     } else {
       // TODO throw
     }
@@ -217,7 +217,7 @@ core::optional<ast::Define> parse_definition(const std::vector<Token>& tokens,
     ast::Define def(tokens.at(token));
 
     if(auto variable = parse_variable_definition(tokens, tmp)) {
-      def.definition = ast::Define::Definition(std::move(*variable));
+      def.definition.emplace(std::move(*variable));
     } else {
       // TODO throw
     }
@@ -263,9 +263,9 @@ core::optional<ast::Return> parse_return(const std::vector<Token>& tokens,
     ast::Return ret(tokens.at(token));
 
     if(auto var = parse_executable(tokens, tmp)) {
-      ret.output = ast::Return::Output(std::move(*var));
+      ret.output.emplace(std::move(*var));
     } else if(auto var = parse_variable(tokens, tmp)) {
-      ret.output = ast::Return::Output(std::move(*var));
+      ret.output.emplace(std::move(*var));
     } else {
       // TODO throw
     }

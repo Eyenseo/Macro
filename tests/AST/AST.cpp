@@ -149,14 +149,14 @@ TEST_CASE("Define Comparison") {
   }
   SECTION("Definition") {
     Define a({0, 0, ""});
-    a.definition = Define::Definition(Function({0, 0, ""}));
+    a.definition.emplace(Function({0, 0, ""}));
     Define b({0, 0, ""});
-    b.definition = Define::Definition(Function({0, 0, ""}));
+    b.definition.emplace(Function({0, 0, ""}));
     REQUIRE(a == b);
   }
   SECTION("Definition/No-Definition") {
     Define a({0, 0, ""});
-    a.definition = Define::Definition(Function({0, 0, ""}));
+    a.definition.emplace(Function({0, 0, ""}));
     Define b({0, 0, ""});
     REQUIRE_FALSE(a == b);
   }
@@ -170,21 +170,21 @@ TEST_CASE("Return Comparison") {
   }
   SECTION("Definition") {
     Return a({0, 0, ""});
-    a.output = Return::Output(Variable({0, 0, ""}));
+    a.output.emplace(Variable({0, 0, ""}));
     Return b({0, 0, ""});
-    b.output = Return::Output(Variable({0, 0, ""}));
+    b.output.emplace(Variable({0, 0, ""}));
     REQUIRE(a == b);
   }
   SECTION("Different Definition") {
     Return a({0, 0, ""});
-    a.output = Return::Output(Variable({0, 0, ""}));
+    a.output.emplace(Variable({0, 0, ""}));
     Return b({0, 0, ""});
-    b.output = Return::Output(Executable({0, 0, ""}));
+    b.output.emplace(Executable({0, 0, ""}));
     REQUIRE_FALSE(a == b);
   }
   SECTION("Definition/No-Definition") {
     Return a({0, 0, ""});
-    a.output = Return::Output(Variable({0, 0, ""}));
+    a.output.emplace(Variable({0, 0, ""}));
     Return b({0, 0, ""});
     REQUIRE_FALSE(a == b);
   }

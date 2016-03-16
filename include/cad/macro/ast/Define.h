@@ -17,11 +17,11 @@ namespace ast {
 class Define : public AST {
   using Function = executable::Function;
   using EntryFunction = executable::EntryFunction;
+  using Definition = core::variant<Function, EntryFunction, Variable>;
 
   void print_internals(IndentStream& os) const;
 
 public:
-  using Definition = core::variant<Function, EntryFunction, Variable>;
   core::optional<Definition> definition;
 
   Define() = default;

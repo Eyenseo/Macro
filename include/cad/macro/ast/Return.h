@@ -14,12 +14,11 @@ namespace cad {
 namespace macro {
 namespace ast {
 class Return : public AST {
+  using Output = core::variant<Variable, executable::Executable>;
 
   void print_internals(IndentStream& os) const;
 
 public:
-  using Output = core::variant<Variable, executable::Executable>;
-
   core::optional<Output> output;
 
   Return() = default;
