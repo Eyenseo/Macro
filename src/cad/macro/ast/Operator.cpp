@@ -1,10 +1,8 @@
-#include "cad/macro/ast/executable/operator/Operator.h"
+#include "cad/macro/ast/Operator.h"
 
 namespace cad {
 namespace macro {
 namespace ast {
-namespace executable {
-namespace operation {
 //////////////////////////////////////////
 // UnaryOperator
 //////////////////////////////////////////
@@ -171,8 +169,6 @@ bool Operand::operator==(const Operand& other) const {
 }
 bool Operand::operator!=(const Operand& other) const {
   return !(*this == other);
-}
-}
 }
 }
 }

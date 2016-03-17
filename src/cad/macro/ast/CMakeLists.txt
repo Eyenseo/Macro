@@ -6,5 +6,6 @@ target_sources(
       ${CMAKE_CURRENT_SOURCE_DIR}/Return.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Scope.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Variable.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/Operator.cpp
 )
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/executable)

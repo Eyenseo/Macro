@@ -1,5 +1,5 @@
-#ifndef cad_macro_ast_logic_Operator_h
-#define cad_macro_ast_logic_Operator_h
+#ifndef cad_macro_ast_Operator_h
+#define cad_macro_ast_Operator_h
 
 #include "cad/macro/ast/AST.h"
 
@@ -12,8 +12,6 @@
 namespace cad {
 namespace macro {
 namespace ast {
-namespace executable {
-namespace operation {
 enum class OperationType { Unary, Binary };
 enum class UnaryOperation { NONE, NOT };
 enum class BinaryOperation {
@@ -114,23 +112,21 @@ public:
 bool operator==(const BinaryOperator& first, const AST& second);
 
 struct Operand {
-  using OperandMember =
-      core::variant<Executable, Variable, UnaryOperator, BinaryOperator>;
+  using OperandMember = core::variant<executable::Executable, Variable,
+                                      UnaryOperator, BinaryOperator>;
   OperandMember operand;
 
   bool operator==(const Operand& other) const;
   bool operator!=(const Operand& other) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Operand& operand) {
-    operand.operand.match([&os](const Executable& o) { os << o; },
+    operand.operand.match([&os](const executable::Executable& o) { os << o; },
                           [&os](const Variable& o) { os << o; },
                           [&os](const UnaryOperator& o) { os << o; },
                           [&os](const BinaryOperator& o) { os << o; });
     return os;
   }
 };
-}
-}
 }
 }
 }

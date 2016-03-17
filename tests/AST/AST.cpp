@@ -5,7 +5,6 @@
 using namespace cad::macro::parser;
 using namespace cad::macro::ast;
 using namespace cad::macro::ast::executable;
-using namespace cad::macro::ast::executable::operation;
 
 TEST_CASE("AST Comparison") {
   SECTION("Empty") {
