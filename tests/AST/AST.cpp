@@ -1,15 +1,11 @@
 #include <Catch/catch.hpp>
 
-#include "cad/macro/ast/AST.h"
 #include "cad/macro/ast/Scope.h"
-#include "cad/macro/ast/Define.h"
-#include "cad/macro/ast/Return.h"
-#include "cad/macro/ast/executable/Function.h"
-#include "cad/macro/ast/executable/EntryFunction.h"
 
 using namespace cad::macro::parser;
 using namespace cad::macro::ast;
 using namespace cad::macro::ast::executable;
+using namespace cad::macro::ast::executable::operation;
 
 TEST_CASE("AST Comparison") {
   SECTION("Empty") {
@@ -155,5 +151,149 @@ TEST_CASE("Return Comparison") {
     a.output.emplace(Variable({0, 0, ""}));
     Return b({0, 0, ""});
     REQUIRE_FALSE(a == b);
+  }
+}
+TEST_CASE("Operator Comparison") {
+  SECTION("Unary") {
+    SECTION("No-Operand") {
+      UnaryOperator a({0, 0, ""});
+      UnaryOperator b({0, 0, ""});
+      REQUIRE(a == b);
+    }
+    // Operand
+    SECTION("Operand") {
+      UnaryOperator a({0, 0, ""});
+      a.operand = std::make_unique<Operand>();
+      a.operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      UnaryOperator b({0, 0, ""});
+      b.operand = std::make_unique<Operand>();
+      b.operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      REQUIRE(a == b);
+    }
+    SECTION("Different Operand") {
+      UnaryOperator a({0, 0, ""});
+      a.operand = std::make_unique<Operand>();
+      a.operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      UnaryOperator b({0, 0, ""});
+      b.operand = std::make_unique<Operand>();
+      b.operand->operand = Operand::OperandMember(Executable({0, 0, ""}));
+      REQUIRE_FALSE(a == b);
+    }
+    SECTION("Operand/No-Operand") {
+      UnaryOperator a({0, 0, ""});
+      a.operand = std::make_unique<Operand>();
+      a.operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      UnaryOperator b({0, 0, ""});
+      REQUIRE_FALSE(a == b);
+    }
+    // Operation
+    SECTION("Operation") {
+      UnaryOperator a({0, 0, ""});
+      a.operation = UnaryOperation::NOT;
+      UnaryOperator b({0, 0, ""});
+      b.operation = UnaryOperation::NOT;
+      REQUIRE(a == b);
+    }
+    SECTION("Operation/No-Operation") {
+      UnaryOperator a({0, 0, ""});
+      a.operation = UnaryOperation::NOT;
+      UnaryOperator b({0, 0, ""});
+      REQUIRE_FALSE(a == b);
+    }
+  }
+  SECTION("Binary") {
+    SECTION("No-Operand") {
+      BinaryOperator a({0, 0, ""});
+      BinaryOperator b({0, 0, ""});
+      REQUIRE(a == b);
+    }
+    // Left
+    SECTION("LeftOperand") {
+      BinaryOperator a({0, 0, ""});
+      a.left_operand = std::make_unique<Operand>();
+      a.left_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      BinaryOperator b({0, 0, ""});
+      b.left_operand = std::make_unique<Operand>();
+      b.left_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      REQUIRE(a == b);
+    }
+    SECTION("Different LeftOperand") {
+      BinaryOperator a({0, 0, ""});
+      a.left_operand = std::make_unique<Operand>();
+      a.left_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      BinaryOperator b({0, 0, ""});
+      b.left_operand = std::make_unique<Operand>();
+      b.left_operand->operand = Operand::OperandMember(Executable({0, 0, ""}));
+      REQUIRE_FALSE(a == b);
+    }
+    SECTION("LeftOperand/No-LeftOperand") {
+      BinaryOperator a({0, 0, ""});
+      a.left_operand = std::make_unique<Operand>();
+      a.left_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      BinaryOperator b({0, 0, ""});
+      REQUIRE_FALSE(a == b);
+    }
+    // Right
+    SECTION("RightOperand") {
+      BinaryOperator a({0, 0, ""});
+      a.right_operand = std::make_unique<Operand>();
+      a.right_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      BinaryOperator b({0, 0, ""});
+      b.right_operand = std::make_unique<Operand>();
+      b.right_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      REQUIRE(a == b);
+    }
+    SECTION("Different RightOperand") {
+      BinaryOperator a({0, 0, ""});
+      a.right_operand = std::make_unique<Operand>();
+      a.right_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      BinaryOperator b({0, 0, ""});
+      b.right_operand = std::make_unique<Operand>();
+      b.right_operand->operand = Operand::OperandMember(Executable({0, 0, ""}));
+      REQUIRE_FALSE(a == b);
+    }
+    SECTION("RightOperand/No-RightOperand") {
+      BinaryOperator a({0, 0, ""});
+      a.right_operand = std::make_unique<Operand>();
+      a.right_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      BinaryOperator b({0, 0, ""});
+      REQUIRE_FALSE(a == b);
+    }
+    // Both
+    SECTION("Right-/LeftOperand") {
+      BinaryOperator a({0, 0, ""});
+      a.left_operand = std::make_unique<Operand>();
+      a.left_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      a.right_operand = std::make_unique<Operand>();
+      a.right_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      BinaryOperator b({0, 0, ""});
+      b.left_operand = std::make_unique<Operand>();
+      b.left_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      b.right_operand = std::make_unique<Operand>();
+      b.right_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      REQUIRE(a == b);
+    }
+    SECTION("No Right-/LeftOperand") {
+      BinaryOperator a({0, 0, ""});
+      a.left_operand = std::make_unique<Operand>();
+      a.left_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      BinaryOperator b({0, 0, ""});
+      b.left_operand = std::make_unique<Operand>();
+      b.left_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      b.right_operand = std::make_unique<Operand>();
+      b.right_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      REQUIRE_FALSE(a == b);
+    }
+    SECTION("Right-/ No-LeftOperand") {
+      BinaryOperator a({0, 0, ""});
+      a.left_operand = std::make_unique<Operand>();
+      a.left_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      BinaryOperator b({0, 0, ""});
+      b.left_operand = std::make_unique<Operand>();
+      b.left_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      b.right_operand = std::make_unique<Operand>();
+      b.right_operand->operand = Operand::OperandMember(Variable({0, 0, ""}));
+      REQUIRE_FALSE(a == b);
+    }
   }
 }

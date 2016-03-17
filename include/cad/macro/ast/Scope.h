@@ -5,6 +5,7 @@
 
 #include "cad/macro/ast/Define.h"
 #include "cad/macro/ast/Return.h"
+#include "cad/macro/ast/executable/operator/Operator.h"
 #include "cad/macro/ast/executable/Function.h"
 #include "cad/macro/ast/executable/EntryFunction.h"
 #include "cad/macro/ast/executable/Executable.h"
@@ -29,10 +30,12 @@ class Scope : public AST {
   using EntryFunction = executable::EntryFunction;
   using Executable = executable::Executable;
   using Function = executable::Function;
+  using UnaryOperator = executable::operation::UnaryOperator;
+  using BinaryOperator = executable::operation::BinaryOperator;
 
 public:
-  using Node =
-      core::variant<Define, EntryFunction, Executable, Function, Return, Scope>;
+  using Node = core::variant<Define, EntryFunction, Executable, Function,
+                             Return, Scope, UnaryOperator, BinaryOperator>;
 
 private:
   void print_internals(std::ostream& os) const;
