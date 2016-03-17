@@ -7,38 +7,6 @@ using namespace cad::macro::parser;
 using namespace cad::macro::ast;
 using namespace cad::macro::ast::executable;
 
-namespace {
-// https://isocpp.org/files/papers/N3656.txt
-template <class T>
-struct UniqueIf {
-  typedef std::unique_ptr<T> SingleObject;
-};
-
-template <class T>
-struct UniqueIf<T[]> {
-  typedef std::unique_ptr<T[]> UnknownBound;
-};
-
-template <class T, size_t N>
-struct UniqueIf<T[N]> {
-  typedef void KnownBound;
-};
-
-template <class T, class... Args>
-typename UniqueIf<T>::SingleObject make_unique(Args&&... args) {
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-
-template <class T>
-typename UniqueIf<T>::UnknownBound make_unique(size_t n) {
-  typedef typename std::remove_extent<T>::type U;
-  return std::unique_ptr<T>(new U[n]());
-}
-
-template <class T, class... Args>
-typename UniqueIf<T>::KnownBound make_unique(Args&&...) = delete;
-}
-
 TEST_CASE("Define") {
   SECTION("EntryFunction") {
     Parser p;
@@ -48,7 +16,7 @@ TEST_CASE("Define") {
     {
       Define def({1, 1, "def"});
       EntryFunction fun({1, 5, "main"});
-      fun.scope = make_unique<Scope>(Token(1, 12, "{"));
+      fun.scope = std::make_unique<Scope>(Token(1, 12, "{"));
       def.definition.emplace(std::move(fun));
       expected.nodes.push_back(std::move(def));
     }
@@ -64,7 +32,7 @@ TEST_CASE("Define") {
     {
       Define def({1, 1, "def"});
       Function fun({1, 5, "fun"});
-      fun.scope = make_unique<Scope>(Token(1, 11, "{"));
+      fun.scope = std::make_unique<Scope>(Token(1, 11, "{"));
       def.definition.emplace(std::move(fun));
       expected.nodes.push_back(std::move(def));
     }
@@ -102,7 +70,7 @@ TEST_CASE("Define") {
       fun.parameter.push_back(var);
       var_def.definition.emplace(Variable(var));
       scope.nodes.push_back(std::move(var_def));
-      fun.scope = make_unique<Scope>(scope);
+      fun.scope = std::make_unique<Scope>(scope);
       def.definition.emplace(std::move(fun));
       expected.nodes.push_back(std::move(def));
     }
@@ -130,7 +98,7 @@ TEST_CASE("Define") {
       fun.parameter.push_back(var2);
       var2_def.definition.emplace(Variable(var2));
       scope.nodes.push_back(std::move(var2_def));
-      fun.scope = make_unique<Scope>(scope);
+      fun.scope = std::make_unique<Scope>(scope);
       def.definition.emplace(std::move(fun));
       expected.nodes.push_back(std::move(def));
     }

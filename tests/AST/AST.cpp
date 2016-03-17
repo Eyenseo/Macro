@@ -11,38 +11,6 @@ using namespace cad::macro::parser;
 using namespace cad::macro::ast;
 using namespace cad::macro::ast::executable;
 
-namespace {
-// https://isocpp.org/files/papers/N3656.txt
-template <class T>
-struct UniqueIf {
-  typedef std::unique_ptr<T> SingleObject;
-};
-
-template <class T>
-struct UniqueIf<T[]> {
-  typedef std::unique_ptr<T[]> UnknownBound;
-};
-
-template <class T, size_t N>
-struct UniqueIf<T[N]> {
-  typedef void KnownBound;
-};
-
-template <class T, class... Args>
-typename UniqueIf<T>::SingleObject make_unique(Args&&... args) {
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-
-template <class T>
-typename UniqueIf<T>::UnknownBound make_unique(size_t n) {
-  typedef typename std::remove_extent<T>::type U;
-  return std::unique_ptr<T>(new U[n]());
-}
-
-template <class T, class... Args>
-typename UniqueIf<T>::KnownBound make_unique(Args&&...) = delete;
-}
-
 TEST_CASE("AST Comparison") {
   SECTION("Empty") {
     AST a({0, 0, ""});
@@ -128,14 +96,14 @@ TEST_CASE("Function Comparison") {
   }
   SECTION("Scope") {
     Function a({0, 0, ""});
-    a.scope = make_unique<Scope>(Token(0, 0, ""));
+    a.scope = std::make_unique<Scope>(Token(0, 0, ""));
     Function b({0, 0, ""});
-    b.scope = make_unique<Scope>(Token(0, 0, ""));
+    b.scope = std::make_unique<Scope>(Token(0, 0, ""));
     REQUIRE(a == b);
   }
   SECTION("Scope/No-Scope") {
     Function a({0, 0, ""});
-    a.scope = make_unique<Scope>(Token(0, 0, ""));
+    a.scope = std::make_unique<Scope>(Token(0, 0, ""));
     Function b({0, 0, ""});
     REQUIRE_FALSE(a == b);
   }

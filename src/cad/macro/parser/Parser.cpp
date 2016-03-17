@@ -12,37 +12,6 @@ namespace cad {
 namespace macro {
 namespace parser {
 namespace {
-// https://isocpp.org/files/papers/N3656.txt
-template <class T>
-struct UniqueIf {
-  typedef std::unique_ptr<T> SingleObject;
-};
-
-template <class T>
-struct UniqueIf<T[]> {
-  typedef std::unique_ptr<T[]> UnknownBound;
-};
-
-template <class T, size_t N>
-struct UniqueIf<T[N]> {
-  typedef void KnownBound;
-};
-
-template <class T, class... Args>
-typename UniqueIf<T>::SingleObject make_unique(Args&&... args) {
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-
-template <class T>
-typename UniqueIf<T>::UnknownBound make_unique(size_t n) {
-  typedef typename std::remove_extent<T>::type U;
-  return std::unique_ptr<T>(new U[n]());
-}
-
-template <class T, class... Args>
-typename UniqueIf<T>::KnownBound make_unique(Args&&...) = delete;
-
-
 void parse_scope_internals(const std::vector<Token>& tokens, size_t& token,
                            ast::Scope& scope);
 
@@ -148,7 +117,7 @@ core::optional<T> parse_function_internals(const std::vector<Token>& tokens,
         });
   }
 
-  fun.scope = make_unique<ast::Scope>(*std::move(fun_scope));
+  fun.scope = std::make_unique<ast::Scope>(*std::move(fun_scope));
   token = tmp;
   return fun;
 }
