@@ -21,7 +21,8 @@ void Scope::print_internals(std::ostream& os) const {
             [&os](const Scope& n) { os << n; },
             [&os](const Define& n) { os << n; },
             [&os](const UnaryOperator& n) { os << n; },
-            [&os](const BinaryOperator& n) { os << n; });
+            [&os](const BinaryOperator& n) { os << n; },
+            [&os](const If& n) { os << n; });
   }
 }
 

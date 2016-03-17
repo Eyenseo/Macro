@@ -11,7 +11,7 @@ Executable::Executable(parser::Token token)
 }
 
 void Executable::print_internals(IndentStream& os) const {
-  os << "parameter: \n";
+  os << "parameter:\n";
   if(!parameter.empty()) {
     os.indent();
     for(const auto& v : parameter) {

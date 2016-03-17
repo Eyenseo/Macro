@@ -11,8 +11,15 @@ UnaryOperator::UnaryOperator(const UnaryOperator& other)
     , operand((other.operand) ? std::make_unique<Operand>(*other.operand)
                               : nullptr) {
 }
+UnaryOperator::UnaryOperator(UnaryOperator&& other) {
+  swap(*this, other);
+}
 UnaryOperator::UnaryOperator(parser::Token token)
     : Operator<OperationType::Unary>(std::move(token)) {
+}
+UnaryOperator& UnaryOperator::operator=(UnaryOperator other) {
+  swap(*this, other);
+  return *this;
 }
 
 void UnaryOperator::print_internals(IndentStream& os) const {
@@ -73,10 +80,16 @@ BinaryOperator::BinaryOperator(const BinaryOperator& other)
                         ? std::make_unique<Operand>(*other.right_operand)
                         : nullptr) {
 }
+BinaryOperator::BinaryOperator(BinaryOperator&& other) {
+  swap(*this, other);
+}
 BinaryOperator::BinaryOperator(parser::Token token)
     : Operator<OperationType::Binary>(std::move(token)) {
 }
-
+BinaryOperator& BinaryOperator::operator=(BinaryOperator other) {
+  swap(*this, other);
+  return *this;
+}
 void BinaryOperator::print_internals(IndentStream& os) const {
   if(left_operand) {
     os << "Left operand:\n";

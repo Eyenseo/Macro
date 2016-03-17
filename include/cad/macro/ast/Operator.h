@@ -43,6 +43,10 @@ public:
       : AST()
       , operation(Operation::NONE) {
   }
+  Operator(const Operator& other)
+      : AST(other)
+      , operation(other.operation) {
+  }
   Operator(parser::Token token)
       : AST(std::move(token))
       , operation(Operation::NONE) {
@@ -70,7 +74,19 @@ public:
 public:
   UnaryOperator() = default;
   UnaryOperator(const UnaryOperator& other);
+  UnaryOperator(UnaryOperator&& other);
   UnaryOperator(parser::Token token);
+
+  UnaryOperator& operator=(UnaryOperator other);
+
+  friend void swap(UnaryOperator& first, UnaryOperator& second) {
+    // enable ADL (not necessary in our case, but good practice)
+    using std::swap;
+
+    swap(dynamic_cast<Operator&>(first), dynamic_cast<Operator&>(second));
+    swap(first.operand, second.operand);
+  }
+
 
   std::string operation_to_string() const;
 
@@ -95,8 +111,18 @@ public:
 public:
   BinaryOperator() = default;
   BinaryOperator(const BinaryOperator& other);
+  BinaryOperator(BinaryOperator&& other);
   BinaryOperator(parser::Token token);
 
+  BinaryOperator& operator=(BinaryOperator other);
+  friend void swap(BinaryOperator& first, BinaryOperator& second) {
+    // enable ADL
+    using std::swap;
+
+    swap(dynamic_cast<Operator&>(first), dynamic_cast<Operator&>(second));
+    swap(first.left_operand, second.left_operand);
+    swap(first.right_operand, second.right_operand);
+  }
 
   std::string operation_to_string() const;
 

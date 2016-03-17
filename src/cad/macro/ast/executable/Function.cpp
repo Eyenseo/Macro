@@ -9,14 +9,21 @@ namespace ast {
 namespace executable {
 Function::Function() {
 }
-Function::Function(parser::Token token)
-    : Executable(std::move(token)) {
-}
 Function::Function(const Function& other)
     : Executable(other)
     , scope((other.scope) ? std::make_unique<Scope>(*other.scope) : nullptr) {
 }
+Function::Function(Function&& other) {
+  swap(*this, other);
+}
+Function::Function(parser::Token token)
+    : Executable(std::move(token)) {
+}
 Function::~Function() {
+}
+Function& Function::operator=(Function other) {
+  swap(*this, other);
+  return *this;
 }
 
 void Function::print_internals(IndentStream& os) const {

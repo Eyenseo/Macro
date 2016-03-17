@@ -28,8 +28,19 @@ public:
 
   Function();
   Function(const Function&);
+  Function(Function&&);
   Function(parser::Token token);
   ~Function();
+
+  Function& operator=(Function other);
+
+  friend void swap(Function& first, Function& second) {
+    // enable ADL
+    using std::swap;
+
+    swap(dynamic_cast<Executable&>(first), dynamic_cast<Executable&>(second));
+    swap(first.scope, second.scope);
+  }
 
   bool operator==(const Function& other) const;
   bool operator!=(const Function& other) const;

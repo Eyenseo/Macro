@@ -27,7 +27,7 @@ protected:
   }
 
 public:
-  const parser::Token token;
+  parser::Token token;
 
   AST();
   AST(parser::Token token);

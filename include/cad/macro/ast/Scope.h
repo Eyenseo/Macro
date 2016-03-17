@@ -9,6 +9,7 @@
 #include "cad/macro/ast/executable/Function.h"
 #include "cad/macro/ast/executable/EntryFunction.h"
 #include "cad/macro/ast/executable/Executable.h"
+#include "cad/macro/ast/logic/If.h"
 
 #include <core/variant.hpp>
 
@@ -30,10 +31,11 @@ class Scope : public AST {
   using EntryFunction = executable::EntryFunction;
   using Executable = executable::Executable;
   using Function = executable::Function;
+  using If = logic::If;
 
 public:
   using Node = core::variant<Define, EntryFunction, Executable, Function,
-                             Return, Scope, UnaryOperator, BinaryOperator>;
+                             Return, Scope, UnaryOperator, BinaryOperator, If>;
 
 private:
   void print_internals(std::ostream& os) const;
