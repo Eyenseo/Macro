@@ -21,12 +21,13 @@ enum class BinaryOperation {
   EQUAL,
   GREATER,
   GREATER_EQUAL,
+  NOT_EQUAL,
   SMALLER,
   SMALLER_EQUAL,
-  DIVIDE,
-  MULTIPLY,
   ADD,
-  MODULO
+  DIVIDE,
+  MODULO,
+  MULTIPLY
 };
 struct Operand;
 

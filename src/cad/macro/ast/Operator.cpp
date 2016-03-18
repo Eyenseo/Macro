@@ -116,6 +116,8 @@ std::string BinaryOperator::operation_to_string() const {
     return "or";
   case BinaryOperation::EQUAL:
     return "equal";
+  case BinaryOperation::NOT_EQUAL:
+    return "not equal";
   case BinaryOperation::GREATER:
     return "greater";
   case BinaryOperation::GREATER_EQUAL:
