@@ -141,6 +141,7 @@ struct Operand {
   OperandMember operand;
 
 public:
+  Operand() = default;
   Operand(OperandMember op)
       : operand(std::move(op)) {
   }
