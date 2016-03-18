@@ -33,7 +33,6 @@ public:
     return os;
   }
 };
-bool operator==(const Return& first, const AST& ast);
 }
 }
 }

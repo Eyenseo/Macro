@@ -51,7 +51,6 @@ public:
     return os;
   }
 };
-bool operator==(const Function& first, const AST& second);
 }
 }
 }

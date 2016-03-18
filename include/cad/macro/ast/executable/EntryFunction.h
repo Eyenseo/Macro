@@ -21,7 +21,6 @@ public:
     return os;
   }
 };
-bool operator==(const EntryFunction& first, const AST& second);
 }
 }
 }

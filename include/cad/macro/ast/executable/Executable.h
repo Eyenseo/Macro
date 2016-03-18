@@ -33,7 +33,6 @@ public:
     return os;
   }
 };
-bool operator==(const Executable& first, const AST& second);
 }
 }
 }

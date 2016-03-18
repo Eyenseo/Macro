@@ -37,7 +37,6 @@ public:
     return os;
   }
 };
-bool operator==(const Define& first, const AST& second);
 }
 }
 }

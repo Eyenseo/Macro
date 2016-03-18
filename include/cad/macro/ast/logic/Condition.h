@@ -28,7 +28,6 @@ public:
     return os;
   }
 };
-bool operator==(const Condition& first, const AST& second);
 }
 }
 }

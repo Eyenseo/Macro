@@ -49,7 +49,6 @@ public:
     return os;
   }
 };
-bool operator==(const If& first, const AST& second);
 }
 }
 }

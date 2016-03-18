@@ -98,7 +98,6 @@ public:
     return os;
   }
 };
-bool operator==(const UnaryOperator& first, const AST& second);
 
 class BinaryOperator : public Operator<OperationType::Binary> {
   void print_internals(IndentStream& os) const;
@@ -134,7 +133,6 @@ public:
     return os;
   }
 };
-bool operator==(const BinaryOperator& first, const AST& second);
 
 struct Operand {
   using OperandMember = core::variant<executable::Executable, Variable,

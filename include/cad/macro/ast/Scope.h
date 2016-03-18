@@ -56,7 +56,6 @@ public:
     return os;
   }
 };
-bool operator==(const Scope& first, const AST& second);
 }
 }
 }
