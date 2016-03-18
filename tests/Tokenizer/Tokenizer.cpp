@@ -54,6 +54,13 @@ TEST_CASE("Special Tokens") {
 
     REQUIRE(tokens_to_strings(tokens) == expected);
   }
+  SECTION("!=") {
+    std::vector<std::string> expected = {"!="};
+    const std::string raw_macro = "!=";
+    auto tokens = tokenizer::tokenize(raw_macro);
+
+    REQUIRE(tokens_to_strings(tokens) == expected);
+  }
   SECTION("(") {
     std::vector<std::string> expected = {"("};
     const std::string raw_macro = "(";

@@ -84,8 +84,8 @@ void token_end(Macro macro, Position& position) {
       (position.string + 1 <= macro.size()) ? macro[position.string + 1] : '\0';
 
   if((current == '&' && next == '&') || (current == '|' && next == '|') ||
-     (current == '=' && next == '=') || (current == '<' && next == '=') ||
-     (current == '>' && next == '=')) {
+     (current == '=' && next == '=') || (current == '!' && next == '=') ||
+     (current == '<' && next == '=') || (current == '>' && next == '=')) {
     position.column += 2;
     position.string += 2;
   } else if(float_token_end(macro, position)) {
