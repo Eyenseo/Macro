@@ -82,7 +82,7 @@ public:
     // enable ADL (not necessary in our case, but good practice)
     using std::swap;
 
-    swap(dynamic_cast<Operator&>(first), dynamic_cast<Operator&>(second));
+    swap(static_cast<Operator&>(first), static_cast<Operator&>(second));
     swap(first.operand, second.operand);
   }
 
@@ -117,7 +117,7 @@ public:
     // enable ADL
     using std::swap;
 
-    swap(dynamic_cast<Operator&>(first), dynamic_cast<Operator&>(second));
+    swap(static_cast<Operator&>(first), static_cast<Operator&>(second));
     swap(first.left_operand, second.left_operand);
     swap(first.right_operand, second.right_operand);
   }

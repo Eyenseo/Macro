@@ -59,14 +59,6 @@ bool UnaryOperator::operator!=(const UnaryOperator& other) const {
   return !(*this == other);
 }
 
-bool operator==(const UnaryOperator& first, const AST& ast) {
-  auto second = dynamic_cast<const UnaryOperator*>(&ast);
-  if(second) {
-    return first == *second;
-  }
-  return false;
-}
-
 //////////////////////////////////////////
 // BinaryOperator
 //////////////////////////////////////////
@@ -163,14 +155,6 @@ bool BinaryOperator::operator==(const BinaryOperator& other) const {
 }
 bool BinaryOperator::operator!=(const BinaryOperator& other) const {
   return !(*this == other);
-}
-
-bool operator==(const BinaryOperator& first, const AST& ast) {
-  auto second = dynamic_cast<const BinaryOperator*>(&ast);
-  if(second) {
-    return first == *second;
-  }
-  return false;
 }
 
 //////////////////////////////////////////

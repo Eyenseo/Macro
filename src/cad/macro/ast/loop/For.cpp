@@ -52,14 +52,6 @@ bool For::operator==(const For& other) const {
 bool For::operator!=(const For& other) const {
   return !(*this == other);
 }
-
-bool operator==(const For& first, const AST& ast) {
-  auto second = dynamic_cast<const For*>(&ast);
-  if(second) {
-    return first == *second;
-  }
-  return false;
-}
 }
 }
 }

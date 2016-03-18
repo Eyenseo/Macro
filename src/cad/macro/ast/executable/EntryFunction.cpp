@@ -16,13 +16,6 @@ bool EntryFunction::operator==(const EntryFunction& other) const {
 bool EntryFunction::operator!=(const EntryFunction& other) const {
   return !(*this == other);
 }
-bool operator==(const EntryFunction& first, const AST& ast) {
-  auto second = dynamic_cast<const EntryFunction*>(&ast);
-  if(second) {
-    return first == *second;
-  }
-  return false;
-}
 }
 }
 }

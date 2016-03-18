@@ -41,14 +41,6 @@ bool Scope::operator==(const Scope& other) const {
 bool Scope::operator!=(const Scope& other) const {
   return !(*this == other);
 }
-
-bool operator==(const Scope& first, const AST& ast) {
-  auto second = dynamic_cast<const Scope*>(&ast);
-  if(second) {
-    return first == *second;
-  }
-  return false;
-}
 }
 }
 }

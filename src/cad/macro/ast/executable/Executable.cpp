@@ -35,14 +35,6 @@ bool Executable::operator==(const Executable& other) const {
 bool Executable::operator!=(const Executable& other) const {
   return !(*this == other);
 }
-
-bool operator==(const Executable& first, const AST& ast) {
-  auto second = dynamic_cast<const Executable*>(&ast);
-  if(second) {
-    return first == *second;
-  }
-  return false;
-}
 }
 }
 }

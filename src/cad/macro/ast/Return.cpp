@@ -36,13 +36,6 @@ bool Return::operator==(const Return& other) const {
 bool Return::operator!=(const Return& other) const {
   return !(*this == other);
 }
-bool operator==(const Return& first, const AST& ast) {
-  auto second = dynamic_cast<const Return*>(&ast);
-  if(second) {
-    return first == *second;
-  }
-  return false;
-}
 }
 }
 }

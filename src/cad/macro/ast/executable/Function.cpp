@@ -47,13 +47,6 @@ bool Function::operator==(const Function& other) const {
 bool Function::operator!=(const Function& other) const {
   return !(*this == other);
 }
-bool operator==(const Function& first, const AST& ast) {
-  auto second = dynamic_cast<const Function*>(&ast);
-  if(second) {
-    return first == *second;
-  }
-  return false;
-}
 }
 }
 }

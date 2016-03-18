@@ -35,14 +35,6 @@ bool Condition::operator==(const Condition& other) const {
 bool Condition::operator!=(const Condition& other) const {
   return !(*this == other);
 }
-
-bool operator==(const Condition& first, const AST& ast) {
-  auto second = dynamic_cast<const Condition*>(&ast);
-  if(second) {
-    return first == *second;
-  }
-  return false;
-}
 }
 }
 }

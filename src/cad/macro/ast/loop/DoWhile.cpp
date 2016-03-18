@@ -14,14 +14,6 @@ bool DoWhile::operator==(const DoWhile& other) const {
 bool DoWhile::operator!=(const DoWhile& other) const {
   return !(*this == other);
 }
-
-bool operator==(const DoWhile& first, const AST& ast) {
-  auto second = dynamic_cast<const DoWhile*>(&ast);
-  if(second) {
-    return first == *second;
-  }
-  return false;
-}
 }
 }
 }

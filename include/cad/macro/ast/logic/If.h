@@ -35,7 +35,7 @@ public:
   friend void swap(If& first, If& second) {
     using std::swap;
 
-    swap(dynamic_cast<Condition&>(first), dynamic_cast<Condition&>(second));
+    swap(static_cast<Condition&>(first), static_cast<Condition&>(second));
     swap(first.true_scope, second.true_scope);
     swap(first.false_scope, second.false_scope);
   }

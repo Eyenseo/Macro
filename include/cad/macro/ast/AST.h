@@ -31,7 +31,6 @@ public:
 
   AST();
   AST(parser::Token token);
-  virtual ~AST() = default;
 
   bool operator==(const AST& other) const;
   bool operator!=(const AST& other) const;

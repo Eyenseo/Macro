@@ -56,14 +56,6 @@ bool While::operator==(const While& other) const {
 bool While::operator!=(const While& other) const {
   return !(*this == other);
 }
-
-bool operator==(const While& first, const AST& ast) {
-  auto second = dynamic_cast<const While*>(&ast);
-  if(second) {
-    return first == *second;
-  }
-  return false;
-}
 }
 }
 }

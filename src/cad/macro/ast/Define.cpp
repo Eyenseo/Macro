@@ -42,14 +42,6 @@ bool Define::operator==(const Define& other) const {
 bool Define::operator!=(const Define& other) const {
   return !(*this == other);
 }
-
-bool operator==(const Define& first, const AST& ast) {
-  auto second = dynamic_cast<const Define*>(&ast);
-  if(second) {
-    return first == *second;
-  }
-  return false;
-}
 }
 }
 }

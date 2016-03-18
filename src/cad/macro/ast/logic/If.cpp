@@ -66,14 +66,6 @@ bool If::operator==(const If& other) const {
 bool If::operator!=(const If& other) const {
   return !(*this == other);
 }
-
-bool operator==(const If& first, const AST& ast) {
-  auto second = dynamic_cast<const If*>(&ast);
-  if(second) {
-    return first == *second;
-  }
-  return false;
-}
 }
 }
 }

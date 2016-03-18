@@ -38,7 +38,7 @@ public:
     // enable ADL
     using std::swap;
 
-    swap(dynamic_cast<AST&>(first), dynamic_cast<AST&>(second));
+    swap(static_cast<AST&>(first), static_cast<AST&>(second));
     swap(first.condition, second.condition);
     swap(first.scope, second.scope);
   }

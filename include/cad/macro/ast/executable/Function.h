@@ -38,7 +38,7 @@ public:
     // enable ADL
     using std::swap;
 
-    swap(dynamic_cast<Executable&>(first), dynamic_cast<Executable&>(second));
+    swap(static_cast<Executable&>(first), static_cast<Executable&>(second));
     swap(first.scope, second.scope);
   }
 
