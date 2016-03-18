@@ -10,3 +10,4 @@ target_sources(
 )
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/executable)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/logic)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/loop)

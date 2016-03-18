@@ -10,6 +10,9 @@
 #include "cad/macro/ast/executable/EntryFunction.h"
 #include "cad/macro/ast/executable/Executable.h"
 #include "cad/macro/ast/logic/If.h"
+#include "cad/macro/ast/loop/While.h"
+#include "cad/macro/ast/loop/DoWhile.h"
+#include "cad/macro/ast/loop/For.h"
 
 #include <core/variant.hpp>
 
@@ -32,10 +35,14 @@ class Scope : public AST {
   using Executable = executable::Executable;
   using Function = executable::Function;
   using If = logic::If;
+  using While = loop::While;
+  using DoWhile = loop::DoWhile;
+  using For = loop::For;
 
 public:
-  using Node = core::variant<Define, EntryFunction, Executable, Function,
-                             Return, Scope, UnaryOperator, BinaryOperator, If>;
+  using Node =
+      core::variant<Define, EntryFunction, Executable, Function, Return, Scope,
+                    UnaryOperator, BinaryOperator, If, While, DoWhile, For>;
 
 private:
   void print_internals(std::ostream& os) const;

@@ -7,6 +7,7 @@ using namespace cad::macro::parser;
 using namespace cad::macro::ast;
 using namespace cad::macro::ast::executable;
 using namespace cad::macro::ast::logic;
+using namespace cad::macro::ast::loop;
 
 TEST_CASE("AST Comparison") {
   SECTION("Empty") {
@@ -386,5 +387,116 @@ TEST_CASE("If") {
     b.true_scope = std::make_unique<Scope>(Token(0, 0, ""));
     b.false_scope = std::make_unique<Scope>(Token(0, 0, ""));
     REQUIRE_FALSE(a == b);
+  }
+}
+
+TEST_CASE("While") {
+  SECTION("Default") {
+    While a({0, 0, ""});
+    While b({0, 0, ""});
+    REQUIRE(a == b);
+  }
+  // Condition
+  SECTION("Condition") {
+    SECTION("Same") {
+      While a({0, 0, ""});
+      Condition ac({0, 0, ""});
+      ac.condition = Variable({0, 0, ""});
+      a.condition = ac;
+      While b({0, 0, ""});
+      Condition bc({0, 0, ""});
+      bc.condition = Variable({0, 0, ""});
+      b.condition = bc;
+      REQUIRE(a == b);
+    }
+    SECTION("Different") {
+      While a({0, 0, ""});
+      Condition ac({0, 0, ""});
+      ac.condition = Variable({0, 0, ""});
+      a.condition = ac;
+      While b({0, 0, ""});
+      Condition bc({0, 0, ""});
+      bc.condition = Executable({0, 0, ""});
+      b.condition = bc;
+      REQUIRE_FALSE(a == b);
+    }
+    SECTION("N/One") {
+      While a({0, 0, ""});
+      Condition ac({0, 0, ""});
+      ac.condition = Variable({0, 0, ""});
+      a.condition = ac;
+      While b({0, 0, ""});
+      REQUIRE_FALSE(a == b);
+    }
+  }
+  // Scope
+  SECTION("Scope") {
+    SECTION("Both") {
+      While a({0, 0, ""});
+      a.scope = std::make_unique<Scope>(Token(0, 0, ""));
+      While b({0, 0, ""});
+      b.scope = std::make_unique<Scope>(Token(0, 0, ""));
+      REQUIRE(a == b);
+    }
+    SECTION("N/One") {
+      While a({0, 0, ""});
+      a.scope = std::make_unique<Scope>(Token(0, 0, ""));
+      While b({0, 0, ""});
+      REQUIRE_FALSE(a == b);
+    }
+  }
+}
+TEST_CASE("For") {
+  SECTION("Default") {
+    For a({0, 0, ""});
+    For b({0, 0, ""});
+    REQUIRE(a == b);
+  }
+  // Variable
+  SECTION("Variable") {
+    SECTION("Same") {
+      For a({0, 0, ""});
+      Condition ac({0, 0, ""});
+      a.variable = Variable({0, 0, ""});
+      For b({0, 0, ""});
+      Condition bc({0, 0, ""});
+      b.variable = Variable({0, 0, ""});
+      REQUIRE(a == b);
+    }
+    SECTION("N/One") {
+      For a({0, 0, ""});
+      Condition ac({0, 0, ""});
+      a.variable = Variable({1, 0, ""});
+      For b({0, 0, ""});
+      REQUIRE_FALSE(a == b);
+    }
+  }
+  // Operation
+  SECTION("Operation") {
+    SECTION("Same") {
+      For a({0, 0, ""});
+      BinaryOperator ac({0, 0, ""});
+      a.operation = ac;
+      For b({0, 0, ""});
+      BinaryOperator bc({0, 0, ""});
+      b.operation = bc;
+      REQUIRE(a == b);
+    }
+    SECTION("Different") {
+      For a({0, 0, ""});
+      BinaryOperator ac({0, 0, ""});
+      a.operation = ac;
+      For b({0, 0, ""});
+      UnaryOperator bc({0, 0, ""});
+      b.operation = bc;
+      REQUIRE_FALSE(a == b);
+    }
+    SECTION("N/One") {
+      For a({0, 0, ""});
+      BinaryOperator ac({0, 0, ""});
+      a.operation = ac;
+      For b({0, 0, ""});
+      REQUIRE_FALSE(a == b);
+    }
   }
 }
