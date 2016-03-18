@@ -28,7 +28,6 @@ void UnaryOperator::print_internals(IndentStream& os) const {
     os.indent() << "Operand:\n";
     os << *operand;
     os.dedent();
-    os << "\n";
   }
 }
 
@@ -95,14 +94,12 @@ void BinaryOperator::print_internals(IndentStream& os) const {
     os << "Left operand:\n";
     os.indent() << *left_operand;
     os.dedent();
-    os << "\n";
   }
   os << "Operation: " << operation_to_string() << "\n";
   if(right_operand) {
     os << "Right operand:\n";
     os.indent() << *right_operand;
     os.dedent();
-    os << "\n";
   }
 }
 
