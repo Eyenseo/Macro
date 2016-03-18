@@ -109,12 +109,15 @@ core::optional<T> parse_function_internals(const std::vector<Token>& tokens,
   if(!fun_scope) {
     // TODO throw
   }
+  const auto definitions = fun_scope->nodes.size();
   for(const auto& v : fun.parameter) {
     v.match(
-        [&fun_scope](ast::Variable p) {
+        [&fun_scope, definitions](ast::Variable p) {
+          auto it = fun_scope->nodes.end();
+          std::advance(it, -definitions);
           ast::Define def(p.token);
           def.definition.emplace(std::move(p));
-          fun_scope->nodes.emplace_back(std::move(def));
+          fun_scope->nodes.emplace(it, std::move(def));
         },
         [](const ast::executable::Executable&) {
           // TODO throw
