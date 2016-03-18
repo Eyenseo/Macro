@@ -28,7 +28,8 @@ enum class BinaryOperation {
   EQUAL,
   NOT_EQUAL,
   AND,
-  OR
+  OR,
+  ASSIGNMENT
 };
 struct Operand;
 

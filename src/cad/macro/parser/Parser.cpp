@@ -285,6 +285,8 @@ parse_operator(const std::vector<Token>& tokens, size_t& token) {
       op.operation = ast::BinaryOperation::AND;
     } else if(read_token(tokens, tmp, "||")) {
       op.operation = ast::BinaryOperation::OR;
+    } else if(read_token(tokens, tmp, "=")) {
+      op.operation = ast::BinaryOperation::ASSIGNMENT;
     }
     if(op.operation != ast::BinaryOperation::NONE) {
       ret.emplace(std::move(op));
@@ -327,7 +329,7 @@ void assamble_condition(std::vector<Condition>& conditions, size_t& index) {
         conditions.erase(next);
         // We changed the vector - get new, VALID iterator
         previous = conditions.begin();
-        std::advance(previous, index); // we decremented index already
+        std::advance(previous, index);  // we decremented index already
         conditions.erase(previous);
       },
       [](ast::Variable&) {}, [](ast::executable::Executable&) {});
@@ -385,6 +387,9 @@ assamble_conditions(std::vector<Condition> conditions) {
   assamble_conditions(conditions, ast::BinaryOperation::NOT_EQUAL);
   assamble_conditions(conditions, ast::BinaryOperation::AND);
   assamble_conditions(conditions, ast::BinaryOperation::OR);
+
+  // TODO needed / allowed?
+  // assamble_conditions(conditions, ast::BinaryOperation::ASSIGNMENT);
 
   if(conditions.size() != 1) {
 

@@ -136,6 +136,8 @@ std::string BinaryOperator::operation_to_string() const {
     return "and";
   case BinaryOperation::OR:
     return "or";
+  case BinaryOperation::ASSIGNMENT:
+    return "assignment";
   }
   return "This 'can not' happen - you accessed uninitialized memory or "
          "something similar!";
