@@ -110,30 +110,32 @@ std::string BinaryOperator::operation_to_string() const {
   switch(operation) {
   case BinaryOperation::NONE:
     return "NONE";
-  case BinaryOperation::AND:
-    return "and";
-  case BinaryOperation::OR:
-    return "or";
-  case BinaryOperation::EQUAL:
-    return "equal";
-  case BinaryOperation::NOT_EQUAL:
-    return "not equal";
-  case BinaryOperation::GREATER:
-    return "greater";
-  case BinaryOperation::GREATER_EQUAL:
-    return "greater equal";
-  case BinaryOperation::SMALLER:
-    return "smaller";
-  case BinaryOperation::SMALLER_EQUAL:
-    return "smaller equal";
   case BinaryOperation::DIVIDE:
     return "divide";
   case BinaryOperation::MULTIPLY:
     return "multiply";
-  case BinaryOperation::ADD:
-    return "add";
   case BinaryOperation::MODULO:
     return "modulo";
+  case BinaryOperation::ADD:
+    return "add";
+  case BinaryOperation::SUBTRACT:
+    return "subtract";
+  case BinaryOperation::SMALLER:
+    return "smaller";
+  case BinaryOperation::SMALLER_EQUAL:
+    return "smaller equal";
+  case BinaryOperation::GREATER:
+    return "greater";
+  case BinaryOperation::GREATER_EQUAL:
+    return "greater equal";
+  case BinaryOperation::EQUAL:
+    return "equal";
+  case BinaryOperation::NOT_EQUAL:
+    return "not equal";
+  case BinaryOperation::AND:
+    return "and";
+  case BinaryOperation::OR:
+    return "or";
   }
   return "This 'can not' happen - you accessed uninitialized memory or "
          "something similar!";

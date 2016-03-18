@@ -16,18 +16,19 @@ enum class OperationType { Unary, Binary };
 enum class UnaryOperation { NONE, NOT };
 enum class BinaryOperation {
   NONE,
-  AND,
-  OR,
-  EQUAL,
-  GREATER,
-  GREATER_EQUAL,
-  NOT_EQUAL,
+  DIVIDE,
+  MULTIPLY,
+  MODULO,
+  ADD,
+  SUBTRACT,
   SMALLER,
   SMALLER_EQUAL,
-  ADD,
-  DIVIDE,
-  MODULO,
-  MULTIPLY
+  GREATER,
+  GREATER_EQUAL,
+  EQUAL,
+  NOT_EQUAL,
+  AND,
+  OR
 };
 struct Operand;
 
@@ -43,10 +44,6 @@ public:
   Operator()
       : AST()
       , operation(Operation::NONE) {
-  }
-  Operator(const Operator& other)
-      : AST(other)
-      , operation(other.operation) {
   }
   Operator(parser::Token token)
       : AST(std::move(token))
@@ -143,14 +140,32 @@ struct Operand {
                                       UnaryOperator, BinaryOperator>;
   OperandMember operand;
 
+public:
+  Operand(OperandMember op)
+      : operand(std::move(op)) {
+  }
+  Operand(executable::Executable op)
+      : operand(std::move(op)) {
+  }
+  Operand(Variable op)
+      : operand(std::move(op)) {
+  }
+  Operand(UnaryOperator op)
+      : operand(std::move(op)) {
+  }
+  Operand(BinaryOperator op)
+      : operand(std::move(op)) {
+  }
+
+
   bool operator==(const Operand& other) const;
   bool operator!=(const Operand& other) const;
 
-  friend std::ostream& operator<<(std::ostream& os, const Operand& operand) {
-    operand.operand.match([&os](const executable::Executable& o) { os << o; },
-                          [&os](const Variable& o) { os << o; },
-                          [&os](const UnaryOperator& o) { os << o; },
-                          [&os](const BinaryOperator& o) { os << o; });
+  friend std::ostream& operator<<(std::ostream& os, const Operand& op) {
+    op.operand.match([&os](const executable::Executable& o) { os << o; },
+                     [&os](const Variable& o) { os << o; },
+                     [&os](const UnaryOperator& o) { os << o; },
+                     [&os](const BinaryOperator& o) { os << o; });
     return os;
   }
 };

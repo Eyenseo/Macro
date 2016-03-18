@@ -13,7 +13,9 @@ void Condition::print_internals(IndentStream& os) const {
   if(condition) {
     os.indent();
     condition->match([&os](const UnaryOperator& c) { os << c; },
-                     [&os](const BinaryOperator& c) { os << c; });
+                     [&os](const BinaryOperator& c) { os << c; },
+                     [&os](const Variable& c) { os << c; },
+                     [&os](const executable::Executable& c) { os << c; });
     os.dedent();
   }
 }
@@ -24,7 +26,7 @@ bool Condition::operator==(const Condition& other) const {
   } else if(AST::operator==(other)) {
     if(condition && other.condition) {
       return condition == other.condition;
-    } else if(!condition && !other.condition){
+    } else if(!condition && !other.condition) {
       return true;
     }
   }
