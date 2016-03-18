@@ -29,9 +29,9 @@ bool Token::operator!=(const Token& other) const {
   return !(*this == other);
 }
 
-std::ostream& Token::operator<<(std::ostream& os) {
-  os << "Token{line: " << line << " column: " << column << " token: " << token
-     << "}";
+std::ostream& operator<<(std::ostream& os, const Token& token) {
+  os << "Token{line: " << token.line << " column: " << token.column
+     << " token: " << token.token << "}\n";
   return os;
 }
 }
