@@ -1,7 +1,7 @@
 #include "cad/macro/ast/Scope.h"
 
 #include "cad/macro/ast/Define.h"
-
+#include "cad/macro/ast/ValueProducer.h"
 #include "cad/macro/IndentStream.h"
 
 namespace cad {

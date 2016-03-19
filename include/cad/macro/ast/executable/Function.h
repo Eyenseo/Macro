@@ -1,7 +1,7 @@
 #ifndef cad_macro_ast_executable_Function_h
 #define cad_macro_ast_executable_Function_h
 
-#include "cad/macro/ast/executable/Executable.h"
+#include "cad/macro/ast/AST.h"
 
 #include <vector>
 #include <memory>
@@ -19,11 +19,12 @@ namespace cad {
 namespace macro {
 namespace ast {
 namespace executable {
-class Function : public Executable {
+class Function : public AST {
 protected:
   void print_internals(IndentStream& os) const;
 
 public:
+  std::vector<Variable> parameter;
   std::unique_ptr<Scope> scope;
 
   Function();
@@ -38,8 +39,9 @@ public:
     // enable ADL
     using std::swap;
 
-    swap(static_cast<Executable&>(first), static_cast<Executable&>(second));
+    swap(static_cast<AST&>(first), static_cast<AST&>(second));
     swap(first.scope, second.scope);
+    swap(first.parameter, second.parameter);
   }
 
   bool operator==(const Function& other) const;

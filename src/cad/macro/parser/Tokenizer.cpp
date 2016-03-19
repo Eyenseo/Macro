@@ -45,19 +45,16 @@ void token_begin(Macro macro, Position& position) {
 }
 
 bool float_token_end(Macro macro, Position& position) {
-  const static std::regex regex("(\\d*(\\.\\d+))");
+  const static std::regex regex("(\\d*\\.\\d+)");
   std::smatch match;
   std::regex_search(macro.begin() + position.string, macro.end(), match, regex);
 
-  if(match.empty()) {
-    return false;
-  } else {
-    if(match.position(1) == 0) {
-      position.column += match.position(1) + match[1].length();
-      position.string += match.position(1) + match[1].length();
-    }
+  if(!match.empty() && match.position(1) == 0) {
+    position.column += match[1].length();
+    position.string += match[1].length();
     return true;
   }
+  return false;
 }
 void normal_token_end(Macro macro, Position& position) {
   const static std::regex regex("([^a-zA-Z0-9_])");

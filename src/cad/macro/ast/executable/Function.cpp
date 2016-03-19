@@ -1,6 +1,7 @@
 #include "cad/macro/ast/executable/Function.h"
 
 #include "cad/macro/ast/Scope.h"
+#include "cad/macro/ast/ValueProducer.h"
 #include "cad/macro/ast/Variable.h"
 
 namespace cad {
@@ -10,14 +11,15 @@ namespace executable {
 Function::Function() {
 }
 Function::Function(const Function& other)
-    : Executable(other)
+    : AST(other)
+    , parameter(other.parameter)
     , scope((other.scope) ? std::make_unique<Scope>(*other.scope) : nullptr) {
 }
 Function::Function(Function&& other) {
   swap(*this, other);
 }
 Function::Function(parser::Token token)
-    : Executable(std::move(token)) {
+    : AST(std::move(token)) {
 }
 Function::~Function() {
 }
@@ -27,15 +29,23 @@ Function& Function::operator=(Function other) {
 }
 
 void Function::print_internals(IndentStream& os) const {
-  Executable::print_internals(os);
+  os << "parameter:\n";
+  if(!parameter.empty()) {
+    os.indent();
+    for(const auto& v : parameter) {
+      os << v;
+    }
+    os.dedent();
+  }
   if(scope) {
     os << *scope;
   }
 }
+
 bool Function::operator==(const Function& other) const {
   if(this == &other) {
     return true;
-  } else if(Executable::operator==(other)) {
+  } else if(AST::operator==(other)) {
     if(scope && other.scope) {
       return *scope == *other.scope;
     } else if(!scope && !other.scope) {

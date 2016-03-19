@@ -1,6 +1,8 @@
 #include "cad/macro/parser/Parser.h"
 
 #include "cad/macro/ast/Scope.h"
+#include "cad/macro/ast/Literal.h"
+#include "cad/macro/ast/ValueProducer.h"
 #include "cad/macro/parser/Tokenizer.h"
 
 #include <core/optional.hpp>
@@ -44,7 +46,7 @@ bool read_token(const std::vector<Token>& tokens, size_t& token,
 bool read_token(const std::vector<Token>& tokens, size_t& token,
                 const std::regex& token_regex) {
   std::smatch match;
-  if(!std::regex_search(tokens.at(token).token, match, token_regex)) {
+  if(!std::regex_match(tokens.at(token).token, match, token_regex)) {
     return false;
   }
   auto tmp = token + 1;
@@ -53,6 +55,92 @@ bool read_token(const std::vector<Token>& tokens, size_t& token,
   }
   token = tmp;
   return true;
+}
+
+core::optional<ast::Literal<ast::Literals::BOOL>>
+parse_literal_bool(const std::vector<Token>& tokens, size_t& token) {
+  auto tmp = token;
+
+  if(read_token(tokens, tmp, "true")) {
+    ast::Literal<ast::Literals::BOOL> lit(tokens.at(token));
+    lit.data = true;
+
+    token = tmp;
+    return lit;
+  } else if(read_token(tokens, tmp, "false")) {
+    ast::Literal<ast::Literals::BOOL> lit(tokens.at(token));
+    lit.data = false;
+
+    token = tmp;
+    return lit;
+  }
+  return {};
+}
+core::optional<ast::Literal<ast::Literals::INT>>
+parse_literal_int(const std::vector<Token>& tokens, size_t& token) {
+  const static std::regex regex("([0-9]+)");
+  auto tmp = token;
+
+  if(read_token(tokens, tmp, regex)) {
+    ast::Literal<ast::Literals::INT> lit(tokens.at(token));
+    lit.data = std::stoi(tokens.at(token).token);
+
+    token = tmp;
+    return lit;
+  }
+  return {};
+}
+core::optional<ast::Literal<ast::Literals::DOUBLE>>
+parse_literal_double(const std::vector<Token>& tokens, size_t& token) {
+  const static std::regex regex("([0-9]?.[0-9]+)");
+  auto tmp = token;
+
+  if(read_token(tokens, tmp, regex)) {
+    ast::Literal<ast::Literals::DOUBLE> lit(tokens.at(token));
+    lit.data = std::stod(lit.token.token);
+
+    token = tmp;
+    return lit;
+  }
+  return {};
+}
+core::optional<ast::Literal<ast::Literals::STRING>>
+parse_literal_string(const std::vector<Token>& tokens, size_t& token) {
+  const static std::regex regex("(\\\".*\\\")");
+  auto tmp = token;
+
+  if(read_token(tokens, tmp, regex)) {
+    ast::Literal<ast::Literals::STRING> lit(tokens.at(token));
+    lit.data = lit.token.token.substr(1, lit.token.token.size() - 2);
+
+    auto replace_all = [&lit](const std::string& search,
+                              const std::string& replace) {
+      for(size_t pos = 0;; pos += replace.length()) {
+        pos = lit.data.find(search, pos);
+
+        if(pos == std::string::npos) {
+          break;
+        }
+
+        lit.data.erase(pos, search.length());
+        lit.data.insert(pos, replace);
+      }
+    };
+
+    replace_all("\\/", "/");
+    replace_all("\\\"", "\"");
+    replace_all("\\\\", "\\");
+    replace_all("\\b", "\b");
+    replace_all("\\f", "\f");
+    replace_all("\\n", "\n");
+    replace_all("\\r", "\r");
+    replace_all("\\t", "\t");
+    replace_all("\\a", "\a");
+
+    token = tmp;
+    return lit;
+  }
+  return {};
 }
 
 core::optional<ast::Scope> parse_scope(const std::vector<Token>& tokens,
@@ -108,17 +196,12 @@ core::optional<T> parse_function_internals(const std::vector<Token>& tokens,
   }
   const auto definitions = fun_scope->nodes.size();
   for(const auto& v : fun.parameter) {
-    v.match(
-        [&fun_scope, definitions](ast::Variable p) {
-          auto it = fun_scope->nodes.end();
-          std::advance(it, -definitions);
-          ast::Define def(p.token);
-          def.definition.emplace(std::move(p));
-          fun_scope->nodes.emplace(it, std::move(def));
-        },
-        [](const ast::executable::Executable&) {
-          // TODO throw
-        });
+    // Add the variables to the scope definitions in the right order
+    auto it = fun_scope->nodes.end();
+    std::advance(it, -definitions);
+    ast::Define def(v.token);
+    def.definition.emplace(v);
+    fun_scope->nodes.emplace(it, std::move(def));
   }
 
   fun.scope = std::make_unique<ast::Scope>(*std::move(fun_scope));
@@ -127,8 +210,7 @@ core::optional<T> parse_function_internals(const std::vector<Token>& tokens,
 }
 
 core::optional<ast::executable::EntryFunction>
-parse_entry_function_definition(const std::vector<Token>& tokens,
-                                size_t& token) {
+parse_entry_function(const std::vector<Token>& tokens, size_t& token) {
   auto tmp = token;
   if(read_token(tokens, tmp, "main")) {
     // TODO catch - add information
@@ -142,7 +224,7 @@ parse_entry_function_definition(const std::vector<Token>& tokens,
 }
 
 core::optional<ast::executable::Function>
-parse_function_definition(const std::vector<Token>& tokens, size_t& token) {
+parse_function(const std::vector<Token>& tokens, size_t& token) {
   const static std::regex regex("([a-z][a-z0-9_]*)");
   auto tmp = token;
 
@@ -155,31 +237,15 @@ parse_function_definition(const std::vector<Token>& tokens, size_t& token) {
   return {};
 }
 
-core::optional<ast::Variable>
-parse_variable_definition(const std::vector<Token>& tokens, size_t& token) {
-  const static std::regex regex("([a-z][a-z0-9_]*)");
-  auto tmp = token;
-
-  if(read_token(tokens, tmp, regex)) {
-    ast::Variable var(tokens.at(token));
-    if(read_token(tokens, tmp, "(")) {
-      // TODO throw
-    }
-    token = tmp;
-    return var;
-  }
-  return {};
-}
-
 core::optional<ast::Define> parse_definition(const std::vector<Token>& tokens,
                                              size_t& token) {
   auto tmp = token;
   if(read_token(tokens, tmp, "def")) {
     ast::Define def(tokens.at(token));
 
-    if(auto entry_function = parse_entry_function_definition(tokens, tmp)) {
+    if(auto entry_function = parse_entry_function(tokens, tmp)) {
       def.definition.emplace(std::move(*entry_function));
-    } else if(auto function = parse_function_definition(tokens, tmp)) {
+    } else if(auto function = parse_function(tokens, tmp)) {
       def.definition.emplace(std::move(*function));
     } else {
       // TODO throw
@@ -189,7 +255,7 @@ core::optional<ast::Define> parse_definition(const std::vector<Token>& tokens,
   } else if(read_token(tokens, tmp, "var")) {
     ast::Define def(tokens.at(token));
 
-    if(auto variable = parse_variable_definition(tokens, tmp)) {
+    if(auto variable = parse_variable(tokens, tmp)) {
       def.definition.emplace(std::move(*variable));
     } else {
       // TODO throw
@@ -210,10 +276,19 @@ parse_executable(const std::vector<Token>& tokens, size_t& token) {
 
     while(tmp < tokens.size()) {
       if(auto exe = parse_executable(tokens, tmp)) {
-        exec.parameter.push_back(std::move(*exe));
+        exec.parameter.emplace_back(std::move(*exe));
+      } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
+        exec.parameter.emplace_back(std::move(*lit_bool));
+      } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
+        exec.parameter.emplace_back(std::move(*lit_int));
+      } else if(auto lit_double = parse_literal_double(tokens, tmp)) {
+        exec.parameter.emplace_back(std::move(*lit_double));
+      } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
+        exec.parameter.emplace_back(std::move(*lit_string));
       } else if(auto var = parse_variable(tokens, tmp)) {
-        exec.parameter.push_back(std::move(*var));
+        exec.parameter.emplace_back(std::move(*var));
       } else {
+        // TODO operator
         // TODO throw
       }
       if(!read_token(tokens, tmp, ",")) {
@@ -236,10 +311,19 @@ core::optional<ast::Return> parse_return(const std::vector<Token>& tokens,
     ast::Return ret(tokens.at(token));
 
     if(auto exe = parse_executable(tokens, tmp)) {
-      ret.output.emplace(std::move(*exe));
+      ret.output = std::make_unique<ast::ValueProducer>(std::move(*exe));
+    } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
+      ret.output = std::make_unique<ast::ValueProducer>(std::move(*lit_bool));
+    } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
+      ret.output = std::make_unique<ast::ValueProducer>(std::move(*lit_int));
+    } else if(auto lit_double = parse_literal_double(tokens, tmp)) {
+      ret.output = std::make_unique<ast::ValueProducer>(std::move(*lit_double));
+    } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
+      ret.output = std::make_unique<ast::ValueProducer>(std::move(*lit_string));
     } else if(auto var = parse_variable(tokens, tmp)) {
-      ret.output.emplace(std::move(*var));
+      ret.output = std::make_unique<ast::ValueProducer>(std::move(*var));
     } else {
+      // TODO operator
       // TODO throw
     }
 
@@ -248,6 +332,7 @@ core::optional<ast::Return> parse_return(const std::vector<Token>& tokens,
   }
   return {};
 }
+
 core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>>
 parse_operator(const std::vector<Token>& tokens, size_t& token) {
   auto tmp = token;
@@ -298,8 +383,8 @@ parse_operator(const std::vector<Token>& tokens, size_t& token) {
   return ret;
 }
 
-void assamble_condition(std::vector<ast::ValueVariant>& conditions,
-                        size_t& index) {
+void assamble_operator(std::vector<ast::ValueProducer>& conditions,
+                       size_t& index) {
   auto next = conditions.begin();
   std::advance(next, index + 1);
   auto previous = conditions.begin();
@@ -309,12 +394,12 @@ void assamble_condition(std::vector<ast::ValueVariant>& conditions,
     std::advance(previous, index - 1);
   }
 
-  conditions.at(index).match(
+  conditions.at(index).value.match(
       [&conditions, &next](ast::UnaryOperator& op) {
         if(next == conditions.end()) {
           // TODO throw
         }
-        op.operand = std::make_unique<ast::Operand>(std::move(*next));
+        op.operand = std::make_unique<ast::ValueProducer>(std::move(*next));
         conditions.erase(next);
       },
       [&conditions, &index, &next, &previous](ast::BinaryOperator& op) {
@@ -324,8 +409,10 @@ void assamble_condition(std::vector<ast::ValueVariant>& conditions,
         if(next == conditions.end()) {
           // TODO throw
         }
-        op.left_operand = std::make_unique<ast::Operand>(std::move(*previous));
-        op.right_operand = std::make_unique<ast::Operand>(std::move(*next));
+        op.left_operand =
+            std::make_unique<ast::ValueProducer>(std::move(*previous));
+        op.right_operand =
+            std::make_unique<ast::ValueProducer>(std::move(*next));
         --index;
         conditions.erase(next);
         // We changed the vector - get new, VALID iterator
@@ -333,72 +420,83 @@ void assamble_condition(std::vector<ast::ValueVariant>& conditions,
         std::advance(previous, index);  // we decremented index already
         conditions.erase(previous);
       },
-      [](ast::Variable&) {}, [](ast::executable::Executable&) {});
+      [](ast::Literal<ast::Literals::BOOL>&) {},
+      [](ast::Literal<ast::Literals::INT>&) {},
+      [](ast::Literal<ast::Literals::DOUBLE>&) {},
+      [](ast::Literal<ast::Literals::STRING>&) {}, [](ast::Variable&) {},
+      [](ast::executable::Executable&) {});
 }
 
-void assamble_conditions(std::vector<ast::ValueVariant>& conditions,
-                         const ast::UnaryOperation operaton) {
+void assamble_operators(std::vector<ast::ValueProducer>& conditions,
+                        const ast::UnaryOperation operaton) {
   for(size_t i = 0; i < conditions.size(); ++i) {
-    conditions.at(i).match(
+    conditions.at(i).value.match(
         [&conditions, &i, operaton](ast::UnaryOperator& op) {
           if(op.operation == ast::UnaryOperation::NONE) {
             // TODO throw
             assert(false && "ast::UnaryOperation::NONE");
           } else if(op.operation == operaton) {
-            assamble_condition(conditions, i);
+            assamble_operator(conditions, i);
           }
         },
-        [](ast::BinaryOperator&) {}, [](ast::Variable&) {},
+        [](ast::BinaryOperator&) {}, [](ast::Literal<ast::Literals::BOOL>&) {},
+        [](ast::Literal<ast::Literals::INT>&) {},
+        [](ast::Literal<ast::Literals::DOUBLE>&) {},
+        [](ast::Literal<ast::Literals::STRING>&) {}, [](ast::Variable&) {},
         [](ast::executable::Executable&) {});
   }
 }
 
-void assamble_conditions(std::vector<ast::ValueVariant>& conditions,
-                         const ast::BinaryOperation operaton) {
+void assamble_operators(std::vector<ast::ValueProducer>& conditions,
+                        const ast::BinaryOperation operaton) {
   for(size_t i = 0; i < conditions.size(); ++i) {
-    conditions.at(i).match(
+    conditions.at(i).value.match(
         [&conditions, &i, operaton](ast::BinaryOperator& op) {
           if(op.operation == ast::BinaryOperation::NONE) {
             // TODO throw
             assert(false && "ast::BinaryOperation::NONE");
           } else if(op.operation == operaton) {
-            assamble_condition(conditions, i);
+            assamble_operator(conditions, i);
           }
         },
-        [](ast::UnaryOperator&) {}, [](ast::Variable&) {},
+        [](ast::UnaryOperator&) {}, [](ast::Literal<ast::Literals::BOOL>&) {},
+        [](ast::Literal<ast::Literals::INT>&) {},
+        [](ast::Literal<ast::Literals::DOUBLE>&) {},
+        [](ast::Literal<ast::Literals::STRING>&) {}, [](ast::Variable&) {},
         [](ast::executable::Executable&) {});
   }
 }
 
-core::optional<ast::ValueVariant>
-assamble_conditions(std::vector<ast::ValueVariant> conditions) {
-  assamble_conditions(conditions, ast::UnaryOperation::NOT);
+core::optional<ast::ValueProducer>
+assamble_conditions(std::vector<ast::ValueProducer> conditions) {
+  assamble_operators(conditions, ast::UnaryOperation::NOT);
 
-  assamble_conditions(conditions, ast::BinaryOperation::DIVIDE);
-  assamble_conditions(conditions, ast::BinaryOperation::MULTIPLY);
-  assamble_conditions(conditions, ast::BinaryOperation::MODULO);
-  assamble_conditions(conditions, ast::BinaryOperation::ADD);
-  assamble_conditions(conditions, ast::BinaryOperation::SUBTRACT);
+  assamble_operators(conditions, ast::BinaryOperation::DIVIDE);
+  assamble_operators(conditions, ast::BinaryOperation::MULTIPLY);
+  assamble_operators(conditions, ast::BinaryOperation::MODULO);
+  assamble_operators(conditions, ast::BinaryOperation::ADD);
+  assamble_operators(conditions, ast::BinaryOperation::SUBTRACT);
 
-  assamble_conditions(conditions, ast::BinaryOperation::SMALLER);
-  assamble_conditions(conditions, ast::BinaryOperation::SMALLER_EQUAL);
-  assamble_conditions(conditions, ast::BinaryOperation::GREATER);
-  assamble_conditions(conditions, ast::BinaryOperation::GREATER_EQUAL);
-  assamble_conditions(conditions, ast::BinaryOperation::EQUAL);
-  assamble_conditions(conditions, ast::BinaryOperation::NOT_EQUAL);
-  assamble_conditions(conditions, ast::BinaryOperation::AND);
-  assamble_conditions(conditions, ast::BinaryOperation::OR);
-
-  // TODO needed / allowed?
-  // assamble_conditions(conditions, ast::BinaryOperation::ASSIGNMENT);
+  assamble_operators(conditions, ast::BinaryOperation::SMALLER);
+  assamble_operators(conditions, ast::BinaryOperation::SMALLER_EQUAL);
+  assamble_operators(conditions, ast::BinaryOperation::GREATER);
+  assamble_operators(conditions, ast::BinaryOperation::GREATER_EQUAL);
+  assamble_operators(conditions, ast::BinaryOperation::EQUAL);
+  assamble_operators(conditions, ast::BinaryOperation::NOT_EQUAL);
+  assamble_operators(conditions, ast::BinaryOperation::AND);
+  assamble_operators(conditions, ast::BinaryOperation::OR);
 
   if(conditions.size() != 1) {
-
     for(const auto& c : conditions) {
-      c.match([](const ast::BinaryOperator& o) { std::cout << o; },
-              [](const ast::UnaryOperator& o) { std::cout << o; },
-              [](const ast::Variable& o) { std::cout << o; },
-              [](const ast::executable::Executable& o) { std::cout << o; });
+      c.value.match(
+          [](const ast::BinaryOperator& o) { std::cout << o; },
+          [](const ast::UnaryOperator& o) { std::cout << o; },
+          [](const ast::Literal<ast::Literals::BOOL>& o) { std::cout << o; },
+          [](const ast::Literal<ast::Literals::INT>& o) { std::cout << o; },
+          [](const ast::Literal<ast::Literals::DOUBLE>& o) { std::cout << o; },
+          [](const ast::Literal<ast::Literals::STRING>& o) { std::cout << o; },
+          [](const ast::Variable& o) { std::cout << o; },
+          [](const ast::executable::Executable& o) { std::cout << o; });
     }
 
     assert(false && "Left over operators");
@@ -406,15 +504,23 @@ assamble_conditions(std::vector<ast::ValueVariant> conditions) {
   return conditions.front();
 }
 
-core::optional<ast::ValueVariant>
+core::optional<ast::ValueProducer>
 parse_condition(const std::vector<Token>& tokens, size_t& token) {
   auto tmp = token;
 
-  std::vector<ast::ValueVariant> conditions;
+  std::vector<ast::ValueProducer> conditions;
 
   while(tmp < tokens.size()) {
     if(auto exe = parse_executable(tokens, tmp)) {
       conditions.push_back(std::move(*exe));
+    } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
+      conditions.push_back(std::move(*lit_bool));
+    } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
+      conditions.push_back(std::move(*lit_int));
+    } else if(auto lit_double = parse_literal_double(tokens, tmp)) {
+      conditions.push_back(std::move(*lit_double));
+    } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
+      conditions.push_back(std::move(*lit_string));
     } else if(auto var = parse_variable(tokens, tmp)) {
       conditions.push_back(std::move(*var));
     } else if(auto op = parse_operator(tokens, tmp)) {
@@ -456,7 +562,7 @@ core::optional<ast::logic::If> parse_if(const std::vector<Token>& tokens,
     if(!condition) {
       // TODO throw
     }
-    iff.condition = std::move(*condition);
+    iff.condition = std::make_unique<ast::ValueProducer>(std::move(*condition));
     expect_token(tokens, tmp, ")");
 
     auto true_scope = parse_scope(tokens, tmp);

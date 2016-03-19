@@ -1,5 +1,7 @@
 #include "cad/macro/ast/Operator.h"
 
+#include "cad/macro/ast/ValueProducer.h"
+
 namespace cad {
 namespace macro {
 namespace ast {
@@ -8,7 +10,7 @@ namespace ast {
 //////////////////////////////////////////
 UnaryOperator::UnaryOperator(const UnaryOperator& other)
     : Operator<OperationType::Unary>(other)
-    , operand((other.operand) ? std::make_unique<Operand>(*other.operand)
+    , operand((other.operand) ? std::make_unique<ValueProducer>(*other.operand)
                               : nullptr) {
 }
 UnaryOperator::UnaryOperator(UnaryOperator&& other) {
@@ -65,10 +67,10 @@ bool UnaryOperator::operator!=(const UnaryOperator& other) const {
 BinaryOperator::BinaryOperator(const BinaryOperator& other)
     : Operator<OperationType::Binary>(other)
     , left_operand((other.left_operand)
-                       ? std::make_unique<Operand>(*other.left_operand)
+                       ? std::make_unique<ValueProducer>(*other.left_operand)
                        : nullptr)
     , right_operand((other.right_operand)
-                        ? std::make_unique<Operand>(*other.right_operand)
+                        ? std::make_unique<ValueProducer>(*other.right_operand)
                         : nullptr) {
 }
 BinaryOperator::BinaryOperator(BinaryOperator&& other) {
@@ -154,20 +156,6 @@ bool BinaryOperator::operator==(const BinaryOperator& other) const {
   return false;
 }
 bool BinaryOperator::operator!=(const BinaryOperator& other) const {
-  return !(*this == other);
-}
-
-//////////////////////////////////////////
-// Operand
-//////////////////////////////////////////
-bool Operand::operator==(const Operand& other) const {
-  if(this == &other) {
-    return true;
-  } else {
-    return value == other.value;
-  }
-}
-bool Operand::operator!=(const Operand& other) const {
   return !(*this == other);
 }
 }

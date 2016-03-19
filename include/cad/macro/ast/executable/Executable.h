@@ -2,12 +2,16 @@
 #define cad_macro_ast_executable_Executable_h
 
 #include "cad/macro/ast/AST.h"
-#include "cad/macro/ast/Variable.h"
-#include "cad/macro/ast/executable/Executable.h"
-
-#include <core/variant.hpp>
 
 #include <vector>
+
+namespace cad {
+namespace macro {
+namespace ast {
+class ValueProducer;
+}
+}
+}
 
 namespace cad {
 namespace macro {
@@ -18,11 +22,23 @@ protected:
   void print_internals(IndentStream& os) const;
 
 public:
-  using Input = core::variant<Variable, Executable>;
-  std::vector<Input> parameter;
+  std::vector<ValueProducer> parameter;
 
-  Executable() = default;
+  Executable();
+  Executable(const Executable&);
+  Executable(Executable&&);
   Executable(parser::Token token);
+  ~Executable();
+
+  Executable& operator=(Executable other);
+
+  friend void swap(Executable& first, Executable& second) {
+    // enable ADL
+    using std::swap;
+
+    swap(static_cast<AST&>(first), static_cast<AST&>(second));
+    swap(first.parameter, second.parameter);
+  }
 
   bool operator==(const Executable& other) const;
   bool operator!=(const Executable& other) const;

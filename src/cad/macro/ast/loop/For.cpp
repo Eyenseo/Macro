@@ -1,6 +1,7 @@
 #include "cad/macro/ast/loop/For.h"
 
 #include "cad/macro/ast/Scope.h"
+#include "cad/macro/ast/ValueProducer.h"
 
 namespace cad {
 namespace macro {
@@ -16,7 +17,8 @@ void For::print_internals(IndentStream& os) const {
   os << "Operation:\n";
   os.indent();
   operation.match([&os](const UnaryOperator& op) { os << op; },
-                  [&os](const BinaryOperator& op) { os << op; });
+                  [&os](const BinaryOperator& op) { os << op; },
+                  [&os](const executable::Executable& op) { os << op; });
   os.dedent();
 }
 

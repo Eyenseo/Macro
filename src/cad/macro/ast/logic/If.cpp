@@ -1,6 +1,7 @@
 #include "cad/macro/ast/logic/If.h"
 
 #include "cad/macro/ast/Scope.h"
+#include "cad/macro/ast/ValueProducer.h"
 
 namespace cad {
 namespace macro {

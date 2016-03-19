@@ -2,7 +2,16 @@
 #define cad_macro_ast_logic_Condition_h
 
 #include "cad/macro/ast/AST.h"
-#include "cad/macro/ast/Operator.h"
+
+#include <memory>
+
+namespace cad {
+namespace macro {
+namespace ast {
+class ValueProducer;
+}
+}
+}
 
 namespace cad {
 namespace macro {
@@ -13,10 +22,23 @@ protected:
   void print_internals(IndentStream& os) const;
 
 public:
-  core::optional<ValueVariant> condition;
+  std::unique_ptr<ValueProducer> condition;
 
-  Condition() = default;
+  Condition();
+  Condition(const Condition&);
+  Condition(Condition&&);
   Condition(parser::Token token);
+  ~Condition();
+
+  Condition& operator=(Condition other);
+
+  friend void swap(Condition& first, Condition& second) {
+    // enable ADL
+    using std::swap;
+
+    swap(static_cast<AST&>(first), static_cast<AST&>(second));
+    swap(first.condition, second.condition);
+  }
 
   bool operator==(const Condition& other) const;
   bool operator!=(const Condition& other) const;

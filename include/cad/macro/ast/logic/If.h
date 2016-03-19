@@ -3,7 +3,6 @@
 
 #include "cad/macro/ast/logic/Condition.h"
 
-
 namespace cad {
 namespace macro {
 namespace ast {

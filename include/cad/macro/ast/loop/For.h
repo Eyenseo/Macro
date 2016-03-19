@@ -4,6 +4,9 @@
 #include "cad/macro/ast/loop/While.h"
 #include "cad/macro/ast/Variable.h"
 #include "cad/macro/ast/Operator.h"
+#include "cad/macro/ast/executable/Executable.h"
+
+#include <core/variant.hpp>
 
 namespace cad {
 namespace macro {
@@ -15,7 +18,8 @@ protected:
 
 public:
   Variable variable;
-  core::variant<UnaryOperator, BinaryOperator> operation;
+  core::variant<UnaryOperator, BinaryOperator, executable::Executable>
+      operation;
 
   For();
   For(const For& other);

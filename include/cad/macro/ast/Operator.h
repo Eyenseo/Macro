@@ -3,11 +3,7 @@
 
 #include "cad/macro/ast/AST.h"
 
-#include "cad/macro/ast/Variable.h"
-#include "cad/macro/ast/executable/Executable.h"
-
-#include <core/variant.hpp>
-#include <core/optional.hpp>
+#include <memory>
 
 namespace cad {
 namespace macro {
@@ -31,7 +27,7 @@ enum class BinaryOperation {
   OR,
   ASSIGNMENT
 };
-struct Operand;
+class ValueProducer;
 
 template <OperationType T>
 class Operator : public AST {
@@ -68,7 +64,7 @@ class UnaryOperator : public Operator<OperationType::Unary> {
   void print_internals(IndentStream& os) const;
 
 public:
-  std::unique_ptr<Operand> operand;
+  std::unique_ptr<ValueProducer> operand;
 
 public:
   UnaryOperator() = default;
@@ -103,8 +99,8 @@ class BinaryOperator : public Operator<OperationType::Binary> {
   void print_internals(IndentStream& os) const;
 
 public:
-  std::unique_ptr<Operand> left_operand;
-  std::unique_ptr<Operand> right_operand;
+  std::unique_ptr<ValueProducer> left_operand;
+  std::unique_ptr<ValueProducer> right_operand;
 
 public:
   BinaryOperator() = default;
@@ -130,42 +126,6 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const BinaryOperator& ast) {
     ast.print_token(os, "BinaryOperator",
                     [&ast](IndentStream& os) { ast.print_internals(os); });
-    return os;
-  }
-};
-
-using ValueVariant = core::variant<executable::Executable, Variable,
-                                   UnaryOperator, BinaryOperator>;
-
-struct Operand {
-  ValueVariant value;
-
-public:
-  Operand() = default;
-  Operand(ValueVariant op)
-      : value(std::move(op)) {
-  }
-  Operand(executable::Executable op)
-      : value(std::move(op)) {
-  }
-  Operand(Variable op)
-      : value(std::move(op)) {
-  }
-  Operand(UnaryOperator op)
-      : value(std::move(op)) {
-  }
-  Operand(BinaryOperator op)
-      : value(std::move(op)) {
-  }
-
-  bool operator==(const Operand& other) const;
-  bool operator!=(const Operand& other) const;
-
-  friend std::ostream& operator<<(std::ostream& os, const Operand& op) {
-    op.value.match([&os](const executable::Executable& o) { os << o; },
-                   [&os](const Variable& o) { os << o; },
-                   [&os](const UnaryOperator& o) { os << o; },
-                   [&os](const BinaryOperator& o) { os << o; });
     return os;
   }
 };

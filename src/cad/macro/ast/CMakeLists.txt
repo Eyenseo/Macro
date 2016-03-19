@@ -7,6 +7,7 @@ target_sources(
       ${CMAKE_CURRENT_SOURCE_DIR}/Scope.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Variable.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Operator.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/ValueProducer.cpp
 )
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/executable)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/logic)

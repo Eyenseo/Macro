@@ -2,6 +2,8 @@
 
 #include "cad/macro/parser/Parser.h"
 #include "cad/macro/ast/Scope.h"
+#include "cad/macro/ast/Literal.h"
+#include "cad/macro/ast/ValueProducer.h"
 
 using namespace cad::macro::parser;
 using namespace cad::macro::ast;
@@ -132,7 +134,7 @@ TEST_CASE("Executable") {
       Executable fun({1, 1, "fun"});
       Variable var1({1, 5, "herbert"});
 
-      fun.parameter.push_back(var1);
+      fun.parameter.emplace_back(var1);
       expected.nodes.push_back(std::move(fun));
     }
 
@@ -149,8 +151,8 @@ TEST_CASE("Executable") {
       Variable var1({1, 5, "herbert"});
       Variable var2({1, 14, "berta"});
 
-      fun.parameter.push_back(var1);
-      fun.parameter.push_back(var2);
+      fun.parameter.emplace_back(var1);
+      fun.parameter.emplace_back(var2);
       expected.nodes.push_back(std::move(fun));
     }
 
@@ -166,7 +168,7 @@ TEST_CASE("Executable") {
       Executable fun({1, 1, "fun"});
       Executable gun({1, 5, "gun"});
 
-      fun.parameter.push_back(gun);
+      fun.parameter.emplace_back(gun);
       expected.nodes.push_back(std::move(fun));
     }
 
@@ -183,8 +185,8 @@ TEST_CASE("Executable") {
       Executable gun({1, 5, "gun"});
       Executable hun({1, 12, "hun"});
 
-      fun.parameter.push_back(gun);
-      fun.parameter.push_back(hun);
+      fun.parameter.emplace_back(gun);
+      fun.parameter.emplace_back(hun);
       expected.nodes.push_back(std::move(fun));
     }
 
@@ -202,7 +204,7 @@ TEST_CASE("Return") {
       Return ret({1, 1, "return"});
       Variable foo({1, 8, "foo"});
 
-      ret.output.emplace(std::move(foo));
+      ret.output = std::make_unique<ValueProducer>(std::move(foo));
       expected.nodes.push_back(std::move(ret));
     }
 
@@ -218,7 +220,7 @@ TEST_CASE("Return") {
       Return ret({1, 1, "return"});
       Executable fun({1, 8, "fun"});
 
-      ret.output.emplace(std::move(fun));
+      ret.output = std::make_unique<ValueProducer>(std::move(fun));
       expected.nodes.push_back(std::move(ret));
     }
 
@@ -235,7 +237,7 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if"});
-        iff.condition = Variable({1, 4, "a"});
+        iff.condition = std::make_unique<ValueProducer>(Variable({1, 4, "a"}));
         iff.true_scope = std::make_unique<Scope>(Token(1, 6, "{"));
         expected.nodes.push_back(std::move(iff));
       }
@@ -250,28 +252,30 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if"});
-        iff.condition = Executable({1, 4, "fun"});
+        iff.condition =
+            std::make_unique<ValueProducer>(Executable({1, 4, "fun"}));
         iff.true_scope = std::make_unique<Scope>(Token(1, 10, "{"));
         expected.nodes.push_back(std::move(iff));
       }
 
       REQUIRE(ast == expected);
     }
-    // FIXME
-    // SECTION("Literal") {
-    //   Parser p;
-    //   auto ast = p.parse("if(true){}");
+    SECTION("Literal") {
+      Parser p;
+      auto ast = p.parse("if(true){}");
 
-    //   Scope expected({0, 0, ""});
-    //   {
-    //     If iff({1, 1, "if"});
-    //     iff.condition = Boolean({1, 4, "true"});
-    //     iff.true_scope = std::make_unique<Scope>(Token(1, 9, "{"));
-    //     expected.nodes.push_back(std::move(iff));
-    //   }
+      Scope expected({0, 0, ""});
+      {
+        If iff({1, 1, "if"});
+        Literal<Literals::BOOL> lit({1, 4, "true"});
+        lit.data = true;
+        iff.condition = std::make_unique<ValueProducer>(lit);
+        iff.true_scope = std::make_unique<Scope>(Token(1, 9, "{"));
+        expected.nodes.push_back(std::move(iff));
+      }
 
-    //   REQUIRE(ast == expected);
-    // }
+      REQUIRE(ast == expected);
+    }
   }
 
   SECTION("Operator") {
@@ -283,11 +287,13 @@ TEST_CASE("If") {
       {
         If iff({1, 1, "if"});
         BinaryOperator op({1, 6, "=="});
-        op.left_operand = std::make_unique<Operand>(Variable({1, 4, "a"}));
-        op.right_operand = std::make_unique<Operand>(Variable({1, 9, "b"}));
+        op.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 4, "a"}));
+        op.right_operand =
+            std::make_unique<ValueProducer>(Variable({1, 9, "b"}));
         op.operation = BinaryOperation::EQUAL;
 
-        iff.condition = op;
+        iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 11, "{"));
         expected.nodes.push_back(std::move(iff));
       }
@@ -303,11 +309,13 @@ TEST_CASE("If") {
       {
         If iff({1, 1, "if"});
         BinaryOperator op({1, 6, "!="});
-        op.left_operand = std::make_unique<Operand>(Variable({1, 4, "a"}));
-        op.right_operand = std::make_unique<Operand>(Variable({1, 9, "b"}));
+        op.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 4, "a"}));
+        op.right_operand =
+            std::make_unique<ValueProducer>(Variable({1, 9, "b"}));
         op.operation = BinaryOperation::NOT_EQUAL;
 
-        iff.condition = op;
+        iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 11, "{"));
         expected.nodes.push_back(std::move(iff));
       }
@@ -323,11 +331,13 @@ TEST_CASE("If") {
       {
         If iff({1, 1, "if"});
         BinaryOperator op({1, 6, ">"});
-        op.left_operand = std::make_unique<Operand>(Variable({1, 4, "a"}));
-        op.right_operand = std::make_unique<Operand>(Variable({1, 8, "b"}));
+        op.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 4, "a"}));
+        op.right_operand =
+            std::make_unique<ValueProducer>(Variable({1, 8, "b"}));
         op.operation = BinaryOperation::GREATER;
 
-        iff.condition = op;
+        iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 10, "{"));
         expected.nodes.push_back(std::move(iff));
       }
@@ -343,11 +353,13 @@ TEST_CASE("If") {
       {
         If iff({1, 1, "if"});
         BinaryOperator op({1, 6, ">="});
-        op.left_operand = std::make_unique<Operand>(Variable({1, 4, "a"}));
-        op.right_operand = std::make_unique<Operand>(Variable({1, 9, "b"}));
+        op.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 4, "a"}));
+        op.right_operand =
+            std::make_unique<ValueProducer>(Variable({1, 9, "b"}));
         op.operation = BinaryOperation::GREATER_EQUAL;
 
-        iff.condition = op;
+        iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 11, "{"));
         expected.nodes.push_back(std::move(iff));
       }
@@ -363,11 +375,13 @@ TEST_CASE("If") {
       {
         If iff({1, 1, "if"});
         BinaryOperator op({1, 6, "<"});
-        op.left_operand = std::make_unique<Operand>(Variable({1, 4, "a"}));
-        op.right_operand = std::make_unique<Operand>(Variable({1, 8, "b"}));
+        op.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 4, "a"}));
+        op.right_operand =
+            std::make_unique<ValueProducer>(Variable({1, 8, "b"}));
         op.operation = BinaryOperation::SMALLER;
 
-        iff.condition = op;
+        iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 10, "{"));
         expected.nodes.push_back(std::move(iff));
       }
@@ -383,11 +397,13 @@ TEST_CASE("If") {
       {
         If iff({1, 1, "if"});
         BinaryOperator op({1, 6, "<="});
-        op.left_operand = std::make_unique<Operand>(Variable({1, 4, "a"}));
-        op.right_operand = std::make_unique<Operand>(Variable({1, 9, "b"}));
+        op.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 4, "a"}));
+        op.right_operand =
+            std::make_unique<ValueProducer>(Variable({1, 9, "b"}));
         op.operation = BinaryOperation::SMALLER_EQUAL;
 
-        iff.condition = op;
+        iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 11, "{"));
         expected.nodes.push_back(std::move(iff));
       }
@@ -403,10 +419,10 @@ TEST_CASE("If") {
       {
         If iff({1, 1, "if"});
         UnaryOperator op({1, 4, "!"});
-        op.operand = std::make_unique<Operand>(Variable({1, 5, "a"}));
+        op.operand = std::make_unique<ValueProducer>(Variable({1, 5, "a"}));
         op.operation = UnaryOperation::NOT;
 
-        iff.condition = op;
+        iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 7, "{"));
         expected.nodes.push_back(std::move(iff));
       }
@@ -422,14 +438,16 @@ TEST_CASE("If") {
       {
         If iff({1, 1, "if"});
         BinaryOperator op2({1, 8, "=="});
-        op2.left_operand = std::make_unique<Operand>(Variable({1, 6, "a"}));
-        op2.right_operand = std::make_unique<Operand>(Variable({1, 11, "b"}));
+        op2.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 6, "a"}));
+        op2.right_operand =
+            std::make_unique<ValueProducer>(Variable({1, 11, "b"}));
         op2.operation = BinaryOperation::EQUAL;
         UnaryOperator op({1, 4, "!"});
-        op.operand = std::make_unique<Operand>(op2);
+        op.operand = std::make_unique<ValueProducer>(op2);
         op.operation = UnaryOperation::NOT;
 
-        iff.condition = op;
+        iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 14, "{"));
         expected.nodes.push_back(std::move(iff));
       }
@@ -438,90 +456,104 @@ TEST_CASE("If") {
     }
   }
 
-  // FIXME
-  // SECTION("Literals") {
-  //   SECTION("Boolean") {
-  //     Parser p;
-  //     auto ast = p.parse("if(true == false){}");
+  SECTION("Literals") {
+    SECTION("Boolean") {
+      Parser p;
+      auto ast = p.parse("if(true == false){}");
 
-  //     Scope expected({0, 0, ""});
-  //     {
-  //       If iff({1, 1, "if"});
-  //       BinaryOperator op({1, 9, "=="});
-  //       op.left_operand = std::make_unique<Operand>(Boolean({1, 4, "true"}));
-  //       op.right_operand = std::make_unique<Operand>(Boolean({1, 12,
-  //       "false"}));
-  //       op.operation = BinaryOperation::EQUAL;
+      Scope expected({0, 0, ""});
+      {
+        If iff({1, 1, "if"});
+        BinaryOperator op({1, 9, "=="});
+        Literal<Literals::BOOL> left({1, 4, "true"});
+        Literal<Literals::BOOL> right({1, 12, "false"});
+        left.data = true;
+        right.data = false;
+        op.left_operand = std::make_unique<ValueProducer>(left);
+        op.right_operand = std::make_unique<ValueProducer>(right);
+        op.operation = BinaryOperation::EQUAL;
 
-  //       iff.condition = op;
-  //       iff.true_scope = std::make_unique<Scope>(Token(1, 18, "{"));
-  //       expected.nodes.push_back(std::move(iff));
-  //     }
+        iff.condition = std::make_unique<ValueProducer>(op);
+        iff.true_scope = std::make_unique<Scope>(Token(1, 18, "{"));
+        expected.nodes.push_back(std::move(iff));
+      }
 
-  //     REQUIRE(ast == expected);
-  //   }
+      REQUIRE(ast == expected);
+    }
 
-  //   SECTION("Integer") {
-  //     Parser p;
-  //     auto ast = p.parse("if(1 == 1){}");
+    SECTION("Integer") {
+      Parser p;
+      auto ast = p.parse("if(1 == 1){}");
 
-  //     Scope expected({0, 0, ""});
-  //     {
-  //       If iff({1, 1, "if"});
-  //       BinaryOperator op({1, 6, "=="});
-  //       op.left_operand = std::make_unique<Operand>(Integer({1, 4, "1"}));
-  //       op.right_operand = std::make_unique<Operand>(Integer({1, 9, "1"}));
-  //       op.operation = BinaryOperation::EQUAL;
+      Scope expected({0, 0, ""});
+      {
+        If iff({1, 1, "if"});
+        BinaryOperator op({1, 6, "=="});
+        Literal<Literals::INT> left({1, 4, "1"});
+        Literal<Literals::INT> right({1, 9, "1"});
+        left.data = 1;
+        right.data = 1;
+        op.left_operand = std::make_unique<ValueProducer>(left);
+        op.right_operand = std::make_unique<ValueProducer>(right);
+        op.operation = BinaryOperation::EQUAL;
 
-  //       iff.condition = op;
-  //       iff.true_scope = std::make_unique<Scope>(Token(1, 11, "{"));
-  //       expected.nodes.push_back(std::move(iff));
-  //     }
+        iff.condition = std::make_unique<ValueProducer>(op);
+        iff.true_scope = std::make_unique<Scope>(Token(1, 11, "{"));
+        expected.nodes.push_back(std::move(iff));
+      }
 
-  //     REQUIRE(ast == expected);
-  //   }
+      REQUIRE(ast == expected);
+    }
 
-  //   SECTION("Double") {
-  //     Parser p;
-  //     auto ast = p.parse("if(.1 == .1){}");
+    SECTION("Double") {
+      Parser p;
+      auto ast = p.parse("if(.1 == .1){}");
 
-  //     Scope expected({0, 0, ""});
-  //     {
-  //       If iff({1, 1, "if"});
-  //       BinaryOperator op({1, 7, "=="});
-  //       op.left_operand = std::make_unique<Operand>(Double({1, 4, ".1"}));
-  //       op.right_operand = std::make_unique<Operand>(Double({1, 10, ".1"}));
-  //       op.operation = BinaryOperation::EQUAL;
+      Scope expected({0, 0, ""});
+      {
+        If iff({1, 1, "if"});
+        BinaryOperator op({1, 7, "=="});
+        Literal<Literals::DOUBLE> left({1, 4, ".1"});
+        Literal<Literals::DOUBLE> right({1, 10, ".1"});
+        left.data = 0.1;
+        right.data = 0.1;
+        op.left_operand = std::make_unique<ValueProducer>(left);
+        op.right_operand = std::make_unique<ValueProducer>(right);
+        op.operation = BinaryOperation::EQUAL;
 
-  //       iff.condition = op;
-  //       iff.true_scope = std::make_unique<Scope>(Token(1, 13, "{"));
-  //       expected.nodes.push_back(std::move(iff));
-  //     }
+        iff.condition = std::make_unique<ValueProducer>(op);
+        iff.true_scope = std::make_unique<Scope>(Token(1, 13, "{"));
+        expected.nodes.push_back(std::move(iff));
+      }
 
-  //     REQUIRE(ast == expected);
-  //   }
+      REQUIRE(ast == expected);
+    }
 
-  //   SECTION("String") {
-  //     Parser p;
-  //     auto ast = p.parse("if(\"a\" == \"a\"){}");
+    SECTION("String") {
+      Parser p;
+      // The escaped " counts one!
+      auto ast = p.parse("if(\"a\" == \"a\"){}");
 
-  //     Scope expected({0, 0, ""});
-  //     {
-  //       If iff({1, 1, "if"});
-  //       BinaryOperator op({1, 10, "=="});
-  //       op.left_operand = std::make_unique<Operand>(String({1, 4, "\"a\""}));
-  //       op.right_operand = std::make_unique<Operand>(String({1, 13,
-  //       "\"a\""}));
-  //       op.operation = BinaryOperation::EQUAL;
+      Scope expected({0, 0, ""});
+      {
+        If iff({1, 1, "if"});
+        BinaryOperator op({1, 7, "=="});
+        Literal<Literals::STRING> left({1, 6, "\"a\""});
+        Literal<Literals::STRING> right({1, 12, "\"a\""});
+        left.data = "a";
+        right.data = "a";
+        op.left_operand = std::make_unique<ValueProducer>(left);
+        op.right_operand = std::make_unique<ValueProducer>(right);
+        op.operation = BinaryOperation::EQUAL;
 
-  //       iff.condition = op;
-  //       iff.true_scope = std::make_unique<Scope>(Token(1, 19, "{"));
-  //       expected.nodes.push_back(std::move(iff));
-  //     }
+        iff.condition = std::make_unique<ValueProducer>(op);
+        iff.true_scope = std::make_unique<Scope>(Token(1, 13, "{"));
+        expected.nodes.push_back(std::move(iff));
+      }
 
-  //     REQUIRE(ast == expected);
-  //   }
-  // }
+      REQUIRE(ast == expected);
+    }
+  }
 
   SECTION("Combination") {
     SECTION("Brackets") {
@@ -532,31 +564,35 @@ TEST_CASE("If") {
       {
         If iff({1, 1, "if"});
         BinaryOperator a_eq_c({1, 17, "=="});
-        a_eq_c.left_operand = std::make_unique<Operand>(Variable({1, 15, "a"}));
+        a_eq_c.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 15, "a"}));
         a_eq_c.right_operand =
-            std::make_unique<Operand>(Variable({1, 20, "c"}));
+            std::make_unique<ValueProducer>(Variable({1, 20, "c"}));
         a_eq_c.operation = BinaryOperation::EQUAL;
         BinaryOperator c_eq_b({1, 27, "=="});
-        c_eq_b.left_operand = std::make_unique<Operand>(Variable({1, 25, "c"}));
+        c_eq_b.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 25, "c"}));
         c_eq_b.right_operand =
-            std::make_unique<Operand>(Variable({1, 30, "b"}));
+            std::make_unique<ValueProducer>(Variable({1, 30, "b"}));
         c_eq_b.operation = BinaryOperation::EQUAL;
         BinaryOperator op_or({1, 22, "||"});
-        op_or.left_operand = std::make_unique<Operand>(a_eq_c);
-        op_or.right_operand = std::make_unique<Operand>(c_eq_b);
+        op_or.left_operand = std::make_unique<ValueProducer>(a_eq_c);
+        op_or.right_operand = std::make_unique<ValueProducer>(c_eq_b);
         op_or.operation = BinaryOperation::OR;
 
         BinaryOperator a_eq_b({1, 6, "=="});
-        a_eq_b.left_operand = std::make_unique<Operand>(Variable({1, 4, "a"}));
-        a_eq_b.right_operand = std::make_unique<Operand>(Variable({1, 9, "b"}));
+        a_eq_b.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 4, "a"}));
+        a_eq_b.right_operand =
+            std::make_unique<ValueProducer>(Variable({1, 9, "b"}));
         a_eq_b.operation = BinaryOperation::EQUAL;
 
         BinaryOperator op_and({1, 11, "&&"});
-        op_and.left_operand = std::make_unique<Operand>(a_eq_b);
-        op_and.right_operand = std::make_unique<Operand>(op_or);
+        op_and.left_operand = std::make_unique<ValueProducer>(a_eq_b);
+        op_and.right_operand = std::make_unique<ValueProducer>(op_or);
         op_and.operation = BinaryOperation::AND;
 
-        iff.condition = op_and;
+        iff.condition = std::make_unique<ValueProducer>(op_and);
         iff.true_scope = std::make_unique<Scope>(Token(1, 33, "{"));
         expected.nodes.push_back(std::move(iff));
       }
@@ -572,30 +608,34 @@ TEST_CASE("If") {
       {
         If iff({1, 1, "if"});
         BinaryOperator a_eq_b({1, 6, "=="});
-        a_eq_b.left_operand = std::make_unique<Operand>(Variable({1, 4, "a"}));
-        a_eq_b.right_operand = std::make_unique<Operand>(Variable({1, 9, "b"}));
+        a_eq_b.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 4, "a"}));
+        a_eq_b.right_operand =
+            std::make_unique<ValueProducer>(Variable({1, 9, "b"}));
         a_eq_b.operation = BinaryOperation::EQUAL;
         BinaryOperator a_eq_c({1, 16, "=="});
-        a_eq_c.left_operand = std::make_unique<Operand>(Variable({1, 14, "a"}));
+        a_eq_c.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 14, "a"}));
         a_eq_c.right_operand =
-            std::make_unique<Operand>(Variable({1, 19, "c"}));
+            std::make_unique<ValueProducer>(Variable({1, 19, "c"}));
         a_eq_c.operation = BinaryOperation::EQUAL;
         BinaryOperator op_and({1, 11, "&&"});
-        op_and.left_operand = std::make_unique<Operand>(a_eq_b);
-        op_and.right_operand = std::make_unique<Operand>(a_eq_c);
+        op_and.left_operand = std::make_unique<ValueProducer>(a_eq_b);
+        op_and.right_operand = std::make_unique<ValueProducer>(a_eq_c);
         op_and.operation = BinaryOperation::AND;
 
         BinaryOperator c_eq_b({1, 26, "=="});
-        c_eq_b.left_operand = std::make_unique<Operand>(Variable({1, 24, "c"}));
+        c_eq_b.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 24, "c"}));
         c_eq_b.right_operand =
-            std::make_unique<Operand>(Variable({1, 29, "b"}));
+            std::make_unique<ValueProducer>(Variable({1, 29, "b"}));
         c_eq_b.operation = BinaryOperation::EQUAL;
         BinaryOperator op_or({1, 21, "||"});
-        op_or.left_operand = std::make_unique<Operand>(op_and);
-        op_or.right_operand = std::make_unique<Operand>(c_eq_b);
+        op_or.left_operand = std::make_unique<ValueProducer>(op_and);
+        op_or.right_operand = std::make_unique<ValueProducer>(c_eq_b);
         op_or.operation = BinaryOperation::OR;
 
-        iff.condition = op_or;
+        iff.condition = std::make_unique<ValueProducer>(op_or);
         iff.true_scope = std::make_unique<Scope>(Token(1, 31, "{"));
         expected.nodes.push_back(std::move(iff));
       }
@@ -610,7 +650,7 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if"});
-        iff.condition = Variable({1, 4, "a"});
+        iff.condition = std::make_unique<ValueProducer>(Variable({1, 4, "a"}));
         iff.true_scope = std::make_unique<Scope>(Token(1, 6, "{"));
         iff.false_scope = std::make_unique<Scope>(Token(1, 12, "{"));
         expected.nodes.push_back(std::move(iff));
@@ -619,4 +659,32 @@ TEST_CASE("If") {
       REQUIRE(ast == expected);
     }
   }
+}
+
+TEST_CASE("Complete") {
+  const std::string raw_macro = "\n"
+                                "var a = true;            \n"
+                                "var b = 2;               \n"
+                                "var c = \" 3\";          \n"
+                                "                         \n"
+                                "                         \n"
+                                "def fun(foo) {           \n"
+                                "  var bar;               \n"
+                                "                         \n"
+                                "  if(foo == a) {         \n"
+                                "    bar = foo;           \n"
+                                "  } else {               \n"
+                                "    bar = b;             \n"
+                                "  }                      \n"
+                                "                         \n"
+                                "  return bar;            \n"
+                                "}                        \n"
+                                "                         \n"
+                                "                         \n"
+                                "def main(foo, bar) {     \n"
+                                "  var baz = foo;         \n"
+                                "                         \n"
+                                "  fun(baz);              \n"
+                                "}                        \n"
+                                "                         \n";
 }

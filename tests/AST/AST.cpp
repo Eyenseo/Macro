@@ -2,6 +2,8 @@
 
 #include "cad/macro/ast/Scope.h"
 #include "cad/macro/ast/logic/Condition.h"
+#include "cad/macro/ast/Literal.h"
+#include "cad/macro/ast/ValueProducer.h"
 
 using namespace cad::macro::parser;
 using namespace cad::macro::ast;
@@ -136,21 +138,21 @@ TEST_CASE("Return Comparison") {
   }
   SECTION("Definition") {
     Return a({0, 0, ""});
-    a.output.emplace(Variable({0, 0, ""}));
+    a.output = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
     Return b({0, 0, ""});
-    b.output.emplace(Variable({0, 0, ""}));
+    b.output = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
     REQUIRE(a == b);
   }
   SECTION("Different Definition") {
     Return a({0, 0, ""});
-    a.output.emplace(Variable({0, 0, ""}));
+    a.output = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
     Return b({0, 0, ""});
-    b.output.emplace(Executable({0, 0, ""}));
+    b.output = std::make_unique<ValueProducer>(Executable({0, 0, ""}));
     REQUIRE_FALSE(a == b);
   }
   SECTION("Definition/No-Definition") {
     Return a({0, 0, ""});
-    a.output.emplace(Variable({0, 0, ""}));
+    a.output = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
     Return b({0, 0, ""});
     REQUIRE_FALSE(a == b);
   }
@@ -165,25 +167,25 @@ TEST_CASE("Operator Comparison") {
     // Operand
     SECTION("Operand") {
       UnaryOperator a({0, 0, ""});
-      a.operand = std::make_unique<Operand>();
+      a.operand = std::make_unique<ValueProducer>();
       a.operand->value = Variable({0, 0, ""});
       UnaryOperator b({0, 0, ""});
-      b.operand = std::make_unique<Operand>();
+      b.operand = std::make_unique<ValueProducer>();
       b.operand->value = Variable({0, 0, ""});
       REQUIRE(a == b);
     }
     SECTION("Different Operand") {
       UnaryOperator a({0, 0, ""});
-      a.operand = std::make_unique<Operand>();
+      a.operand = std::make_unique<ValueProducer>();
       a.operand->value = Variable({0, 0, ""});
       UnaryOperator b({0, 0, ""});
-      b.operand = std::make_unique<Operand>();
+      b.operand = std::make_unique<ValueProducer>();
       b.operand->value = Executable({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
     SECTION("Operand/No-Operand") {
       UnaryOperator a({0, 0, ""});
-      a.operand = std::make_unique<Operand>();
+      a.operand = std::make_unique<ValueProducer>();
       a.operand->value = Variable({0, 0, ""});
       UnaryOperator b({0, 0, ""});
       REQUIRE_FALSE(a == b);
@@ -212,25 +214,25 @@ TEST_CASE("Operator Comparison") {
     // Left
     SECTION("LeftOperand") {
       BinaryOperator a({0, 0, ""});
-      a.left_operand = std::make_unique<Operand>();
+      a.left_operand = std::make_unique<ValueProducer>();
       a.left_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
-      b.left_operand = std::make_unique<Operand>();
+      b.left_operand = std::make_unique<ValueProducer>();
       b.left_operand->value = Variable({0, 0, ""});
       REQUIRE(a == b);
     }
     SECTION("Different LeftOperand") {
       BinaryOperator a({0, 0, ""});
-      a.left_operand = std::make_unique<Operand>();
+      a.left_operand = std::make_unique<ValueProducer>();
       a.left_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
-      b.left_operand = std::make_unique<Operand>();
+      b.left_operand = std::make_unique<ValueProducer>();
       b.left_operand->value = Executable({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
     SECTION("LeftOperand/No-LeftOperand") {
       BinaryOperator a({0, 0, ""});
-      a.left_operand = std::make_unique<Operand>();
+      a.left_operand = std::make_unique<ValueProducer>();
       a.left_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
       REQUIRE_FALSE(a == b);
@@ -238,25 +240,25 @@ TEST_CASE("Operator Comparison") {
     // Right
     SECTION("RightOperand") {
       BinaryOperator a({0, 0, ""});
-      a.right_operand = std::make_unique<Operand>();
+      a.right_operand = std::make_unique<ValueProducer>();
       a.right_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
-      b.right_operand = std::make_unique<Operand>();
+      b.right_operand = std::make_unique<ValueProducer>();
       b.right_operand->value = Variable({0, 0, ""});
       REQUIRE(a == b);
     }
     SECTION("Different RightOperand") {
       BinaryOperator a({0, 0, ""});
-      a.right_operand = std::make_unique<Operand>();
+      a.right_operand = std::make_unique<ValueProducer>();
       a.right_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
-      b.right_operand = std::make_unique<Operand>();
+      b.right_operand = std::make_unique<ValueProducer>();
       b.right_operand->value = Executable({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
     SECTION("RightOperand/No-RightOperand") {
       BinaryOperator a({0, 0, ""});
-      a.right_operand = std::make_unique<Operand>();
+      a.right_operand = std::make_unique<ValueProducer>();
       a.right_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
       REQUIRE_FALSE(a == b);
@@ -264,36 +266,36 @@ TEST_CASE("Operator Comparison") {
     // Both
     SECTION("Right-/LeftOperand") {
       BinaryOperator a({0, 0, ""});
-      a.left_operand = std::make_unique<Operand>();
+      a.left_operand = std::make_unique<ValueProducer>();
       a.left_operand->value = Variable({0, 0, ""});
-      a.right_operand = std::make_unique<Operand>();
+      a.right_operand = std::make_unique<ValueProducer>();
       a.right_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
-      b.left_operand = std::make_unique<Operand>();
+      b.left_operand = std::make_unique<ValueProducer>();
       b.left_operand->value = Variable({0, 0, ""});
-      b.right_operand = std::make_unique<Operand>();
+      b.right_operand = std::make_unique<ValueProducer>();
       b.right_operand->value = Variable({0, 0, ""});
       REQUIRE(a == b);
     }
     SECTION("No Right-/LeftOperand") {
       BinaryOperator a({0, 0, ""});
-      a.left_operand = std::make_unique<Operand>();
+      a.left_operand = std::make_unique<ValueProducer>();
       a.left_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
-      b.left_operand = std::make_unique<Operand>();
+      b.left_operand = std::make_unique<ValueProducer>();
       b.left_operand->value = Variable({0, 0, ""});
-      b.right_operand = std::make_unique<Operand>();
+      b.right_operand = std::make_unique<ValueProducer>();
       b.right_operand->value = Variable({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
     SECTION("Right-/ No-LeftOperand") {
       BinaryOperator a({0, 0, ""});
-      a.right_operand = std::make_unique<Operand>();
+      a.right_operand = std::make_unique<ValueProducer>();
       a.right_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
-      b.left_operand = std::make_unique<Operand>();
+      b.left_operand = std::make_unique<ValueProducer>();
       b.left_operand->value = Variable({0, 0, ""});
-      b.right_operand = std::make_unique<Operand>();
+      b.right_operand = std::make_unique<ValueProducer>();
       b.right_operand->value = Variable({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
@@ -308,21 +310,21 @@ TEST_CASE("Condition") {
   }
   SECTION("Definition") {
     Condition a({0, 0, ""});
-    a.condition = UnaryOperator({0, 0, ""});
+    a.condition = std::make_unique<ValueProducer>(UnaryOperator({0, 0, ""}));
     Condition b({0, 0, ""});
-    b.condition = UnaryOperator({0, 0, ""});
+    b.condition = std::make_unique<ValueProducer>(UnaryOperator({0, 0, ""}));
     REQUIRE(a == b);
   }
   SECTION("Different Definition") {
     Condition a({0, 0, ""});
-    a.condition = UnaryOperator({0, 0, ""});
+    a.condition = std::make_unique<ValueProducer>(UnaryOperator({0, 0, ""}));
     Condition b({0, 0, ""});
-    b.condition = BinaryOperator({0, 0, ""});
+    b.condition = std::make_unique<ValueProducer>(BinaryOperator({0, 0, ""}));
     REQUIRE_FALSE(a == b);
   }
   SECTION("Definition/No-Definition") {
     Condition a({0, 0, ""});
-    a.condition = UnaryOperator({0, 0, ""});
+    a.condition = std::make_unique<ValueProducer>(UnaryOperator({0, 0, ""}));
     Condition b({0, 0, ""});
     REQUIRE_FALSE(a == b);
   }
@@ -401,29 +403,29 @@ TEST_CASE("While") {
     SECTION("Same") {
       While a({0, 0, ""});
       Condition ac({0, 0, ""});
-      ac.condition = Variable({0, 0, ""});
+      ac.condition = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
       a.condition = ac;
       While b({0, 0, ""});
       Condition bc({0, 0, ""});
-      bc.condition = Variable({0, 0, ""});
+      bc.condition = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
       b.condition = bc;
       REQUIRE(a == b);
     }
     SECTION("Different") {
       While a({0, 0, ""});
       Condition ac({0, 0, ""});
-      ac.condition = Variable({0, 0, ""});
+      ac.condition = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
       a.condition = ac;
       While b({0, 0, ""});
       Condition bc({0, 0, ""});
-      bc.condition = Executable({0, 0, ""});
+      bc.condition = std::make_unique<ValueProducer>(Executable({0, 0, ""}));
       b.condition = bc;
       REQUIRE_FALSE(a == b);
     }
     SECTION("N/One") {
       While a({0, 0, ""});
       Condition ac({0, 0, ""});
-      ac.condition = Variable({0, 0, ""});
+      ac.condition = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
       a.condition = ac;
       While b({0, 0, ""});
       REQUIRE_FALSE(a == b);
@@ -498,5 +500,35 @@ TEST_CASE("For") {
       For b({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
+  }
+}
+
+TEST_CASE("Literal") {
+  SECTION("Default") {
+    Literal<Literals::INT> a({0, 0, ""});
+    Literal<Literals::INT> b({0, 0, ""});
+    REQUIRE(a == b);
+  }
+
+  SECTION("Same") {
+    Literal<Literals::INT> a({0, 0, ""});
+    a.data = 1;
+    Literal<Literals::INT> b({0, 0, ""});
+    b.data = 1;
+    REQUIRE(a == b);
+  }
+  SECTION("Different") {
+    Literal<Literals::INT> a({0, 0, ""});
+    a.data = 1;
+    Literal<Literals::INT> b({0, 0, ""});
+    UnaryOperator bc({0, 0, ""});
+    b.data = 2;
+    REQUIRE_FALSE(a == b);
+  }
+  SECTION("N/One") {
+    Literal<Literals::INT> a({0, 0, ""});
+    a.data = 1;
+    Literal<Literals::INT> b({0, 0, ""});
+    REQUIRE_FALSE(a == b);
   }
 }
