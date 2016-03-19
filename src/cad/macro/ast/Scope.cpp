@@ -14,7 +14,8 @@ Scope::Scope(parser::Token token)
 void Scope::print_internals(std::ostream& os) const {
   IndentStream indent_os(os);
   for(auto& v : nodes) {
-    v.match([&os](const EntryFunction& n) { os << n; },   //
+    v.match([&os](const Variable& n) { os << n; },        //
+            [&os](const EntryFunction& n) { os << n; },   //
             [&os](const Executable& n) { os << n; },      //
             [&os](const Function& n) { os << n; },        //
             [&os](const Return& n) { os << n; },          //
