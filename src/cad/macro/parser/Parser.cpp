@@ -17,6 +17,8 @@ namespace parser {
 namespace {
 void parse_scope_internals(const std::vector<Token>& tokens, size_t& token,
                            ast::Scope& scope);
+core::optional<ast::ValueProducer>
+parse_condition(const std::vector<Token>& tokens, size_t& token);
 
 void expect_token(const std::vector<Token>& tokens, size_t& token,
                   const char* const token_literal) {
@@ -237,8 +239,8 @@ parse_function(const std::vector<Token>& tokens, size_t& token) {
   return {};
 }
 
-core::optional<ast::Define> parse_definition(const std::vector<Token>& tokens,
-                                             size_t& token) {
+core::optional<ast::Define>
+parse_executable_definition(const std::vector<Token>& tokens, size_t& token) {
   auto tmp = token;
   if(read_token(tokens, tmp, "def")) {
     ast::Define def(tokens.at(token));
@@ -252,7 +254,13 @@ core::optional<ast::Define> parse_definition(const std::vector<Token>& tokens,
     }
     token = tmp;
     return def;
-  } else if(read_token(tokens, tmp, "var")) {
+  }
+  return {};
+}
+core::optional<ast::Define>
+parse_variable_definition(const std::vector<Token>& tokens, size_t& token) {
+  auto tmp = token;
+  if(read_token(tokens, tmp, "var")) {
     ast::Define def(tokens.at(token));
 
     if(auto variable = parse_variable(tokens, tmp)) {
@@ -287,8 +295,9 @@ parse_executable(const std::vector<Token>& tokens, size_t& token) {
         exec.parameter.emplace_back(std::move(*lit_string));
       } else if(auto var = parse_variable(tokens, tmp)) {
         exec.parameter.emplace_back(std::move(*var));
+      } else if(auto con = parse_condition(tokens, tmp)) {
+        exec.parameter.emplace_back(std::move(*con));
       } else {
-        // TODO operator
         // TODO throw
       }
       if(!read_token(tokens, tmp, ",")) {
@@ -322,8 +331,9 @@ core::optional<ast::Return> parse_return(const std::vector<Token>& tokens,
       ret.output = std::make_unique<ast::ValueProducer>(std::move(*lit_string));
     } else if(auto var = parse_variable(tokens, tmp)) {
       ret.output = std::make_unique<ast::ValueProducer>(std::move(*var));
+    } else if(auto con = parse_condition(tokens, tmp)) {
+      ret.output = std::make_unique<ast::ValueProducer>(std::move(*con));
     } else {
-      // TODO operator
       // TODO throw
     }
 
@@ -652,9 +662,13 @@ parse_condition(const std::vector<Token>& tokens, size_t& token) {
       break;  // We are done
     }
   }
-  auto condition = assamble_conditions(std::move(conditions));
-  token = tmp;
-  return condition;
+  if(!conditions.empty()) {
+    auto condition = assamble_conditions(std::move(conditions));
+    token = tmp;
+    return condition;
+  } else {
+    return {};
+  }
 }
 
 core::optional<ast::logic::If> parse_if(const std::vector<Token>& tokens,
@@ -720,6 +734,51 @@ core::optional<ast::loop::While> parse_while(const std::vector<Token>& tokens,
 }
 
 void two_step_define_assign(std::vector<ast::Scope::Node>& nodes,
+                            std::vector<ast::Scope::Node>::iterator current,
+                            size_t& index, ast::Define& e) {
+  if(!e.definition) {
+    // TODO throw
+    assert(false && "Empty definition");
+  }
+  e.definition->match([](ast::executable::EntryFunction&) {},  //
+                      [&nodes, &index, &current](ast::Variable& v) {
+                        nodes.emplace(current, v);
+                        ++index;
+                      },                                 //
+                      [](ast::executable::Function&) {}  //
+                      );
+}
+
+void two_step_define_assign(std::vector<ast::Scope::Node>& nodes,
+                            std::vector<ast::Scope::Node>::iterator previous,
+                            std::vector<ast::Scope::Node>::iterator current,
+                            size_t& index) {
+  if(previous == nodes.end()) {
+    // TODO throw
+  }
+  previous->match(
+      [&nodes, &index, &current](ast::Define& e) {
+        two_step_define_assign(nodes, current, index, e);
+      },                                             //
+      [](ast::Variable&) {},                         //
+      [](ast::executable::EntryFunction&) {},        //
+      [](ast::executable::Executable&) {},           //
+      [](ast::executable::Function&) {},             //
+      [](ast::Return&) {},                           //
+      [](ast::Scope&) {},                            //
+      [](ast::UnaryOperator&) {},                    //
+      [](ast::BinaryOperator&) {},                   //
+      [](ast::logic::If&) {},                        //
+      [](ast::loop::While&) {},                      //
+      [](ast::loop::DoWhile&) {},                    //
+      [](ast::loop::For&) {},                        //
+      [](ast::Literal<ast::Literals::BOOL>&) {},     //
+      [](ast::Literal<ast::Literals::INT>&) {},      //
+      [](ast::Literal<ast::Literals::DOUBLE>&) {},   //
+      [](ast::Literal<ast::Literals::STRING>&) {});  //
+}
+
+void two_step_define_assign(std::vector<ast::Scope::Node>& nodes,
                             const size_t start, size_t& index) {
   auto current = nodes.begin();
   std::advance(current, index);
@@ -731,40 +790,8 @@ void two_step_define_assign(std::vector<ast::Scope::Node>& nodes,
   }
 
   nodes.at(index).match(
-      [&nodes, &index, &current, &previous](ast::BinaryOperator& op) {
-        if(previous == nodes.end()) {
-          // TODO throw
-        }
-        previous->match(
-            [&nodes, &index, &current](ast::Define& e) {
-              if(!e.definition) {
-                // TODO throw
-                assert(false && "Empty definition");
-              }
-              e.definition->match([](ast::executable::EntryFunction&) {},  //
-                                  [&nodes, &index, &current](ast::Variable& v) {
-                                    nodes.emplace(current, v);
-                                    ++index;
-                                  },                                 //
-                                  [](ast::executable::Function&) {}  //
-                                  );
-            },                                             //
-            [](ast::Variable&) {},                         //
-            [](ast::executable::EntryFunction&) {},        //
-            [](ast::executable::Executable&) {},           //
-            [](ast::executable::Function&) {},             //
-            [](ast::Return&) {},                           //
-            [](ast::Scope&) {},                            //
-            [](ast::UnaryOperator&) {},                    //
-            [](ast::BinaryOperator&) {},                   //
-            [](ast::logic::If&) {},                        //
-            [](ast::loop::While&) {},                      //
-            [](ast::loop::DoWhile&) {},                    //
-            [](ast::loop::For&) {},                        //
-            [](ast::Literal<ast::Literals::BOOL>&) {},     //
-            [](ast::Literal<ast::Literals::INT>&) {},      //
-            [](ast::Literal<ast::Literals::DOUBLE>&) {},   //
-            [](ast::Literal<ast::Literals::STRING>&) {});  //
+      [&nodes, &index, &current, &previous](ast::BinaryOperator&) {
+        two_step_define_assign(nodes, previous, current, index);
       },
       [](ast::Variable&) {},                         //
       [](ast::Define&) {},                           //
@@ -816,7 +843,6 @@ void two_step_define_assign(std::vector<ast::Scope::Node>& nodes,
 }
 
 void assamble_statement(ast::Scope& scope, const size_t last) {
-  // TODO case dev var = a; -> def var; var = a;
   two_step_define_assign(scope.nodes, last);
 
   assamble_operators(scope.nodes, last, ast::UnaryOperation::NOT);
@@ -837,81 +863,96 @@ void assamble_statement(ast::Scope& scope, const size_t last) {
   assamble_operators(scope.nodes, last, ast::BinaryOperation::OR);
 
   assamble_operators(scope.nodes, last, ast::BinaryOperation::ASSIGNMENT);
+}
 
-  // if(scope.nodes.size() != 1) {
-  //   for(const auto& c : scope.nodes) {
-  //     c.match(
-  //         [](const ast::Variable& e) { std::cout << e; },
-  //         [](const ast::Define& e) { std::cout << e; },
-  //         [](const ast::executable::EntryFunction& e) { std::cout << e; },
-  //         [](const ast::executable::Executable& e) { std::cout << e; },
-  //         [](const ast::executable::Function& e) { std::cout << e; },
-  //         [](const ast::Return& e) { std::cout << e; },
-  //         [](const ast::Scope& e) { std::cout << e; },
-  //         [](const ast::UnaryOperator& e) { std::cout << e; },
-  //         [](const ast::BinaryOperator& e) { std::cout << e; },
-  //         [](const ast::logic::If& e) { std::cout << e; },
-  //         [](const ast::loop::While& e) { std::cout << e; },
-  //         [](const ast::loop::DoWhile& e) { std::cout << e; },
-  //         [](const ast::loop::For& e) { std::cout << e; },
-  //         [](const ast::Literal<ast::Literals::BOOL>& e) { std::cout << e; },
-  //         [](const ast::Literal<ast::Literals::INT>& e) { std::cout << e; },
-  //         [](const ast::Literal<ast::Literals::DOUBLE>& e) { std::cout << e;
-  //         },
-  //         [](const ast::Literal<ast::Literals::STRING>& e) { std::cout << e;
-  //         });
-  //   }
+core::optional<ast::Scope::Node>
+parse_scope_internals(const std::vector<Token>& tokens, size_t& token,
+                      bool& new_statement) {
+  ast::Scope::Node node;
 
-  //   assert(false && "Left over operators");
-  // }
+  if(auto def = parse_executable_definition(tokens, token)) {
+    if(!new_statement) {
+      // TODO throw
+      assert(false && "Not new statement");
+    }
+    node = std::move(*def);
+  } else if(auto def = parse_variable_definition(tokens, token)) {
+    if(!new_statement) {
+      // TODO throw
+      assert(false && "Not new statement");
+    }
+    new_statement = false;
+    node = std::move(*def);
+  } else if(auto iff = parse_if(tokens, token)) {
+    if(!new_statement) {
+      // TODO throw
+      assert(false && "Not new statement");
+    }
+    node = std::move(*iff);
+  } else if(auto whi = parse_while(tokens, token)) {
+    if(!new_statement) {
+      // TODO throw
+      assert(false && "Not new statement");
+    }
+    node = std::move(*whi);
+  } else if(auto exe = parse_executable(tokens, token)) {
+    if(!new_statement) {
+      // TODO throw
+      assert(false && "Not new statement");
+    }
+    new_statement = false;
+    node = std::move(*exe);
+  } else if(auto ret = parse_return(tokens, token)) {
+    if(!new_statement) {
+      // TODO throw
+      assert(false && "Not new statement");
+    }
+    new_statement = false;
+    node = std::move(*ret);
+  } else if(auto lit_bool = parse_literal_bool(tokens, token)) {
+    node = std::move(*lit_bool);
+    new_statement = false;
+  } else if(auto lit_int = parse_literal_int(tokens, token)) {
+    node = std::move(*lit_int);
+  } else if(auto lit_double = parse_literal_double(tokens, token)) {
+    new_statement = false;
+    node = std::move(*lit_double);
+  } else if(auto lit_string = parse_literal_string(tokens, token)) {
+    node = std::move(*lit_string);
+    new_statement = false;
+  } else if(auto op = parse_operator(tokens, token)) {
+    op->match([&node](ast::UnaryOperator& op) { node = std::move(op); },
+              [&node](ast::BinaryOperator& op) { node = std::move(op); });
+    new_statement = false;
+  } else if(auto var = parse_variable(tokens, token)) {
+    node = std::move(*var);
+    new_statement = false;
+  } else {
+    return {};
+  }
+  return node;
 }
 
 void parse_scope_internals(const std::vector<Token>& tokens, size_t& token,
                            ast::Scope& scope) {
   auto last = scope.nodes.size();
+  bool new_statement = true;
 
   while(token < tokens.size()) {
     if(read_token(tokens, token, ";")) {
       assamble_statement(scope, last);
       last = scope.nodes.size();
+      new_statement = true;
+    } else if(auto node = parse_scope_internals(tokens, token, new_statement)) {
+      scope.nodes.push_back(std::move(*node));
     } else {
-      if(auto def = parse_definition(tokens, token)) {
-        scope.nodes.emplace_back(std::move(*def));
-      } else if(auto iff = parse_if(tokens, token)) {
-        scope.nodes.emplace_back(std::move(*iff));
-      } else if(auto whi = parse_while(tokens, token)) {
-        scope.nodes.emplace_back(std::move(*whi));
-      } else if(auto exe = parse_executable(tokens, token)) {
-        scope.nodes.emplace_back(std::move(*exe));
-      } else if(auto ret = parse_return(tokens, token)) {
-        scope.nodes.emplace_back(std::move(*ret));
-      } else if(auto lit_bool = parse_literal_bool(tokens, token)) {
-        scope.nodes.emplace_back(std::move(*lit_bool));
-      } else if(auto lit_int = parse_literal_int(tokens, token)) {
-        scope.nodes.emplace_back(std::move(*lit_int));
-      } else if(auto lit_double = parse_literal_double(tokens, token)) {
-        scope.nodes.emplace_back(std::move(*lit_double));
-      } else if(auto lit_string = parse_literal_string(tokens, token)) {
-        scope.nodes.emplace_back(std::move(*lit_string));
-      } else if(auto op = parse_operator(tokens, token)) {
-        op->match(
-            [&scope](ast::UnaryOperator& op) {
-              scope.nodes.emplace_back(std::move(op));
-            },
-            [&scope](ast::BinaryOperator& op) {
-              scope.nodes.emplace_back(std::move(op));
-            });
-      } else if(auto var = parse_variable(tokens, token)) {
-        scope.nodes.emplace_back(std::move(*var));
+      auto tmp = token;  // No advance - that is done by the scope
+      if(read_token(tokens, tmp, "}")) {
+        break;  // done with the scope
       } else {
-        auto tmp = token;  // No advance - that is done by the scope
-        if(read_token(tokens, tmp, "}")) {
-          break;  // done with the scope
-        } else {
-          // TODO throw
-          std::cout << tokens.at(token) << "\n";
-          assert(false && "Bad Token");
-        }
+        // TODO throw
+        std::cout << tokens.at(token) << "\n";
+        assert(false && "Bad Token");
       }
     }
   }
