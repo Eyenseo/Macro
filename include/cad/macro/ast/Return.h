@@ -3,6 +3,7 @@
 
 #include "cad/macro/ast/AST.h"
 #include "cad/macro/ast/Variable.h"
+#include "cad/macro/ast/Operator.h"
 #include "cad/macro/ast/executable/Executable.h"
 
 
@@ -14,12 +15,10 @@ namespace cad {
 namespace macro {
 namespace ast {
 class Return : public AST {
-  using Output = core::variant<Variable, executable::Executable>;
-
   void print_internals(IndentStream& os) const;
 
 public:
-  core::optional<Output> output;
+  core::optional<ValueVariant> output;
 
   Return() = default;
   Return(parser::Token token);

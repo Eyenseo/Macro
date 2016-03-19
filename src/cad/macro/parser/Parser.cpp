@@ -13,9 +13,6 @@ namespace cad {
 namespace macro {
 namespace parser {
 namespace {
-using Condition = core::variant<ast::executable::Executable, ast::Variable,
-                                ast::UnaryOperator, ast::BinaryOperator>;
-
 void parse_scope_internals(const std::vector<Token>& tokens, size_t& token,
                            ast::Scope& scope);
 
@@ -301,7 +298,8 @@ parse_operator(const std::vector<Token>& tokens, size_t& token) {
   return ret;
 }
 
-void assamble_condition(std::vector<Condition>& conditions, size_t& index) {
+void assamble_condition(std::vector<ast::ValueVariant>& conditions,
+                        size_t& index) {
   auto next = conditions.begin();
   std::advance(next, index + 1);
   auto previous = conditions.begin();
@@ -338,7 +336,7 @@ void assamble_condition(std::vector<Condition>& conditions, size_t& index) {
       [](ast::Variable&) {}, [](ast::executable::Executable&) {});
 }
 
-void assamble_conditions(std::vector<Condition>& conditions,
+void assamble_conditions(std::vector<ast::ValueVariant>& conditions,
                          const ast::UnaryOperation operaton) {
   for(size_t i = 0; i < conditions.size(); ++i) {
     conditions.at(i).match(
@@ -355,7 +353,7 @@ void assamble_conditions(std::vector<Condition>& conditions,
   }
 }
 
-void assamble_conditions(std::vector<Condition>& conditions,
+void assamble_conditions(std::vector<ast::ValueVariant>& conditions,
                          const ast::BinaryOperation operaton) {
   for(size_t i = 0; i < conditions.size(); ++i) {
     conditions.at(i).match(
@@ -372,8 +370,8 @@ void assamble_conditions(std::vector<Condition>& conditions,
   }
 }
 
-core::optional<Condition>
-assamble_conditions(std::vector<Condition> conditions) {
+core::optional<ast::ValueVariant>
+assamble_conditions(std::vector<ast::ValueVariant> conditions) {
   assamble_conditions(conditions, ast::UnaryOperation::NOT);
 
   assamble_conditions(conditions, ast::BinaryOperation::DIVIDE);
@@ -408,11 +406,11 @@ assamble_conditions(std::vector<Condition> conditions) {
   return conditions.front();
 }
 
-core::optional<Condition> parse_condition(const std::vector<Token>& tokens,
-                                          size_t& token) {
+core::optional<ast::ValueVariant>
+parse_condition(const std::vector<Token>& tokens, size_t& token) {
   auto tmp = token;
 
-  std::vector<Condition> conditions;
+  std::vector<ast::ValueVariant> conditions;
 
   while(tmp < tokens.size()) {
     if(auto exe = parse_executable(tokens, tmp)) {

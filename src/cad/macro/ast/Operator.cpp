@@ -164,7 +164,7 @@ bool Operand::operator==(const Operand& other) const {
   if(this == &other) {
     return true;
   } else {
-    return operand == other.operand;
+    return value == other.value;
   }
 }
 bool Operand::operator!=(const Operand& other) const {

@@ -134,38 +134,38 @@ public:
   }
 };
 
+using ValueVariant = core::variant<executable::Executable, Variable,
+                                   UnaryOperator, BinaryOperator>;
+
 struct Operand {
-  using OperandMember = core::variant<executable::Executable, Variable,
-                                      UnaryOperator, BinaryOperator>;
-  OperandMember operand;
+  ValueVariant value;
 
 public:
   Operand() = default;
-  Operand(OperandMember op)
-      : operand(std::move(op)) {
+  Operand(ValueVariant op)
+      : value(std::move(op)) {
   }
   Operand(executable::Executable op)
-      : operand(std::move(op)) {
+      : value(std::move(op)) {
   }
   Operand(Variable op)
-      : operand(std::move(op)) {
+      : value(std::move(op)) {
   }
   Operand(UnaryOperator op)
-      : operand(std::move(op)) {
+      : value(std::move(op)) {
   }
   Operand(BinaryOperator op)
-      : operand(std::move(op)) {
+      : value(std::move(op)) {
   }
-
 
   bool operator==(const Operand& other) const;
   bool operator!=(const Operand& other) const;
 
   friend std::ostream& operator<<(std::ostream& os, const Operand& op) {
-    op.operand.match([&os](const executable::Executable& o) { os << o; },
-                     [&os](const Variable& o) { os << o; },
-                     [&os](const UnaryOperator& o) { os << o; },
-                     [&os](const BinaryOperator& o) { os << o; });
+    op.value.match([&os](const executable::Executable& o) { os << o; },
+                   [&os](const Variable& o) { os << o; },
+                   [&os](const UnaryOperator& o) { os << o; },
+                   [&os](const BinaryOperator& o) { os << o; });
     return os;
   }
 };

@@ -166,25 +166,25 @@ TEST_CASE("Operator Comparison") {
     SECTION("Operand") {
       UnaryOperator a({0, 0, ""});
       a.operand = std::make_unique<Operand>();
-      a.operand->operand = Variable({0, 0, ""});
+      a.operand->value = Variable({0, 0, ""});
       UnaryOperator b({0, 0, ""});
       b.operand = std::make_unique<Operand>();
-      b.operand->operand = Variable({0, 0, ""});
+      b.operand->value = Variable({0, 0, ""});
       REQUIRE(a == b);
     }
     SECTION("Different Operand") {
       UnaryOperator a({0, 0, ""});
       a.operand = std::make_unique<Operand>();
-      a.operand->operand = Variable({0, 0, ""});
+      a.operand->value = Variable({0, 0, ""});
       UnaryOperator b({0, 0, ""});
       b.operand = std::make_unique<Operand>();
-      b.operand->operand = Executable({0, 0, ""});
+      b.operand->value = Executable({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
     SECTION("Operand/No-Operand") {
       UnaryOperator a({0, 0, ""});
       a.operand = std::make_unique<Operand>();
-      a.operand->operand = Variable({0, 0, ""});
+      a.operand->value = Variable({0, 0, ""});
       UnaryOperator b({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
@@ -213,25 +213,25 @@ TEST_CASE("Operator Comparison") {
     SECTION("LeftOperand") {
       BinaryOperator a({0, 0, ""});
       a.left_operand = std::make_unique<Operand>();
-      a.left_operand->operand = Variable({0, 0, ""});
+      a.left_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
       b.left_operand = std::make_unique<Operand>();
-      b.left_operand->operand = Variable({0, 0, ""});
+      b.left_operand->value = Variable({0, 0, ""});
       REQUIRE(a == b);
     }
     SECTION("Different LeftOperand") {
       BinaryOperator a({0, 0, ""});
       a.left_operand = std::make_unique<Operand>();
-      a.left_operand->operand = Variable({0, 0, ""});
+      a.left_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
       b.left_operand = std::make_unique<Operand>();
-      b.left_operand->operand = Executable({0, 0, ""});
+      b.left_operand->value = Executable({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
     SECTION("LeftOperand/No-LeftOperand") {
       BinaryOperator a({0, 0, ""});
       a.left_operand = std::make_unique<Operand>();
-      a.left_operand->operand = Variable({0, 0, ""});
+      a.left_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
@@ -239,25 +239,25 @@ TEST_CASE("Operator Comparison") {
     SECTION("RightOperand") {
       BinaryOperator a({0, 0, ""});
       a.right_operand = std::make_unique<Operand>();
-      a.right_operand->operand = Variable({0, 0, ""});
+      a.right_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
       b.right_operand = std::make_unique<Operand>();
-      b.right_operand->operand = Variable({0, 0, ""});
+      b.right_operand->value = Variable({0, 0, ""});
       REQUIRE(a == b);
     }
     SECTION("Different RightOperand") {
       BinaryOperator a({0, 0, ""});
       a.right_operand = std::make_unique<Operand>();
-      a.right_operand->operand = Variable({0, 0, ""});
+      a.right_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
       b.right_operand = std::make_unique<Operand>();
-      b.right_operand->operand = Executable({0, 0, ""});
+      b.right_operand->value = Executable({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
     SECTION("RightOperand/No-RightOperand") {
       BinaryOperator a({0, 0, ""});
       a.right_operand = std::make_unique<Operand>();
-      a.right_operand->operand = Variable({0, 0, ""});
+      a.right_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
@@ -265,36 +265,36 @@ TEST_CASE("Operator Comparison") {
     SECTION("Right-/LeftOperand") {
       BinaryOperator a({0, 0, ""});
       a.left_operand = std::make_unique<Operand>();
-      a.left_operand->operand = Variable({0, 0, ""});
+      a.left_operand->value = Variable({0, 0, ""});
       a.right_operand = std::make_unique<Operand>();
-      a.right_operand->operand = Variable({0, 0, ""});
+      a.right_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
       b.left_operand = std::make_unique<Operand>();
-      b.left_operand->operand = Variable({0, 0, ""});
+      b.left_operand->value = Variable({0, 0, ""});
       b.right_operand = std::make_unique<Operand>();
-      b.right_operand->operand = Variable({0, 0, ""});
+      b.right_operand->value = Variable({0, 0, ""});
       REQUIRE(a == b);
     }
     SECTION("No Right-/LeftOperand") {
       BinaryOperator a({0, 0, ""});
       a.left_operand = std::make_unique<Operand>();
-      a.left_operand->operand = Variable({0, 0, ""});
+      a.left_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
       b.left_operand = std::make_unique<Operand>();
-      b.left_operand->operand = Variable({0, 0, ""});
+      b.left_operand->value = Variable({0, 0, ""});
       b.right_operand = std::make_unique<Operand>();
-      b.right_operand->operand = Variable({0, 0, ""});
+      b.right_operand->value = Variable({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
     SECTION("Right-/ No-LeftOperand") {
       BinaryOperator a({0, 0, ""});
       a.right_operand = std::make_unique<Operand>();
-      a.right_operand->operand = Variable({0, 0, ""});
+      a.right_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
       b.left_operand = std::make_unique<Operand>();
-      b.left_operand->operand = Variable({0, 0, ""});
+      b.left_operand->value = Variable({0, 0, ""});
       b.right_operand = std::make_unique<Operand>();
-      b.right_operand->operand = Variable({0, 0, ""});
+      b.right_operand->value = Variable({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
   }

@@ -9,19 +9,10 @@ Return::Return(parser::Token token)
 
 void Return::print_internals(IndentStream& os) const {
   if(output) {
-    // TODO check if this works https://llvm.org/bugs/show_bug.cgi?id=26929
-    // TODO fixed in clang 3.8+
-    // output->match([&os](const Executable& v) { os << v; },
-    //               [&os](const Variable& v) { os << v; });
-
-    switch(output->which()) {
-    case 0:
-      os << core::get<0>(*output);
-      break;
-    case 1:
-      os << core::get<1>(*output);
-      break;
-    }
+    output->match([&os](const executable::Executable& o) { os << o; },
+                  [&os](const Variable& o) { os << o; },
+                  [&os](const UnaryOperator& o) { os << o; },
+                  [&os](const BinaryOperator& o) { os << o; });
   }
 }
 

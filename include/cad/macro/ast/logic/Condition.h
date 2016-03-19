@@ -13,8 +13,7 @@ protected:
   void print_internals(IndentStream& os) const;
 
 public:
-  core::optional<core::variant<executable::Executable, Variable, UnaryOperator,
-                               BinaryOperator>> condition;
+  core::optional<ValueVariant> condition;
 
   Condition() = default;
   Condition(parser::Token token);
