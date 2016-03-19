@@ -18,12 +18,11 @@ namespace cad {
 namespace macro {
 namespace ast {
 namespace loop {
-class While : public AST {
+class While : public logic::Condition {
 protected:
   void print_internals(IndentStream& os) const;
 
 public:
-  logic::Condition condition;
   std::unique_ptr<Scope> scope;
 
   While();
@@ -38,8 +37,7 @@ public:
     // enable ADL
     using std::swap;
 
-    swap(static_cast<AST&>(first), static_cast<AST&>(second));
-    swap(first.condition, second.condition);
+    swap(static_cast<Condition&>(first), static_cast<Condition&>(second));
     swap(first.scope, second.scope);
   }
 

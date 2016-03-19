@@ -403,30 +403,25 @@ TEST_CASE("While") {
     SECTION("Same") {
       While a({0, 0, ""});
       Condition ac({0, 0, ""});
-      ac.condition = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
-      a.condition = ac;
+      a.condition = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
       While b({0, 0, ""});
       Condition bc({0, 0, ""});
-      bc.condition = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
-      b.condition = bc;
+      b.condition = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
       REQUIRE(a == b);
     }
     SECTION("Different") {
       While a({0, 0, ""});
       Condition ac({0, 0, ""});
-      ac.condition = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
-      a.condition = ac;
+      a.condition = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
       While b({0, 0, ""});
       Condition bc({0, 0, ""});
-      bc.condition = std::make_unique<ValueProducer>(Executable({0, 0, ""}));
-      b.condition = bc;
+      b.condition = std::make_unique<ValueProducer>(Executable({0, 0, ""}));
       REQUIRE_FALSE(a == b);
     }
     SECTION("N/One") {
       While a({0, 0, ""});
       Condition ac({0, 0, ""});
-      ac.condition = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
-      a.condition = ac;
+      a.condition = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
       While b({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }

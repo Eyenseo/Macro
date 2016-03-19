@@ -7,6 +7,7 @@
 #include "cad/macro/ast/Return.h"
 #include "cad/macro/ast/Operator.h"
 #include "cad/macro/ast/Variable.h"
+#include "cad/macro/ast/Literal.h"
 #include "cad/macro/ast/executable/Function.h"
 #include "cad/macro/ast/executable/EntryFunction.h"
 #include "cad/macro/ast/executable/Executable.h"
@@ -41,9 +42,12 @@ class Scope : public AST {
   using For = loop::For;
 
 public:
-  using Node = core::variant<Variable, Define, EntryFunction, Executable,
-                             Function, Return, Scope, UnaryOperator,
-                             BinaryOperator, If, While, DoWhile, For>;
+  using Node =
+      core::variant<Variable, Define, EntryFunction, Executable, Function,
+                    Return, Scope, UnaryOperator, BinaryOperator, If, While,
+                    DoWhile, For, Literal<Literals::BOOL>,
+                    Literal<Literals::INT>, Literal<Literals::DOUBLE>,
+                    Literal<Literals::STRING>>;
 
 private:
   void print_internals(std::ostream& os) const;

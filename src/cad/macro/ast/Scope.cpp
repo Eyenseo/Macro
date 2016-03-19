@@ -14,19 +14,23 @@ Scope::Scope(parser::Token token)
 void Scope::print_internals(std::ostream& os) const {
   IndentStream indent_os(os);
   for(auto& v : nodes) {
-    v.match([&os](const Variable& n) { os << n; },        //
-            [&os](const EntryFunction& n) { os << n; },   //
-            [&os](const Executable& n) { os << n; },      //
-            [&os](const Function& n) { os << n; },        //
-            [&os](const Return& n) { os << n; },          //
-            [&os](const Scope& n) { os << n; },           //
-            [&os](const Define& n) { os << n; },          //
-            [&os](const UnaryOperator& n) { os << n; },   //
-            [&os](const BinaryOperator& n) { os << n; },  //
-            [&os](const If& n) { os << n; },              //
-            [&os](const While& n) { os << n; },           //
-            [&os](const DoWhile& n) { os << n; },         //
-            [&os](const For& n) { os << n; });            //
+    v.match([&os](const Variable& n) { os << n; },                    //
+            [&os](const EntryFunction& n) { os << n; },               //
+            [&os](const Executable& n) { os << n; },                  //
+            [&os](const Function& n) { os << n; },                    //
+            [&os](const Return& n) { os << n; },                      //
+            [&os](const Scope& n) { os << n; },                       //
+            [&os](const Define& n) { os << n; },                      //
+            [&os](const UnaryOperator& n) { os << n; },               //
+            [&os](const BinaryOperator& n) { os << n; },              //
+            [&os](const If& n) { os << n; },                          //
+            [&os](const While& n) { os << n; },                       //
+            [&os](const DoWhile& n) { os << n; },                     //
+            [&os](const For& n) { os << n; },                         //
+            [&os](const Literal<Literals::BOOL>& n) { os << n; },     //
+            [&os](const Literal<Literals::INT>& n) { os << n; },      //
+            [&os](const Literal<Literals::DOUBLE>& n) { os << n; },   //
+            [&os](const Literal<Literals::STRING>& n) { os << n; });  //
   }
 }
 

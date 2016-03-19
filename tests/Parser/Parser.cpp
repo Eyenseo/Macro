@@ -9,6 +9,7 @@ using namespace cad::macro::parser;
 using namespace cad::macro::ast;
 using namespace cad::macro::ast::executable;
 using namespace cad::macro::ast::logic;
+using namespace cad::macro::ast::loop;
 
 TEST_CASE("Define") {
   SECTION("EntryFunction") {
@@ -661,6 +662,44 @@ TEST_CASE("If") {
   }
 }
 
+TEST_CASE("While") {  // Basically an if
+  Parser p;
+  auto ast = p.parse("while(a){}");
+
+  Scope expected({0, 0, ""});
+  {
+    While w({1, 1, "while"});
+    w.condition = std::make_unique<ValueProducer>(Variable({1, 7, "a"}));
+    w.scope = std::make_unique<Scope>(Token(1, 9, "{"));
+    expected.nodes.push_back(std::move(w));
+  }
+
+  REQUIRE(ast == expected);
+}
+
+TEST_CASE("\"free\" operators") {
+}
+
+// FIXME
+// TEST_CASE("For") {
+//   Parser p;
+//   auto ast = p.parse("for(var a = 0; a < 10; a = a + 1){}");
+
+//   Scope expected({0, 0, ""});
+//   {
+//     For f({1, 1, "For"});
+//     f.condition = std::make_unique<ValueProducer>(Variable({1, 4, "a"}));
+
+
+//     f.true_scope = std::make_unique<Scope>(Token(1, 6, "{"));
+//     f.false_scope = std::make_unique<Scope>(Token(1, 12, "{"));
+//     expected.nodes.push_back(std::move(f));
+//   }
+
+//   REQUIRE(ast == expected);
+// }
+
+
 TEST_CASE("Complete") {
   const std::string raw_macro = "\n"
                                 "var a = true;            \n"
@@ -687,4 +726,6 @@ TEST_CASE("Complete") {
                                 "  fun(baz);              \n"
                                 "}                        \n"
                                 "                         \n";
+  Parser p;
+  WARN(p.parse(raw_macro));
 }

@@ -383,132 +383,242 @@ parse_operator(const std::vector<Token>& tokens, size_t& token) {
   return ret;
 }
 
-void assamble_operator(std::vector<ast::ValueProducer>& conditions,
+ast::ValueProducer node_to_value(ast::Scope::Node& node) {
+  ast::ValueProducer value;
+  node.match(
+      [&value](ast::Variable& e) { value = std::move(e); },
+      [&value](ast::Define&) {
+        // TODO throw
+        assert(false && "Not a ValueProducer");
+      },
+      [&value](ast::executable::EntryFunction&) {
+        // TODO throw
+        assert(false && "Not a ValueProducer");
+      },
+      [&value](ast::executable::Executable& e) { value = std::move(e); },
+      [&value](ast::executable::Function&) {
+        // TODO throw
+        assert(false && "Not a ValueProducer");
+      },
+      [&value](ast::Return&) {
+        // TODO throw
+        assert(false && "Not a ValueProducer");
+      },
+      [&value](ast::Scope&) {
+        // TODO throw
+        assert(false && "Not a ValueProducer");
+      },
+      [&value](ast::UnaryOperator& e) { value = std::move(e); },
+      [&value](ast::BinaryOperator& e) { value = std::move(e); },
+      [&value](ast::logic::If&) {
+        // TODO throw
+        assert(false && "Not a ValueProducer");
+      },
+      [&value](ast::loop::While&) {
+        // TODO throw
+        assert(false && "Not a ValueProducer");
+      },
+      [&value](ast::loop::DoWhile&) {
+        // TODO throw
+        assert(false && "Not a ValueProducer");
+      },
+      [&value](ast::loop::For&) {
+        // TODO throw
+        assert(false && "Not a ValueProducer");
+      },
+      [&value](ast::Literal<ast::Literals::BOOL>& e) { value = std::move(e); },
+      [&value](ast::Literal<ast::Literals::INT>& e) { value = std::move(e); },
+      [&value](ast::Literal<ast::Literals::DOUBLE>& e) {
+        value = std::move(e);
+      },
+      [&value](ast::Literal<ast::Literals::STRING>& e) {
+        value = std::move(e);
+      });
+  return value;
+}
+
+ast::Scope::Node value_to_node(ast::ValueProducer& producer) {
+  ast::Scope::Node node;
+  producer.value.match(
+      [&node](ast::Variable& e) { node = std::move(e); },
+      [&node](ast::executable::Executable& e) { node = std::move(e); },
+      [&node](ast::UnaryOperator& e) { node = std::move(e); },
+      [&node](ast::BinaryOperator& e) { node = std::move(e); },
+      [&node](ast::Literal<ast::Literals::BOOL>& e) { node = std::move(e); },
+      [&node](ast::Literal<ast::Literals::INT>& e) { node = std::move(e); },
+      [&node](ast::Literal<ast::Literals::DOUBLE>& e) { node = std::move(e); },
+      [&node](ast::Literal<ast::Literals::STRING>& e) { node = std::move(e); });
+  return node;
+}
+
+void assamble_operator(std::vector<ast::Scope::Node>& nodes, const size_t start,
                        size_t& index) {
-  auto next = conditions.begin();
+  auto next = nodes.begin();
   std::advance(next, index + 1);
-  auto previous = conditions.begin();
-  if(index == 0) {
-    previous = conditions.end();
+  auto previous = nodes.begin();
+  if(index == 0 || start == index) {
+    previous = nodes.end();
   } else {
     std::advance(previous, index - 1);
   }
 
-  conditions.at(index).value.match(
-      [&conditions, &next](ast::UnaryOperator& op) {
-        if(next == conditions.end()) {
+  nodes.at(index).match(
+      [&nodes, &next](ast::UnaryOperator& op) {
+        if(next == nodes.end()) {
           // TODO throw
         }
-        op.operand = std::make_unique<ast::ValueProducer>(std::move(*next));
-        conditions.erase(next);
+        op.operand = std::make_unique<ast::ValueProducer>(node_to_value(*next));
+        nodes.erase(next);
       },
-      [&conditions, &index, &next, &previous](ast::BinaryOperator& op) {
-        if(previous == conditions.end()) {
+      [&nodes, &index, &next, &previous](ast::BinaryOperator& op) {
+        if(previous == nodes.end()) {
           // TODO throw
         }
-        if(next == conditions.end()) {
+        if(next == nodes.end()) {
           // TODO throw
         }
         op.left_operand =
-            std::make_unique<ast::ValueProducer>(std::move(*previous));
+            std::make_unique<ast::ValueProducer>(node_to_value(*previous));
         op.right_operand =
-            std::make_unique<ast::ValueProducer>(std::move(*next));
+            std::make_unique<ast::ValueProducer>(node_to_value(*next));
         --index;
-        conditions.erase(next);
+        nodes.erase(next);
         // We changed the vector - get new, VALID iterator
-        previous = conditions.begin();
+        previous = nodes.begin();
         std::advance(previous, index);  // we decremented index already
-        conditions.erase(previous);
+        nodes.erase(previous);
       },
-      [](ast::Literal<ast::Literals::BOOL>&) {},
-      [](ast::Literal<ast::Literals::INT>&) {},
-      [](ast::Literal<ast::Literals::DOUBLE>&) {},
-      [](ast::Literal<ast::Literals::STRING>&) {}, [](ast::Variable&) {},
-      [](ast::executable::Executable&) {});
+      [](ast::Variable&) {},                         //
+      [](ast::Define&) {},                           //
+      [](ast::executable::EntryFunction&) {},        //
+      [](ast::executable::Executable&) {},           //
+      [](ast::executable::Function&) {},             //
+      [](ast::Return&) {},                           //
+      [](ast::Scope&) {},                            //
+      [](ast::logic::If&) {},                        //
+      [](ast::loop::While&) {},                      //
+      [](ast::loop::DoWhile&) {},                    //
+      [](ast::loop::For&) {},                        //
+      [](ast::Literal<ast::Literals::BOOL>&) {},     //
+      [](ast::Literal<ast::Literals::INT>&) {},      //
+      [](ast::Literal<ast::Literals::DOUBLE>&) {},   //
+      [](ast::Literal<ast::Literals::STRING>&) {});  //
 }
 
-void assamble_operators(std::vector<ast::ValueProducer>& conditions,
+void assamble_operators(std::vector<ast::Scope::Node>& nodes,
+                        const size_t start,
                         const ast::UnaryOperation operaton) {
-  for(size_t i = 0; i < conditions.size(); ++i) {
-    conditions.at(i).value.match(
-        [&conditions, &i, operaton](ast::UnaryOperator& op) {
+  for(size_t i = start; i < nodes.size(); ++i) {
+    nodes.at(i).match(
+        [&nodes, start, &i, operaton](ast::UnaryOperator& op) {
           if(op.operation == ast::UnaryOperation::NONE) {
             // TODO throw
             assert(false && "ast::UnaryOperation::NONE");
           } else if(op.operation == operaton) {
-            assamble_operator(conditions, i);
+            assamble_operator(nodes, start, i);
           }
         },
-        [](ast::BinaryOperator&) {}, [](ast::Literal<ast::Literals::BOOL>&) {},
-        [](ast::Literal<ast::Literals::INT>&) {},
-        [](ast::Literal<ast::Literals::DOUBLE>&) {},
-        [](ast::Literal<ast::Literals::STRING>&) {}, [](ast::Variable&) {},
-        [](ast::executable::Executable&) {});
+        [](ast::Variable&) {},                         //
+        [](ast::Define&) {},                           //
+        [](ast::executable::EntryFunction&) {},        //
+        [](ast::executable::Executable&) {},           //
+        [](ast::executable::Function&) {},             //
+        [](ast::Return&) {},                           //
+        [](ast::Scope&) {},                            //
+        [](ast::BinaryOperator&) {},                   //
+        [](ast::logic::If&) {},                        //
+        [](ast::loop::While&) {},                      //
+        [](ast::loop::DoWhile&) {},                    //
+        [](ast::loop::For&) {},                        //
+        [](ast::Literal<ast::Literals::BOOL>&) {},     //
+        [](ast::Literal<ast::Literals::INT>&) {},      //
+        [](ast::Literal<ast::Literals::DOUBLE>&) {},   //
+        [](ast::Literal<ast::Literals::STRING>&) {});  //
   }
 }
 
-void assamble_operators(std::vector<ast::ValueProducer>& conditions,
+void assamble_operators(std::vector<ast::Scope::Node>& nodes,
+                        const size_t start,
                         const ast::BinaryOperation operaton) {
-  for(size_t i = 0; i < conditions.size(); ++i) {
-    conditions.at(i).value.match(
-        [&conditions, &i, operaton](ast::BinaryOperator& op) {
+  for(size_t i = start; i < nodes.size(); ++i) {
+    nodes.at(i).match(
+        [&nodes, start, &i, operaton](ast::BinaryOperator& op) {
           if(op.operation == ast::BinaryOperation::NONE) {
             // TODO throw
             assert(false && "ast::BinaryOperation::NONE");
           } else if(op.operation == operaton) {
-            assamble_operator(conditions, i);
+            assamble_operator(nodes, start, i);
           }
         },
-        [](ast::UnaryOperator&) {}, [](ast::Literal<ast::Literals::BOOL>&) {},
-        [](ast::Literal<ast::Literals::INT>&) {},
-        [](ast::Literal<ast::Literals::DOUBLE>&) {},
-        [](ast::Literal<ast::Literals::STRING>&) {}, [](ast::Variable&) {},
-        [](ast::executable::Executable&) {});
+        [](ast::Variable&) {},                         //
+        [](ast::Define&) {},                           //
+        [](ast::executable::EntryFunction&) {},        //
+        [](ast::executable::Executable&) {},           //
+        [](ast::executable::Function&) {},             //
+        [](ast::Return&) {},                           //
+        [](ast::Scope&) {},                            //
+        [](ast::UnaryOperator&) {},                    //
+        [](ast::logic::If&) {},                        //
+        [](ast::loop::While&) {},                      //
+        [](ast::loop::DoWhile&) {},                    //
+        [](ast::loop::For&) {},                        //
+        [](ast::Literal<ast::Literals::BOOL>&) {},     //
+        [](ast::Literal<ast::Literals::INT>&) {},      //
+        [](ast::Literal<ast::Literals::DOUBLE>&) {},   //
+        [](ast::Literal<ast::Literals::STRING>&) {});  //
   }
 }
 
-core::optional<ast::ValueProducer>
-assamble_conditions(std::vector<ast::ValueProducer> conditions) {
-  assamble_operators(conditions, ast::UnaryOperation::NOT);
+ast::ValueProducer
+assamble_conditions(std::vector<ast::Scope::Node> conditions) {
+  assamble_operators(conditions, 0, ast::UnaryOperation::NOT);
 
-  assamble_operators(conditions, ast::BinaryOperation::DIVIDE);
-  assamble_operators(conditions, ast::BinaryOperation::MULTIPLY);
-  assamble_operators(conditions, ast::BinaryOperation::MODULO);
-  assamble_operators(conditions, ast::BinaryOperation::ADD);
-  assamble_operators(conditions, ast::BinaryOperation::SUBTRACT);
+  assamble_operators(conditions, 0, ast::BinaryOperation::DIVIDE);
+  assamble_operators(conditions, 0, ast::BinaryOperation::MULTIPLY);
+  assamble_operators(conditions, 0, ast::BinaryOperation::MODULO);
+  assamble_operators(conditions, 0, ast::BinaryOperation::ADD);
+  assamble_operators(conditions, 0, ast::BinaryOperation::SUBTRACT);
 
-  assamble_operators(conditions, ast::BinaryOperation::SMALLER);
-  assamble_operators(conditions, ast::BinaryOperation::SMALLER_EQUAL);
-  assamble_operators(conditions, ast::BinaryOperation::GREATER);
-  assamble_operators(conditions, ast::BinaryOperation::GREATER_EQUAL);
-  assamble_operators(conditions, ast::BinaryOperation::EQUAL);
-  assamble_operators(conditions, ast::BinaryOperation::NOT_EQUAL);
-  assamble_operators(conditions, ast::BinaryOperation::AND);
-  assamble_operators(conditions, ast::BinaryOperation::OR);
+  assamble_operators(conditions, 0, ast::BinaryOperation::SMALLER);
+  assamble_operators(conditions, 0, ast::BinaryOperation::SMALLER_EQUAL);
+  assamble_operators(conditions, 0, ast::BinaryOperation::GREATER);
+  assamble_operators(conditions, 0, ast::BinaryOperation::GREATER_EQUAL);
+  assamble_operators(conditions, 0, ast::BinaryOperation::EQUAL);
+  assamble_operators(conditions, 0, ast::BinaryOperation::NOT_EQUAL);
+  assamble_operators(conditions, 0, ast::BinaryOperation::AND);
+  assamble_operators(conditions, 0, ast::BinaryOperation::OR);
 
   if(conditions.size() != 1) {
     for(const auto& c : conditions) {
-      c.value.match(
-          [](const ast::BinaryOperator& o) { std::cout << o; },
-          [](const ast::UnaryOperator& o) { std::cout << o; },
-          [](const ast::Literal<ast::Literals::BOOL>& o) { std::cout << o; },
-          [](const ast::Literal<ast::Literals::INT>& o) { std::cout << o; },
-          [](const ast::Literal<ast::Literals::DOUBLE>& o) { std::cout << o; },
-          [](const ast::Literal<ast::Literals::STRING>& o) { std::cout << o; },
-          [](const ast::Variable& o) { std::cout << o; },
-          [](const ast::executable::Executable& o) { std::cout << o; });
+      c.match(
+          [](const ast::Variable& e) { std::cout << e; },
+          [](const ast::Define& e) { std::cout << e; },
+          [](const ast::executable::EntryFunction& e) { std::cout << e; },
+          [](const ast::executable::Executable& e) { std::cout << e; },
+          [](const ast::executable::Function& e) { std::cout << e; },
+          [](const ast::Return& e) { std::cout << e; },
+          [](const ast::Scope& e) { std::cout << e; },
+          [](const ast::UnaryOperator& e) { std::cout << e; },
+          [](const ast::BinaryOperator& e) { std::cout << e; },
+          [](const ast::logic::If& e) { std::cout << e; },
+          [](const ast::loop::While& e) { std::cout << e; },
+          [](const ast::loop::DoWhile& e) { std::cout << e; },
+          [](const ast::loop::For& e) { std::cout << e; },
+          [](const ast::Literal<ast::Literals::BOOL>& e) { std::cout << e; },
+          [](const ast::Literal<ast::Literals::INT>& e) { std::cout << e; },
+          [](const ast::Literal<ast::Literals::DOUBLE>& e) { std::cout << e; },
+          [](const ast::Literal<ast::Literals::STRING>& e) { std::cout << e; });
     }
 
     assert(false && "Left over operators");
   }
-  return conditions.front();
+  return node_to_value(conditions.front());
 }
 
 core::optional<ast::ValueProducer>
 parse_condition(const std::vector<Token>& tokens, size_t& token) {
+  std::vector<ast::Scope::Node> conditions;
   auto tmp = token;
-
-  std::vector<ast::ValueProducer> conditions;
 
   while(tmp < tokens.size()) {
     if(auto exe = parse_executable(tokens, tmp)) {
@@ -536,16 +646,13 @@ parse_condition(const std::vector<Token>& tokens, size_t& token) {
       if(!condition) {
         // TODO throw
       }
-      conditions.push_back(std::move(*condition));
+      conditions.push_back(value_to_node(*condition));
       expect_token(tokens, tmp, ")");
     } else {
       break;  // We are done
     }
   }
   auto condition = assamble_conditions(std::move(conditions));
-  if(!condition) {
-    // TODO throw
-  }
   token = tmp;
   return condition;
 }
@@ -585,18 +692,228 @@ core::optional<ast::logic::If> parse_if(const std::vector<Token>& tokens,
   return {};
 }
 
+core::optional<ast::loop::While> parse_while(const std::vector<Token>& tokens,
+                                             size_t& token) {
+  auto tmp = token;
+
+  if(read_token(tokens, tmp, "while")) {
+    ast::loop::While w(tokens.at(token));
+
+    expect_token(tokens, tmp, "(");
+    auto condition = parse_condition(tokens, tmp);
+    if(!condition) {
+      // TODO throw
+    }
+    w.condition = std::make_unique<ast::ValueProducer>(std::move(*condition));
+    expect_token(tokens, tmp, ")");
+
+    auto scope = parse_scope(tokens, tmp);
+    if(!scope) {
+      // TODO throw
+    }
+    w.scope = std::make_unique<ast::Scope>(std::move(*scope));
+
+    token = tmp;
+    return w;
+  }
+  return {};
+}
+
+void two_step_define_assign(std::vector<ast::Scope::Node>& nodes,
+                            const size_t start, size_t& index) {
+  auto current = nodes.begin();
+  std::advance(current, index);
+  auto previous = nodes.begin();
+  if(index == 0 || start == index) {
+    previous = nodes.end();
+  } else {
+    std::advance(previous, index - 1);
+  }
+
+  nodes.at(index).match(
+      [&nodes, &index, &current, &previous](ast::BinaryOperator& op) {
+        if(previous == nodes.end()) {
+          // TODO throw
+        }
+        previous->match(
+            [&nodes, &index, &current](ast::Define& e) {
+              if(!e.definition) {
+                // TODO throw
+                assert(false && "Empty definition");
+              }
+              e.definition->match([](ast::executable::EntryFunction&) {},  //
+                                  [&nodes, &index, &current](ast::Variable& v) {
+                                    nodes.emplace(current, v);
+                                    ++index;
+                                  },                                 //
+                                  [](ast::executable::Function&) {}  //
+                                  );
+            },                                             //
+            [](ast::Variable&) {},                         //
+            [](ast::executable::EntryFunction&) {},        //
+            [](ast::executable::Executable&) {},           //
+            [](ast::executable::Function&) {},             //
+            [](ast::Return&) {},                           //
+            [](ast::Scope&) {},                            //
+            [](ast::UnaryOperator&) {},                    //
+            [](ast::BinaryOperator&) {},                   //
+            [](ast::logic::If&) {},                        //
+            [](ast::loop::While&) {},                      //
+            [](ast::loop::DoWhile&) {},                    //
+            [](ast::loop::For&) {},                        //
+            [](ast::Literal<ast::Literals::BOOL>&) {},     //
+            [](ast::Literal<ast::Literals::INT>&) {},      //
+            [](ast::Literal<ast::Literals::DOUBLE>&) {},   //
+            [](ast::Literal<ast::Literals::STRING>&) {});  //
+      },
+      [](ast::Variable&) {},                         //
+      [](ast::Define&) {},                           //
+      [](ast::UnaryOperator&) {},                    //
+      [](ast::executable::EntryFunction&) {},        //
+      [](ast::executable::Executable&) {},           //
+      [](ast::executable::Function&) {},             //
+      [](ast::Return&) {},                           //
+      [](ast::Scope&) {},                            //
+      [](ast::logic::If&) {},                        //
+      [](ast::loop::While&) {},                      //
+      [](ast::loop::DoWhile&) {},                    //
+      [](ast::loop::For&) {},                        //
+      [](ast::Literal<ast::Literals::BOOL>&) {},     //
+      [](ast::Literal<ast::Literals::INT>&) {},      //
+      [](ast::Literal<ast::Literals::DOUBLE>&) {},   //
+      [](ast::Literal<ast::Literals::STRING>&) {});  //
+}
+
+void two_step_define_assign(std::vector<ast::Scope::Node>& nodes,
+                            const size_t start) {
+  for(size_t i = start; i < nodes.size(); ++i) {
+    nodes.at(i).match(
+        [&nodes, start, &i](ast::BinaryOperator& op) {
+          if(op.operation == ast::BinaryOperation::NONE) {
+            // TODO throw
+            assert(false && "ast::BinaryOperation::NONE");
+          } else if(op.operation == ast::BinaryOperation::ASSIGNMENT) {
+            two_step_define_assign(nodes, start, i);
+          }
+        },
+        [](ast::Variable&) {},                         //
+        [](ast::Define&) {},                           //
+        [](ast::executable::EntryFunction&) {},        //
+        [](ast::executable::Executable&) {},           //
+        [](ast::executable::Function&) {},             //
+        [](ast::Return&) {},                           //
+        [](ast::Scope&) {},                            //
+        [](ast::UnaryOperator&) {},                    //
+        [](ast::logic::If&) {},                        //
+        [](ast::loop::While&) {},                      //
+        [](ast::loop::DoWhile&) {},                    //
+        [](ast::loop::For&) {},                        //
+        [](ast::Literal<ast::Literals::BOOL>&) {},     //
+        [](ast::Literal<ast::Literals::INT>&) {},      //
+        [](ast::Literal<ast::Literals::DOUBLE>&) {},   //
+        [](ast::Literal<ast::Literals::STRING>&) {});  //
+  }
+}
+
+void assamble_statement(ast::Scope& scope, const size_t last) {
+  // TODO case dev var = a; -> def var; var = a;
+  two_step_define_assign(scope.nodes, last);
+
+  assamble_operators(scope.nodes, last, ast::UnaryOperation::NOT);
+
+  assamble_operators(scope.nodes, last, ast::BinaryOperation::DIVIDE);
+  assamble_operators(scope.nodes, last, ast::BinaryOperation::MULTIPLY);
+  assamble_operators(scope.nodes, last, ast::BinaryOperation::MODULO);
+  assamble_operators(scope.nodes, last, ast::BinaryOperation::ADD);
+  assamble_operators(scope.nodes, last, ast::BinaryOperation::SUBTRACT);
+
+  assamble_operators(scope.nodes, last, ast::BinaryOperation::SMALLER);
+  assamble_operators(scope.nodes, last, ast::BinaryOperation::SMALLER_EQUAL);
+  assamble_operators(scope.nodes, last, ast::BinaryOperation::GREATER);
+  assamble_operators(scope.nodes, last, ast::BinaryOperation::GREATER_EQUAL);
+  assamble_operators(scope.nodes, last, ast::BinaryOperation::EQUAL);
+  assamble_operators(scope.nodes, last, ast::BinaryOperation::NOT_EQUAL);
+  assamble_operators(scope.nodes, last, ast::BinaryOperation::AND);
+  assamble_operators(scope.nodes, last, ast::BinaryOperation::OR);
+
+  assamble_operators(scope.nodes, last, ast::BinaryOperation::ASSIGNMENT);
+
+  // if(scope.nodes.size() != 1) {
+  //   for(const auto& c : scope.nodes) {
+  //     c.match(
+  //         [](const ast::Variable& e) { std::cout << e; },
+  //         [](const ast::Define& e) { std::cout << e; },
+  //         [](const ast::executable::EntryFunction& e) { std::cout << e; },
+  //         [](const ast::executable::Executable& e) { std::cout << e; },
+  //         [](const ast::executable::Function& e) { std::cout << e; },
+  //         [](const ast::Return& e) { std::cout << e; },
+  //         [](const ast::Scope& e) { std::cout << e; },
+  //         [](const ast::UnaryOperator& e) { std::cout << e; },
+  //         [](const ast::BinaryOperator& e) { std::cout << e; },
+  //         [](const ast::logic::If& e) { std::cout << e; },
+  //         [](const ast::loop::While& e) { std::cout << e; },
+  //         [](const ast::loop::DoWhile& e) { std::cout << e; },
+  //         [](const ast::loop::For& e) { std::cout << e; },
+  //         [](const ast::Literal<ast::Literals::BOOL>& e) { std::cout << e; },
+  //         [](const ast::Literal<ast::Literals::INT>& e) { std::cout << e; },
+  //         [](const ast::Literal<ast::Literals::DOUBLE>& e) { std::cout << e;
+  //         },
+  //         [](const ast::Literal<ast::Literals::STRING>& e) { std::cout << e;
+  //         });
+  //   }
+
+  //   assert(false && "Left over operators");
+  // }
+}
+
 void parse_scope_internals(const std::vector<Token>& tokens, size_t& token,
                            ast::Scope& scope) {
-  if(auto def = parse_definition(tokens, token)) {
-    scope.nodes.emplace_back(std::move(*def));
-  } else if(auto iff = parse_if(tokens, token)) {
-    scope.nodes.emplace_back(std::move(*iff));
-  } else if(auto exe = parse_executable(tokens, token)) {
-    scope.nodes.emplace_back(std::move(*exe));
-  } else if(auto ret = parse_return(tokens, token)) {
-    scope.nodes.emplace_back(std::move(*ret));
-  } else {
-    // TODO throw
+  auto last = scope.nodes.size();
+
+  while(token < tokens.size()) {
+    if(read_token(tokens, token, ";")) {
+      assamble_statement(scope, last);
+      last = scope.nodes.size();
+    } else {
+      if(auto def = parse_definition(tokens, token)) {
+        scope.nodes.emplace_back(std::move(*def));
+      } else if(auto iff = parse_if(tokens, token)) {
+        scope.nodes.emplace_back(std::move(*iff));
+      } else if(auto whi = parse_while(tokens, token)) {
+        scope.nodes.emplace_back(std::move(*whi));
+      } else if(auto exe = parse_executable(tokens, token)) {
+        scope.nodes.emplace_back(std::move(*exe));
+      } else if(auto ret = parse_return(tokens, token)) {
+        scope.nodes.emplace_back(std::move(*ret));
+      } else if(auto lit_bool = parse_literal_bool(tokens, token)) {
+        scope.nodes.emplace_back(std::move(*lit_bool));
+      } else if(auto lit_int = parse_literal_int(tokens, token)) {
+        scope.nodes.emplace_back(std::move(*lit_int));
+      } else if(auto lit_double = parse_literal_double(tokens, token)) {
+        scope.nodes.emplace_back(std::move(*lit_double));
+      } else if(auto lit_string = parse_literal_string(tokens, token)) {
+        scope.nodes.emplace_back(std::move(*lit_string));
+      } else if(auto op = parse_operator(tokens, token)) {
+        op->match(
+            [&scope](ast::UnaryOperator& op) {
+              scope.nodes.emplace_back(std::move(op));
+            },
+            [&scope](ast::BinaryOperator& op) {
+              scope.nodes.emplace_back(std::move(op));
+            });
+      } else if(auto var = parse_variable(tokens, token)) {
+        scope.nodes.emplace_back(std::move(*var));
+      } else {
+        auto tmp = token;  // No advance - that is done by the scope
+        if(read_token(tokens, tmp, "}")) {
+          break;  // done with the scope
+        } else {
+          // TODO throw
+          std::cout << tokens.at(token) << "\n";
+          assert(false && "Bad Token");
+        }
+      }
+    }
   }
 }
 }
