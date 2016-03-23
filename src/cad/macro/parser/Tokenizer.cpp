@@ -32,7 +32,7 @@ void token_begin(Macro macro, Position& position) {
     case '\n':
     case '\r':
       ++position.line;
-      position.column = 0;
+      position.column = 1;
       break;
     default:
       end = 0;  // We are done!
@@ -160,6 +160,8 @@ std::vector<Token> tokenize(Macro macro) {
   std::vector<Token> tokens;
   Position position = {1, 1, 0};
   token_begin(macro, position);
+
+  // TODO add line string to Token
 
   while(position.string < macro.size()) {
     tokens.push_back(next_token(macro, position));
