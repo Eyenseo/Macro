@@ -45,6 +45,7 @@ void token_begin(Macro macro, Position& position) {
 }
 
 bool float_token_end(Macro macro, Position& position) {
+  // TODO see http://en.cppreference.com/w/cpp/string/basic_string/stof
   const static std::regex regex("(\\d*\\.\\d+)");
   std::smatch match;
   std::regex_search(macro.begin() + position.string, macro.end(), match, regex);
@@ -57,6 +58,7 @@ bool float_token_end(Macro macro, Position& position) {
   return false;
 }
 void normal_token_end(Macro macro, Position& position) {
+  // TODO see http://en.cppreference.com/w/cpp/string/basic_string/stol
   const static std::regex regex("([^a-zA-Z0-9_])");
   std::smatch match;
   std::regex_search(macro.begin() + position.string, macro.end(), match, regex);

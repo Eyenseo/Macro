@@ -126,6 +126,12 @@ TEST_CASE("Executable") {
     REQUIRE(ast == expected);
   }
 
+  SECTION("Space after function name") {
+    Parser p;
+    //TODO check message?
+    REQUIRE_THROWS(p.parse("fun ();"));
+  }
+
   SECTION("Parameter") {
     Parser p;
     auto ast = p.parse("fun(herbert);");

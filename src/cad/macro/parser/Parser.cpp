@@ -216,6 +216,7 @@ parse_entry_function(const std::vector<Token>& tokens, size_t& token) {
   auto tmp = token;
   if(read_token(tokens, tmp, "main")) {
     // TODO catch - add information
+    // TODO open bracket in internals
     expect_token(tokens, tmp, "(");
     auto fun = parse_function_internals(
         tokens, tmp, ast::executable::EntryFunction(tokens.at(token)));
@@ -280,6 +281,10 @@ parse_executable(const std::vector<Token>& tokens, size_t& token) {
 
   auto tmp = token;
   if(read_token(tokens, tmp, regex) && read_token(tokens, tmp, "(")) {
+    if(tokens.at(token).column + tokens.at(token).token.length() !=
+       tokens.at(token + 1).column) {
+      throw std::exception();
+    }
     ast::executable::Executable exec(tokens.at(token));
 
     while(tmp < tokens.size()) {
@@ -900,6 +905,7 @@ parse_scope_internals(const std::vector<Token>& tokens, size_t& token,
       // TODO throw
       assert(false && "Not new statement");
     }
+    // TODO really new statement fun(gun(hun()))?
     new_statement = false;
     node = std::move(*exe);
   } else if(auto ret = parse_return(tokens, token)) {
