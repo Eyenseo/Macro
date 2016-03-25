@@ -905,7 +905,6 @@ parse_scope_internals(const std::vector<Token>& tokens, size_t& token,
       // TODO throw
       assert(false && "Not new statement");
     }
-    // TODO really new statement fun(gun(hun()))?
     new_statement = false;
     node = std::move(*exe);
   } else if(auto ret = parse_return(tokens, token)) {
