@@ -35,6 +35,10 @@ struct Tokens {
   }
 };
 
+static std::vector<std::string> keywords{"if",    "else",   "do",   "while",
+                                         "for",   "var",    "def",  "main",
+                                         "break", "return", "true", "false"};
+
 void parse_scope_internals(const Tokens& tokens, size_t& token,
                            ast::Scope& scope);
 core::optional<ast::ValueProducer> parse_condition(const Tokens& tokens,
@@ -241,6 +245,15 @@ core::optional<ast::Scope> parse_scope(const Tokens& tokens, size_t& token) {
   return {};
 }
 
+bool is_keyword(const std::string& token) {
+  for(const auto& w : keywords) {
+    if(token == w) {
+      return true;
+    }
+  }
+  return false;
+}
+
 core::optional<ast::Variable> parse_variable(const Tokens& tokens,
                                              size_t& token) {
   const static std::regex regex("([a-z][a-z0-9_]*)");
@@ -248,6 +261,14 @@ core::optional<ast::Variable> parse_variable(const Tokens& tokens,
 
   if(read_token(tokens, tmp, regex)) {
     ast::Variable var(Token(tokens.at(token)));
+    if(is_keyword(var.token.token)) {
+      UserSourceExc e;
+      add_exception_info(tokens, token, e, [&] {
+        e << "'" << var.token.token
+          << "' is a keyword an may not be used as qualifier.";
+      });
+      throw e;
+    }
     token = tmp;
     return var;
   }
@@ -319,6 +340,14 @@ core::optional<ast::callable::Function> parse_function(const Tokens& tokens,
 
   try {
     if(read_token(tokens, tmp, regex) && read_token(tokens, tmp, "(")) {
+      if(is_keyword(tokens.at(token).token)) {
+        UserSourceExc e;
+        add_exception_info(tokens, token, e, [&] {
+          e << "'" << tokens.at(token).token
+            << "' is a keyword an may not be used as qualifier.";
+        });
+        throw e;
+      }
       auto fun = parse_function_internals(
           tokens, tmp, ast::callable::Function(tokens.at(token)));
       token = tmp;
