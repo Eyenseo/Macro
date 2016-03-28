@@ -327,7 +327,8 @@ parse_entry_function(const Tokens& tokens, size_t& token) {
     }
   } catch(ExceptionBase<Parser::UserE>&) {
     UserTailExc e;
-    add_exception_info(tokens, token, e, [&e] { e << ""; });
+    add_exception_info(tokens, token, e,
+                       [&e] { e << "In the 'main' function defined here:"; });
     std::throw_with_nested(e);
   }
   return {};
@@ -355,7 +356,9 @@ core::optional<ast::callable::Function> parse_function(const Tokens& tokens,
     }
   } catch(ExceptionBase<Parser::UserE>&) {
     UserTailExc e;
-    add_exception_info(tokens, token, e, [&e] { e << ""; });
+    add_exception_info(tokens, token, e, [&tokens, &token, &e] {
+      e << "In the '" << tokens.at(token).token << "' function defined here:";
+    });
     std::throw_with_nested(e);
   }
   return {};
@@ -364,28 +367,22 @@ core::optional<ast::callable::Function> parse_function(const Tokens& tokens,
 core::optional<ast::Define> parse_function_definition(const Tokens& tokens,
                                                       size_t& token) {
   auto tmp = token;
-  try {
-    if(read_token(tokens, tmp, "def")) {
-      ast::Define def(tokens.at(token));
+  if(read_token(tokens, tmp, "def")) {
+    ast::Define def(tokens.at(token));
 
-      if(auto entry_function = parse_entry_function(tokens, tmp)) {
-        def.definition.emplace(std::move(*entry_function));
-      } else if(auto function = parse_function(tokens, tmp)) {
-        def.definition.emplace(std::move(*function));
-      } else {
-        UserSourceExc e;
-        add_exception_info(tokens, tmp, e, [&] {
-          e << "Unexpected token '" << tokens.at(tmp).token << '\'';
-        });
-        throw e;
-      }
-      token = tmp;
-      return def;
+    if(auto entry_function = parse_entry_function(tokens, tmp)) {
+      def.definition.emplace(std::move(*entry_function));
+    } else if(auto function = parse_function(tokens, tmp)) {
+      def.definition.emplace(std::move(*function));
+    } else {
+      UserSourceExc e;
+      add_exception_info(tokens, tmp, e, [&] {
+        e << "Unexpected token '" << tokens.at(tmp).token << '\'';
+      });
+      throw e;
     }
-  } catch(ExceptionBase<Parser::UserE>&) {
-    UserTailExc e;
-    add_exception_info(tokens, token, e, [&e] { e << ""; });
-    std::throw_with_nested(e);
+    token = tmp;
+    return def;
   }
   return {};
 }
@@ -410,7 +407,9 @@ core::optional<ast::Define> parse_variable_definition(const Tokens& tokens,
     }
   } catch(ExceptionBase<Parser::UserE>&) {
     UserTailExc e;
-    add_exception_info(tokens, token, e, [&e] { e << ""; });
+    add_exception_info(tokens, token, e, [&tokens, &token, &e] {
+      e << "At the '" << tokens.at(token).token << "' variable defined here:";
+    });
     std::throw_with_nested(e);
   }
   return {};
@@ -423,47 +422,41 @@ core::optional<std::pair<ast::Variable, ast::ValueProducer>>
 parse_callable_parameter(const Tokens& tokens, size_t& token) {
   auto tmp = token;
 
-  try {
-    if(auto fun_var = parse_variable(tokens, tmp)) {
-      if(!read_token(tokens, tmp, ":")) {
-        UserSourceExc e;
-        add_exception_info(tokens, tmp, e, [&] {
-          e << "Expected a ':' after '" << tokens.at(tmp - 1).token
-            << "' followed by an expression as value.";
-        });
-        throw e;
-      }
-      std::pair<ast::Variable, ast::ValueProducer> ret;
-
-      if(auto exe = parse_callable(tokens, tmp)) {
-        ret = std::make_pair(std::move(*fun_var), std::move(*exe));
-      } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
-        ret = std::make_pair(std::move(*fun_var), std::move(*lit_bool));
-      } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
-        ret = std::make_pair(std::move(*fun_var), std::move(*lit_int));
-      } else if(auto lit_double = parse_literal_double(tokens, tmp)) {
-        ret = std::make_pair(std::move(*fun_var), std::move(*lit_double));
-      } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
-        ret = std::make_pair(std::move(*fun_var), std::move(*lit_string));
-      } else if(auto var = parse_variable(tokens, tmp)) {
-        ret = std::make_pair(std::move(*fun_var), std::move(*var));
-      } else if(auto con = parse_condition(tokens, tmp)) {
-        ret = std::make_pair(std::move(*fun_var), std::move(*con));
-      } else {
-        UserSourceExc e;
-        add_exception_info(tokens, tmp, e, [&] {
-          e << "Unexpected token '" << tokens.at(tmp).token << '\'';
-        });
-        throw e;
-      }
-
-      token = tmp;
-      return ret;
+  if(auto fun_var = parse_variable(tokens, tmp)) {
+    if(!read_token(tokens, tmp, ":")) {
+      UserSourceExc e;
+      add_exception_info(tokens, tmp, e, [&] {
+        e << "Expected a ':' after '" << tokens.at(tmp - 1).token
+          << "' followed by an expression as value.";
+      });
+      throw e;
     }
-  } catch(ExceptionBase<Parser::UserE>&) {
-    UserTailExc e;
-    add_exception_info(tokens, token, e, [&e] { e << ""; });
-    std::throw_with_nested(e);
+    std::pair<ast::Variable, ast::ValueProducer> ret;
+
+    if(auto exe = parse_callable(tokens, tmp)) {
+      ret = std::make_pair(std::move(*fun_var), std::move(*exe));
+    } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
+      ret = std::make_pair(std::move(*fun_var), std::move(*lit_bool));
+    } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
+      ret = std::make_pair(std::move(*fun_var), std::move(*lit_int));
+    } else if(auto lit_double = parse_literal_double(tokens, tmp)) {
+      ret = std::make_pair(std::move(*fun_var), std::move(*lit_double));
+    } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
+      ret = std::make_pair(std::move(*fun_var), std::move(*lit_string));
+    } else if(auto var = parse_variable(tokens, tmp)) {
+      ret = std::make_pair(std::move(*fun_var), std::move(*var));
+    } else if(auto con = parse_condition(tokens, tmp)) {
+      ret = std::make_pair(std::move(*fun_var), std::move(*con));
+    } else {
+      UserSourceExc e;
+      add_exception_info(tokens, tmp, e, [&] {
+        e << "Unexpected token '" << tokens.at(tmp).token << '\'';
+      });
+      throw e;
+    }
+
+    token = tmp;
+    return ret;
   }
   return {};
 }
@@ -503,7 +496,10 @@ core::optional<ast::callable::Callable> parse_callable(const Tokens& tokens,
     }
   } catch(ExceptionBase<Parser::UserE>&) {
     UserTailExc e;
-    add_exception_info(tokens, token, e, [&e] { e << ""; });
+    add_exception_info(tokens, token, e, [&tokens, &token, &e] {
+      e << "In the function call '" << tokens.at(token).token
+        << "' defined here:";
+    });
     std::throw_with_nested(e);
   }
   return {};
@@ -545,7 +541,8 @@ core::optional<ast::Return> parse_return(const Tokens& tokens, size_t& token) {
     }
   } catch(ExceptionBase<Parser::UserE>&) {
     UserTailExc e;
-    add_exception_info(tokens, token, e, [&e] { e << ""; });
+    add_exception_info(tokens, token, e,
+                       [&e] { e << "At the return statement defined here:"; });
     std::throw_with_nested(e);
   }
   return {};
@@ -563,7 +560,8 @@ core::optional<ast::Break> parse_break(const Tokens& tokens, size_t& token) {
     }
   } catch(ExceptionBase<Parser::UserE>&) {
     UserTailExc e;
-    add_exception_info(tokens, token, e, [&e] { e << ""; });
+    add_exception_info(tokens, token, e,
+                       [&e] { e << "At the break statement defined here:"; });
     std::throw_with_nested(e);
   }
   return {};
@@ -616,7 +614,9 @@ parse_operator(const Tokens& tokens, size_t& token) {
     }
   } catch(ExceptionBase<Parser::UserE>&) {
     UserTailExc e;
-    add_exception_info(tokens, token, e, [&e] { e << ""; });
+    add_exception_info(tokens, token, e, [&tokens, &token, &e] {
+      e << "At the operator '" << tokens.at(token).token << "' defined here:";
+    });
     std::throw_with_nested(e);
   }
   if(ret) {
@@ -858,8 +858,8 @@ assamble_conditions(const std::string& file,
   assamble_operators(file, conditions, 0, ast::BinaryOperation::AND);
   assamble_operators(file, conditions, 0, ast::BinaryOperation::OR);
 
-  if(conditions.size() != 1) {
-    Token token = node_to_token(conditions.at(2));
+  if(conditions.size() > 1) {
+    Token token = node_to_token(conditions.at(1));
 
     UserSourceExc e;
     add_exception_info(token, file, e, [&] {
@@ -875,53 +875,47 @@ core::optional<ast::ValueProducer> parse_condition(const Tokens& tokens,
   std::vector<ast::Scope::Node> conditions;
   auto tmp = token;
 
-  try {
-    while(tmp < tokens.size()) {
-      if(auto exe = parse_callable(tokens, tmp)) {
-        conditions.push_back(std::move(*exe));
-      } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
-        conditions.push_back(std::move(*lit_bool));
-      } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
-        conditions.push_back(std::move(*lit_int));
-      } else if(auto lit_double = parse_literal_double(tokens, tmp)) {
-        conditions.push_back(std::move(*lit_double));
-      } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
-        conditions.push_back(std::move(*lit_string));
-      } else if(auto var = parse_variable(tokens, tmp)) {
-        conditions.push_back(std::move(*var));
-      } else if(auto op = parse_operator(tokens, tmp)) {
-        op->match(
-            [&conditions](ast::UnaryOperator& op) {
-              conditions.push_back(std::move(op));
-            },
-            [&conditions](ast::BinaryOperator& op) {
-              conditions.push_back(std::move(op));
-            });
-      } else if(read_token(tokens, tmp, "(")) {
-        auto condition = parse_condition(tokens, tmp);
-        if(!condition) {
-          UserSourceExc e;
-          add_exception_info(tokens, tmp, e,
-                             [&] { e << "Expected a expression."; });
-          throw e;
-        }
-        conditions.push_back(value_to_node(*condition));
-        expect_token(tokens, tmp, ")");
-      } else {
-        break;  // We are done
+  while(tmp < tokens.size()) {
+    if(auto exe = parse_callable(tokens, tmp)) {
+      conditions.push_back(std::move(*exe));
+    } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
+      conditions.push_back(std::move(*lit_bool));
+    } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
+      conditions.push_back(std::move(*lit_int));
+    } else if(auto lit_double = parse_literal_double(tokens, tmp)) {
+      conditions.push_back(std::move(*lit_double));
+    } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
+      conditions.push_back(std::move(*lit_string));
+    } else if(auto var = parse_variable(tokens, tmp)) {
+      conditions.push_back(std::move(*var));
+    } else if(auto op = parse_operator(tokens, tmp)) {
+      op->match(
+          [&conditions](ast::UnaryOperator& op) {
+            conditions.push_back(std::move(op));
+          },
+          [&conditions](ast::BinaryOperator& op) {
+            conditions.push_back(std::move(op));
+          });
+    } else if(read_token(tokens, tmp, "(")) {
+      auto condition = parse_condition(tokens, tmp);
+      if(!condition) {
+        UserSourceExc e;
+        add_exception_info(tokens, tmp, e,
+                           [&] { e << "Expected a expression."; });
+        throw e;
       }
-    }
-    if(!conditions.empty()) {
-      auto condition = assamble_conditions(tokens.file, std::move(conditions));
-      token = tmp;
-      return condition;
+      conditions.push_back(value_to_node(*condition));
+      expect_token(tokens, tmp, ")");
     } else {
-      return {};
+      break;  // We are done
     }
-  } catch(ExceptionBase<Parser::UserE>&) {
-    UserTailExc e;
-    add_exception_info(tokens, token, e, [&e] { e << ""; });
-    std::throw_with_nested(e);
+  }
+  if(!conditions.empty()) {
+    auto condition = assamble_conditions(tokens.file, std::move(conditions));
+    token = tmp;
+    return condition;
+  } else {
+    return {};
   }
 }
 
@@ -952,23 +946,32 @@ core::optional<ast::logic::If> parse_if(const Tokens& tokens, size_t& token) {
       }
       iff.true_scope = std::make_unique<ast::Scope>(std::move(*true_scope));
 
-      token = tmp;
+      auto tok_else = tmp;
       if(tmp < tokens.size() && read_token(tokens, tmp, "else")) {
-        auto false_scope = parse_scope(tokens, tmp);
-        if(!false_scope) {
-          UserSourceExc e;
-          add_exception_info(tokens, tmp, e, [&] { e << "Expected a scope."; });
-          throw e;
+        try {
+          auto false_scope = parse_scope(tokens, tmp);
+          if(!false_scope) {
+            UserSourceExc e;
+            add_exception_info(tokens, tmp, e,
+                               [&] { e << "Expected a scope."; });
+            throw e;
+          }
+          iff.false_scope =
+              std::make_unique<ast::Scope>(std::move(*false_scope));
+        } catch(ExceptionBase<Parser::UserE>&) {
+          UserTailExc e;
+          add_exception_info(tokens, tok_else, e,
+                             [&e] { e << "In the else part defined here:"; });
+          std::throw_with_nested(e);
         }
-        iff.false_scope = std::make_unique<ast::Scope>(std::move(*false_scope));
       }
-
       token = tmp;
       return iff;
     }
   } catch(ExceptionBase<Parser::UserE>&) {
     UserTailExc e;
-    add_exception_info(tokens, token, e, [&e] { e << ""; });
+    add_exception_info(tokens, token, e,
+                       [&e] { e << "In the if defined here:"; });
     std::throw_with_nested(e);
   }
   return {};
@@ -1006,7 +1009,8 @@ core::optional<ast::loop::While> parse_while(const Tokens& tokens,
     }
   } catch(ExceptionBase<Parser::UserE>&) {
     UserTailExc e;
-    add_exception_info(tokens, token, e, [&e] { e << ""; });
+    add_exception_info(tokens, token, e,
+                       [&e] { e << "In the while defined here:"; });
     std::throw_with_nested(e);
   }
   return {};
@@ -1159,6 +1163,16 @@ void assamble_statement(const std::string& file, ast::Scope& scope,
   assamble_operators(file, scope.nodes, last, ast::BinaryOperation::OR);
 
   assamble_operators(file, scope.nodes, last, ast::BinaryOperation::ASSIGNMENT);
+
+  if(scope.nodes.size() > last + 2) {
+    Token token = node_to_token(scope.nodes.at(last + 2));
+
+    UserSourceExc e;
+    add_exception_info(token, file, e, [&] {
+      e << "Unexpected token '" << token.token << '\'';
+    });
+    throw e;
+  }
 }
 
 enum class Statement {
@@ -1178,7 +1192,7 @@ enum class Statement {
 
 core::optional<ast::Scope::Node>
 parse_scope_internals(const Tokens& tokens, size_t& token,
-                      Statement& last_statement) {
+                      Statement& last_statement, bool& to_be_assambled) {
   ast::Scope::Node node;
 
   if(auto br = parse_break(tokens, token)) {
@@ -1273,6 +1287,7 @@ parse_scope_internals(const Tokens& tokens, size_t& token,
     node = std::move(*lit_string);
   } else if(auto op = parse_operator(tokens, token)) {
     last_statement = Statement::OP;
+    to_be_assambled = true;
     op->match([&node](ast::UnaryOperator& op) { node = std::move(op); },
               [&node](ast::BinaryOperator& op) { node = std::move(op); });
   } else if(auto var = parse_variable(tokens, token)) {
@@ -1299,18 +1314,31 @@ void parse_scope_internals(const Tokens& tokens, size_t& token,
                            ast::Scope& scope) {
   auto last = scope.nodes.size();
   Statement last_statement = Statement::NONE;
+  bool to_be_assambled = false;
 
   while(token < tokens.size()) {
     if(read_token(tokens, token, ";")) {
-      assamble_statement(tokens.file, scope, last);
+      if(to_be_assambled) {
+        assamble_statement(tokens.file, scope, last);
+      }
       last = scope.nodes.size();
       last_statement = Statement::NONE;
-    } else if(auto node =
-                  parse_scope_internals(tokens, token, last_statement)) {
+      to_be_assambled = false;
+    } else if(auto node = parse_scope_internals(tokens, token, last_statement,
+                                                to_be_assambled)) {
       scope.nodes.push_back(std::move(*node));
     } else {
       auto tmp = token;  // No advance - that is done by the scope
       if(read_token(tokens, tmp, "}")) {
+        if(last_statement != Statement::NONE &&
+           last_statement != Statement::SCOPE &&
+           last_statement != Statement::FUN_DEF &&
+           last_statement != Statement::WHILE &&
+           last_statement != Statement::IF) {
+          UserSourceExc e;
+          add_exception_info(tokens, token, e, [&] { e << "Expected a ';'"; });
+          throw e;
+        }
         break;  // done with the scope
       } else {
         UserSourceExc e;
@@ -1320,6 +1348,11 @@ void parse_scope_internals(const Tokens& tokens, size_t& token,
         throw e;
       }
     }
+  }
+  if(to_be_assambled) {
+    UserSourceExc e;
+    add_exception_info(tokens, token, e, [&] { e << "Expected a ';'"; });
+    throw e;
   }
 }
 }

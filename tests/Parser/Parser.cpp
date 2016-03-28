@@ -504,6 +504,12 @@ TEST_CASE("If") {
 
       REQUIRE(ast == expected);
     }
+
+    SECTION("Missing Operator") {
+      Parser p;
+
+      REQUIRE_THROWS(p.parse("if(a b){}"));
+    }
   }
 
   SECTION("Literals") {
@@ -739,6 +745,48 @@ TEST_CASE("While") {  // Basically an if
 
 TEST_CASE("\"free\" operators") {
   // TODO
+  SECTION("Variable define and assign") {
+    Parser p;
+    auto ast = p.parse("var foo = foo + 1;");
+    auto line1 = std::make_shared<std::string>("var foo = foo + 1;");
+
+    Scope expected({0, 0, ""});
+    {
+      Define def({1, 1, "var", line1});
+      Variable var({1, 5, "foo", line1});
+      def.definition.emplace(var);
+
+
+      BinaryOperator op_as({1, 9, "=", line1});
+      BinaryOperator op_ad({1, 15, "+", line1});
+      Literal<Literals::INT> right({1, 17, "1", line1});
+      right.data = 1;
+
+      op_ad.left_operand =
+          std::make_unique<ValueProducer>(Variable({1, 11, "foo", line1}));
+      op_ad.right_operand = std::make_unique<ValueProducer>(right);
+      op_ad.operation = BinaryOperation::ADD;
+
+      op_as.left_operand =
+          std::make_unique<ValueProducer>(Variable({1, 5, "foo", line1}));
+      op_as.right_operand =
+          std::make_unique<ValueProducer>(op_ad);
+      op_as.operation = BinaryOperation::ASSIGNMENT;
+
+      expected.nodes.push_back(std::move(def));
+      expected.nodes.push_back(std::move(op_as));
+    }
+
+    REQUIRE(ast == expected);
+  }
+  SECTION("Missing semicolon") {
+    Parser p;
+    REQUIRE_THROWS(p.parse("var foo = foo + 1"));
+  }
+  SECTION("Missing operator") {
+    Parser p;
+    REQUIRE_THROWS(p.parse("var foo = foo  1;"));
+  }
 }
 
 TEST_CASE("break") {
@@ -781,7 +829,6 @@ TEST_CASE("break") {
 //   REQUIRE(ast == expected);
 // }
 
-
 // TEST_CASE("Complete") {
 //   const std::string raw_macro = "\n"
 //                                 "var a = true;              \n"
@@ -819,8 +866,7 @@ TEST_CASE("break") {
 //                                 "  var baz = foo;           \n"
 //                                 "                           \n"
 //                                 "  fun(foo:baz);            \n"
-//                                 "}                          \n"
-//                                 ;
+//                                 "}                          \n";
 //   Parser p;
 //   WARN(p.parse(raw_macro));
 // }
