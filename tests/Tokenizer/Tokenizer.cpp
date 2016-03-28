@@ -203,8 +203,12 @@ TEST_CASE("Format") {
 
 TEST_CASE("Token Info") {
   std::vector<Token> expected = {
-      {1, 1, "1"}, {2, 4, "2"}, {4, 3, "4"}, {5, 1, "5"}};
-  const std::string raw_macro = "1\n   2\n\n\t 4\n5";
+      {1, 1, "1", std::make_shared<std::string>("1")},
+      {2, 4, "2", std::make_shared<std::string>("   2 abc")},
+      {2, 6, "abc", std::make_shared<std::string>("   2 abc")},
+      {4, 3, "4", std::make_shared<std::string>("\t 4")},
+      {5, 1, "5", std::make_shared<std::string>("5")}};
+  const std::string raw_macro = "1\n   2 abc\n\n\t 4\n5";
   auto tokens = tokenizer::tokenize(raw_macro);
 
   REQUIRE(tokens == expected);

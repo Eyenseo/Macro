@@ -16,6 +16,8 @@ struct Position {
   size_t line;
   size_t column;
   size_t string;
+  size_t line_start;
+  std::shared_ptr<std::string> source_line;
 };
 
 void token_begin(Macro macro, Position& position) {
@@ -33,6 +35,10 @@ void token_begin(Macro macro, Position& position) {
     case '\r':
       ++position.line;
       position.column = 1;
+      position.source_line->append(macro.substr(
+          position.line_start, position.string - position.line_start));
+      position.line_start = position.string + 1;
+      position.source_line = std::make_shared<std::string>();
       break;
     default:
       end = 0;  // We are done!
@@ -114,6 +120,11 @@ Token next_string_token(Macro macro, Position& position) {
       ++position.line;
       position.column = 1;
       last_token = macro[position.string];
+
+      position.source_line->append(macro.substr(
+          position.line_start, position.string - position.line_start));
+      position.line_start = position.string + 1;
+      position.source_line = std::make_shared<std::string>();
       break;
     case '"':
       if(last_token != '\\') {
@@ -137,8 +148,9 @@ Token next_string_token(Macro macro, Position& position) {
     }
   }
 
-  const auto ret = Token(position.line, position.column,
-                         macro.substr(start, position.string - start));
+  const auto ret =
+      Token(position.line, position.column,
+            macro.substr(start, position.string - start), position.source_line);
   return ret;
 }
 
@@ -151,7 +163,8 @@ Token next_token(Macro macro, Position& position) {
     token_end(macro, tmp);
     const auto ret =
         Token(position.line, position.column,
-              macro.substr(position.string, tmp.string - position.string));
+              macro.substr(position.string, tmp.string - position.string),
+              position.source_line);
     position = tmp;
     return ret;
   }
@@ -160,7 +173,7 @@ Token next_token(Macro macro, Position& position) {
 
 std::vector<Token> tokenize(Macro macro) {
   std::vector<Token> tokens;
-  Position position = {1, 1, 0};
+  Position position = {1, 1, 0, 0, std::make_shared<std::string>()};
   token_begin(macro, position);
 
   // TODO add line string to Token
@@ -169,6 +182,9 @@ std::vector<Token> tokenize(Macro macro) {
     tokens.push_back(next_token(macro, position));
     token_begin(macro, position);
   }
+  position.source_line->append(
+      macro.substr(position.line_start, macro.size() - position.line_start));
+
   return tokens;
 }
 }
