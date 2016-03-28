@@ -183,7 +183,7 @@ parse_literal_double(const Tokens& tokens, size_t& token) {
   return {};
 }
 
-void unescale_string(std::string& s) {
+void unescape_string(std::string& s) {
   auto replace_all = [&s](const std::string& search,
                           const std::string& replace) {
     for(size_t pos = 0;; pos += replace.length()) {
@@ -218,7 +218,7 @@ parse_literal_string(const Tokens& tokens, size_t& token) {
     ast::Literal<ast::Literals::STRING> lit(tokens.at(token));
     lit.data = lit.token.token.substr(1, lit.token.token.size() - 2);
 
-    unescale_string(lit.data);
+    unescape_string(lit.data);
 
     token = tmp;
     return lit;
