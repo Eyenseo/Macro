@@ -1,12 +1,12 @@
-#ifndef cad_macro_ast_executable_EntryFunction_h
-#define cad_macro_ast_executable_EntryFunction_h
+#ifndef cad_macro_ast_callable_EntryFunction_h
+#define cad_macro_ast_callable_EntryFunction_h
 
-#include "cad/macro/ast/executable/Function.h"
+#include "cad/macro/ast/callable/Function.h"
 
 namespace cad {
 namespace macro {
 namespace ast {
-namespace executable {
+namespace callable {
 class EntryFunction : public Function {
 public:
   EntryFunction() = default;

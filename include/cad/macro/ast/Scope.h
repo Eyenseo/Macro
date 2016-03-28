@@ -8,9 +8,9 @@
 #include "cad/macro/ast/Operator.h"
 #include "cad/macro/ast/Variable.h"
 #include "cad/macro/ast/Literal.h"
-#include "cad/macro/ast/executable/Function.h"
-#include "cad/macro/ast/executable/EntryFunction.h"
-#include "cad/macro/ast/executable/Executable.h"
+#include "cad/macro/ast/callable/Function.h"
+#include "cad/macro/ast/callable/EntryFunction.h"
+#include "cad/macro/ast/callable/Callable.h"
 #include "cad/macro/ast/logic/If.h"
 #include "cad/macro/ast/loop/While.h"
 #include "cad/macro/ast/loop/DoWhile.h"
@@ -33,9 +33,9 @@ namespace macro {
 namespace ast {
 class Scope : public AST {
   // TODO add all supported elements
-  using EntryFunction = executable::EntryFunction;
-  using Executable = executable::Executable;
-  using Function = executable::Function;
+  using EntryFunction = callable::EntryFunction;
+  using Callable = callable::Callable;
+  using Function = callable::Function;
   using If = logic::If;
   using While = loop::While;
   using DoWhile = loop::DoWhile;
@@ -43,7 +43,7 @@ class Scope : public AST {
 
 public:
   using Node =
-      core::variant<Variable, Define, EntryFunction, Executable, Function,
+      core::variant<Variable, Define, EntryFunction, Callable, Function,
                     Return, Scope, UnaryOperator, BinaryOperator, If, While,
                     DoWhile, For, Literal<Literals::BOOL>,
                     Literal<Literals::INT>, Literal<Literals::DOUBLE>,

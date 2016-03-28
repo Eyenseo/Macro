@@ -32,7 +32,7 @@ void Condition::print_internals(IndentStream& os) const {
   if(condition) {
     os.indent();
     condition->value.match(
-        [&os](const executable::Executable& o) { os << o; },
+        [&os](const callable::Callable& o) { os << o; },
         [&os](const Variable& o) { os << o; },
         [&os](const UnaryOperator& o) { os << o; },
         [&os](const BinaryOperator& o) { os << o; },

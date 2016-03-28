@@ -176,8 +176,8 @@ core::optional<ast::Variable> parse_variable(const std::vector<Token>& tokens,
 
 template <typename T,
           typename std::enable_if<
-              std::is_same<T, ast::executable::Function>::value ||
-                  std::is_same<T, ast::executable::EntryFunction>::value,
+              std::is_same<T, ast::callable::Function>::value ||
+                  std::is_same<T, ast::callable::EntryFunction>::value,
               bool>::type = true>
 core::optional<T> parse_function_internals(const std::vector<Token>& tokens,
                                            size_t& token, T&& fun) {
@@ -211,7 +211,7 @@ core::optional<T> parse_function_internals(const std::vector<Token>& tokens,
   return fun;
 }
 
-core::optional<ast::executable::EntryFunction>
+core::optional<ast::callable::EntryFunction>
 parse_entry_function(const std::vector<Token>& tokens, size_t& token) {
   auto tmp = token;
   if(read_token(tokens, tmp, "main")) {
@@ -219,21 +219,21 @@ parse_entry_function(const std::vector<Token>& tokens, size_t& token) {
     // TODO open bracket in internals
     expect_token(tokens, tmp, "(");
     auto fun = parse_function_internals(
-        tokens, tmp, ast::executable::EntryFunction(tokens.at(token)));
+        tokens, tmp, ast::callable::EntryFunction(tokens.at(token)));
     token = tmp;
     return fun;
   }
   return {};
 }
 
-core::optional<ast::executable::Function>
+core::optional<ast::callable::Function>
 parse_function(const std::vector<Token>& tokens, size_t& token) {
   const static std::regex regex("([a-z][a-z0-9_]*)");
   auto tmp = token;
 
   if(read_token(tokens, tmp, regex) && read_token(tokens, tmp, "(")) {
     auto fun = parse_function_internals(
-        tokens, tmp, ast::executable::Function(tokens.at(token)));
+        tokens, tmp, ast::callable::Function(tokens.at(token)));
     token = tmp;
     return fun;
   }
@@ -241,7 +241,7 @@ parse_function(const std::vector<Token>& tokens, size_t& token) {
 }
 
 core::optional<ast::Define>
-parse_executable_definition(const std::vector<Token>& tokens, size_t& token) {
+parse_callable_definition(const std::vector<Token>& tokens, size_t& token) {
   auto tmp = token;
   if(read_token(tokens, tmp, "def")) {
     ast::Define def(tokens.at(token));
@@ -275,8 +275,8 @@ parse_variable_definition(const std::vector<Token>& tokens, size_t& token) {
   return {};
 }
 
-core::optional<ast::executable::Executable>
-parse_executable(const std::vector<Token>& tokens, size_t& token) {
+core::optional<ast::callable::Callable>
+parse_callable(const std::vector<Token>& tokens, size_t& token) {
   const static std::regex regex("([a-z][a-z0-9_]*)");
 
   auto tmp = token;
@@ -285,10 +285,10 @@ parse_executable(const std::vector<Token>& tokens, size_t& token) {
        tokens.at(token + 1).column) {
       throw std::exception();
     }
-    ast::executable::Executable exec(tokens.at(token));
+    ast::callable::Callable exec(tokens.at(token));
 
     while(tmp < tokens.size()) {
-      if(auto exe = parse_executable(tokens, tmp)) {
+      if(auto exe = parse_callable(tokens, tmp)) {
         exec.parameter.emplace_back(std::move(*exe));
       } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
         exec.parameter.emplace_back(std::move(*lit_bool));
@@ -324,7 +324,7 @@ core::optional<ast::Return> parse_return(const std::vector<Token>& tokens,
   if(read_token(tokens, tmp, "return")) {
     ast::Return ret(tokens.at(token));
 
-    if(auto exe = parse_executable(tokens, tmp)) {
+    if(auto exe = parse_callable(tokens, tmp)) {
       ret.output = std::make_unique<ast::ValueProducer>(std::move(*exe));
     } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
       ret.output = std::make_unique<ast::ValueProducer>(std::move(*lit_bool));
@@ -406,12 +406,12 @@ ast::ValueProducer node_to_value(ast::Scope::Node& node) {
         // TODO throw
         assert(false && "Not a ValueProducer");
       },
-      [&value](ast::executable::EntryFunction&) {
+      [&value](ast::callable::EntryFunction&) {
         // TODO throw
         assert(false && "Not a ValueProducer");
       },
-      [&value](ast::executable::Executable& e) { value = std::move(e); },
-      [&value](ast::executable::Function&) {
+      [&value](ast::callable::Callable& e) { value = std::move(e); },
+      [&value](ast::callable::Function&) {
         // TODO throw
         assert(false && "Not a ValueProducer");
       },
@@ -456,7 +456,7 @@ ast::Scope::Node value_to_node(ast::ValueProducer& producer) {
   ast::Scope::Node node;
   producer.value.match(
       [&node](ast::Variable& e) { node = std::move(e); },
-      [&node](ast::executable::Executable& e) { node = std::move(e); },
+      [&node](ast::callable::Callable& e) { node = std::move(e); },
       [&node](ast::UnaryOperator& e) { node = std::move(e); },
       [&node](ast::BinaryOperator& e) { node = std::move(e); },
       [&node](ast::Literal<ast::Literals::BOOL>& e) { node = std::move(e); },
@@ -505,9 +505,9 @@ void assamble_operator(std::vector<ast::Scope::Node>& nodes, const size_t start,
       },
       [](ast::Variable&) {},                         //
       [](ast::Define&) {},                           //
-      [](ast::executable::EntryFunction&) {},        //
-      [](ast::executable::Executable&) {},           //
-      [](ast::executable::Function&) {},             //
+      [](ast::callable::EntryFunction&) {},        //
+      [](ast::callable::Callable&) {},           //
+      [](ast::callable::Function&) {},             //
       [](ast::Return&) {},                           //
       [](ast::Scope&) {},                            //
       [](ast::logic::If&) {},                        //
@@ -535,9 +535,9 @@ void assamble_operators(std::vector<ast::Scope::Node>& nodes,
         },
         [](ast::Variable&) {},                         //
         [](ast::Define&) {},                           //
-        [](ast::executable::EntryFunction&) {},        //
-        [](ast::executable::Executable&) {},           //
-        [](ast::executable::Function&) {},             //
+        [](ast::callable::EntryFunction&) {},        //
+        [](ast::callable::Callable&) {},           //
+        [](ast::callable::Function&) {},             //
         [](ast::Return&) {},                           //
         [](ast::Scope&) {},                            //
         [](ast::BinaryOperator&) {},                   //
@@ -567,9 +567,9 @@ void assamble_operators(std::vector<ast::Scope::Node>& nodes,
         },
         [](ast::Variable&) {},                         //
         [](ast::Define&) {},                           //
-        [](ast::executable::EntryFunction&) {},        //
-        [](ast::executable::Executable&) {},           //
-        [](ast::executable::Function&) {},             //
+        [](ast::callable::EntryFunction&) {},        //
+        [](ast::callable::Callable&) {},           //
+        [](ast::callable::Function&) {},             //
         [](ast::Return&) {},                           //
         [](ast::Scope&) {},                            //
         [](ast::UnaryOperator&) {},                    //
@@ -608,9 +608,9 @@ assamble_conditions(std::vector<ast::Scope::Node> conditions) {
       c.match(
           [](const ast::Variable& e) { std::cout << e; },
           [](const ast::Define& e) { std::cout << e; },
-          [](const ast::executable::EntryFunction& e) { std::cout << e; },
-          [](const ast::executable::Executable& e) { std::cout << e; },
-          [](const ast::executable::Function& e) { std::cout << e; },
+          [](const ast::callable::EntryFunction& e) { std::cout << e; },
+          [](const ast::callable::Callable& e) { std::cout << e; },
+          [](const ast::callable::Function& e) { std::cout << e; },
           [](const ast::Return& e) { std::cout << e; },
           [](const ast::Scope& e) { std::cout << e; },
           [](const ast::UnaryOperator& e) { std::cout << e; },
@@ -636,7 +636,7 @@ parse_condition(const std::vector<Token>& tokens, size_t& token) {
   auto tmp = token;
 
   while(tmp < tokens.size()) {
-    if(auto exe = parse_executable(tokens, tmp)) {
+    if(auto exe = parse_callable(tokens, tmp)) {
       conditions.push_back(std::move(*exe));
     } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
       conditions.push_back(std::move(*lit_bool));
@@ -745,12 +745,12 @@ void two_step_define_assign(std::vector<ast::Scope::Node>& nodes,
     // TODO throw
     assert(false && "Empty definition");
   }
-  e.definition->match([](ast::executable::EntryFunction&) {},  //
+  e.definition->match([](ast::callable::EntryFunction&) {},  //
                       [&nodes, &index, &current](ast::Variable& v) {
                         nodes.emplace(current, v);
                         ++index;
                       },                                 //
-                      [](ast::executable::Function&) {}  //
+                      [](ast::callable::Function&) {}  //
                       );
 }
 
@@ -766,9 +766,9 @@ void two_step_define_assign(std::vector<ast::Scope::Node>& nodes,
         two_step_define_assign(nodes, current, index, e);
       },                                             //
       [](ast::Variable&) {},                         //
-      [](ast::executable::EntryFunction&) {},        //
-      [](ast::executable::Executable&) {},           //
-      [](ast::executable::Function&) {},             //
+      [](ast::callable::EntryFunction&) {},        //
+      [](ast::callable::Callable&) {},           //
+      [](ast::callable::Function&) {},             //
       [](ast::Return&) {},                           //
       [](ast::Scope&) {},                            //
       [](ast::UnaryOperator&) {},                    //
@@ -801,9 +801,9 @@ void two_step_define_assign(std::vector<ast::Scope::Node>& nodes,
       [](ast::Variable&) {},                         //
       [](ast::Define&) {},                           //
       [](ast::UnaryOperator&) {},                    //
-      [](ast::executable::EntryFunction&) {},        //
-      [](ast::executable::Executable&) {},           //
-      [](ast::executable::Function&) {},             //
+      [](ast::callable::EntryFunction&) {},        //
+      [](ast::callable::Callable&) {},           //
+      [](ast::callable::Function&) {},             //
       [](ast::Return&) {},                           //
       [](ast::Scope&) {},                            //
       [](ast::logic::If&) {},                        //
@@ -830,9 +830,9 @@ void two_step_define_assign(std::vector<ast::Scope::Node>& nodes,
         },
         [](ast::Variable&) {},                         //
         [](ast::Define&) {},                           //
-        [](ast::executable::EntryFunction&) {},        //
-        [](ast::executable::Executable&) {},           //
-        [](ast::executable::Function&) {},             //
+        [](ast::callable::EntryFunction&) {},        //
+        [](ast::callable::Callable&) {},           //
+        [](ast::callable::Function&) {},             //
         [](ast::Return&) {},                           //
         [](ast::Scope&) {},                            //
         [](ast::UnaryOperator&) {},                    //
@@ -875,7 +875,7 @@ parse_scope_internals(const std::vector<Token>& tokens, size_t& token,
                       bool& new_statement) {
   ast::Scope::Node node;
 
-  if(auto def = parse_executable_definition(tokens, token)) {
+  if(auto def = parse_callable_definition(tokens, token)) {
     if(!new_statement) {
       // TODO throw
       assert(false && "Not new statement");
@@ -900,7 +900,7 @@ parse_scope_internals(const std::vector<Token>& tokens, size_t& token,
       assert(false && "Not new statement");
     }
     node = std::move(*whi);
-  } else if(auto exe = parse_executable(tokens, token)) {
+  } else if(auto exe = parse_callable(tokens, token)) {
     if(!new_statement) {
       // TODO throw
       assert(false && "Not new statement");

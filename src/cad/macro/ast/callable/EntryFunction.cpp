@@ -1,11 +1,11 @@
-#include "cad/macro/ast/executable/EntryFunction.h"
+#include "cad/macro/ast/callable/EntryFunction.h"
 
 #include "cad/macro/ast/Variable.h"
 
 namespace cad {
 namespace macro {
 namespace ast {
-namespace executable {
+namespace callable {
 EntryFunction::EntryFunction(parser::Token token)
     : Function(std::move(token)) {
 }

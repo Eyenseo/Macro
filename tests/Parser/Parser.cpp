@@ -7,7 +7,7 @@
 
 using namespace cad::macro::parser;
 using namespace cad::macro::ast;
-using namespace cad::macro::ast::executable;
+using namespace cad::macro::ast::callable;
 using namespace cad::macro::ast::logic;
 using namespace cad::macro::ast::loop;
 
@@ -111,14 +111,14 @@ TEST_CASE("Define") {
   }
 }
 
-TEST_CASE("Executable") {
+TEST_CASE("Callable") {
   SECTION("Parameterless") {
     Parser p;
     auto ast = p.parse("fun();");
 
     Scope expected({0, 0, ""});
     {
-      Executable fun({1, 1, "fun"});
+      Callable fun({1, 1, "fun"});
 
       expected.nodes.push_back(std::move(fun));
     }
@@ -138,7 +138,7 @@ TEST_CASE("Executable") {
 
     Scope expected({0, 0, ""});
     {
-      Executable fun({1, 1, "fun"});
+      Callable fun({1, 1, "fun"});
       Variable var1({1, 5, "herbert"});
 
       fun.parameter.emplace_back(var1);
@@ -154,7 +154,7 @@ TEST_CASE("Executable") {
 
     Scope expected({0, 0, ""});
     {
-      Executable fun({1, 1, "fun"});
+      Callable fun({1, 1, "fun"});
       Variable var1({1, 5, "herbert"});
       Variable var2({1, 14, "berta"});
 
@@ -172,8 +172,8 @@ TEST_CASE("Executable") {
 
     Scope expected({0, 0, ""});
     {
-      Executable fun({1, 1, "fun"});
-      Executable gun({1, 5, "gun"});
+      Callable fun({1, 1, "fun"});
+      Callable gun({1, 5, "gun"});
 
       fun.parameter.emplace_back(gun);
       expected.nodes.push_back(std::move(fun));
@@ -188,9 +188,9 @@ TEST_CASE("Executable") {
 
     Scope expected({0, 0, ""});
     {
-      Executable fun({1, 1, "fun"});
-      Executable gun({1, 5, "gun"});
-      Executable hun({1, 12, "hun"});
+      Callable fun({1, 1, "fun"});
+      Callable gun({1, 5, "gun"});
+      Callable hun({1, 12, "hun"});
 
       fun.parameter.emplace_back(gun);
       fun.parameter.emplace_back(hun);
@@ -225,7 +225,7 @@ TEST_CASE("Return") {
     Scope expected({0, 0, ""});
     {
       Return ret({1, 1, "return"});
-      Executable fun({1, 8, "fun"});
+      Callable fun({1, 8, "fun"});
 
       ret.output = std::make_unique<ValueProducer>(std::move(fun));
       expected.nodes.push_back(std::move(ret));
@@ -260,7 +260,7 @@ TEST_CASE("If") {
       {
         If iff({1, 1, "if"});
         iff.condition =
-            std::make_unique<ValueProducer>(Executable({1, 4, "fun"}));
+            std::make_unique<ValueProducer>(Callable({1, 4, "fun"}));
         iff.true_scope = std::make_unique<Scope>(Token(1, 10, "{"));
         expected.nodes.push_back(std::move(iff));
       }

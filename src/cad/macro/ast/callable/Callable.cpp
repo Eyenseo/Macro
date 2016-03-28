@@ -1,36 +1,36 @@
-#include "cad/macro/ast/executable/Executable.h"
+#include "cad/macro/ast/callable/Callable.h"
 
 #include "cad/macro/ast/ValueProducer.h"
 
 namespace cad {
 namespace macro {
 namespace ast {
-namespace executable {
-Executable::Executable() {
+namespace callable {
+Callable::Callable() {
 }
-Executable::Executable(const Executable& other)
+Callable::Callable(const Callable& other)
     : AST(other)
     , parameter(other.parameter) {
 }
-Executable::Executable(Executable&& other) {
+Callable::Callable(Callable&& other) {
   swap(*this, other);
 }
-Executable::Executable(parser::Token token)
+Callable::Callable(parser::Token token)
     : AST(std::move(token)) {
 }
-Executable::~Executable() {
+Callable::~Callable() {
 }
-Executable& Executable::operator=(Executable other) {
+Callable& Callable::operator=(Callable other) {
   swap(*this, other);
   return *this;
 }
 
-void Executable::print_internals(IndentStream& os) const {
+void Callable::print_internals(IndentStream& os) const {
   os << "parameter:\n";
   if(!parameter.empty()) {
     os.indent();
     for(const auto& v : parameter) {
-      v.value.match([&os](const executable::Executable& o) { os << o; },
+      v.value.match([&os](const callable::Callable& o) { os << o; },
                     [&os](const Variable& o) { os << o; },
                     [&os](const UnaryOperator& o) { os << o; },
                     [&os](const BinaryOperator& o) { os << o; },
@@ -44,7 +44,7 @@ void Executable::print_internals(IndentStream& os) const {
   }
 }
 
-bool Executable::operator==(const Executable& other) const {
+bool Callable::operator==(const Callable& other) const {
   if(this == &other) {
     return true;
   } else if(AST::operator==(other)) {
@@ -53,7 +53,7 @@ bool Executable::operator==(const Executable& other) const {
   return false;
 }
 
-bool Executable::operator!=(const Executable& other) const {
+bool Callable::operator!=(const Callable& other) const {
   return !(*this == other);
 }
 }

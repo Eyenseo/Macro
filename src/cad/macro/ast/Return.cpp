@@ -27,7 +27,7 @@ Return& Return::operator=(Return other) {
 
 void Return::print_internals(IndentStream& os) const {
   if(output) {
-    output->value.match([&os](const executable::Executable& o) { os << o; },
+    output->value.match([&os](const callable::Callable& o) { os << o; },
                         [&os](const Variable& o) { os << o; },
                         [&os](const UnaryOperator& o) { os << o; },
                         [&os](const BinaryOperator& o) { os << o; },

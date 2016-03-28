@@ -4,7 +4,7 @@
 #include "cad/macro/ast/loop/While.h"
 #include "cad/macro/ast/Variable.h"
 #include "cad/macro/ast/Operator.h"
-#include "cad/macro/ast/executable/Executable.h"
+#include "cad/macro/ast/callable/Callable.h"
 
 #include <core/variant.hpp>
 
@@ -18,7 +18,7 @@ protected:
 
 public:
   Variable variable;
-  core::variant<UnaryOperator, BinaryOperator, executable::Executable>
+  core::variant<UnaryOperator, BinaryOperator, callable::Callable>
       operation;
 
   For();

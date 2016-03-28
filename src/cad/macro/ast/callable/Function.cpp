@@ -1,4 +1,4 @@
-#include "cad/macro/ast/executable/Function.h"
+#include "cad/macro/ast/callable/Function.h"
 
 #include "cad/macro/ast/Scope.h"
 #include "cad/macro/ast/ValueProducer.h"
@@ -7,7 +7,7 @@
 namespace cad {
 namespace macro {
 namespace ast {
-namespace executable {
+namespace callable {
 Function::Function() {
 }
 Function::Function(const Function& other)

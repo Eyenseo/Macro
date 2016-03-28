@@ -7,7 +7,7 @@
 
 using namespace cad::macro::parser;
 using namespace cad::macro::ast;
-using namespace cad::macro::ast::executable;
+using namespace cad::macro::ast::callable;
 using namespace cad::macro::ast::logic;
 using namespace cad::macro::ast::loop;
 
@@ -67,23 +67,23 @@ TEST_CASE("Scope Comparison") {
   }
 }
 
-TEST_CASE("Executable Comparison") {
+TEST_CASE("Callable Comparison") {
   SECTION("Parameterless") {
-    Executable a({0, 0, ""});
-    Executable b({0, 0, ""});
+    Callable a({0, 0, ""});
+    Callable b({0, 0, ""});
     REQUIRE(a == b);
   }
   SECTION("Parameter") {
-    Executable a({0, 0, ""});
+    Callable a({0, 0, ""});
     a.parameter.emplace_back(Variable({0, 0, ""}));
-    Executable b({0, 0, ""});
+    Callable b({0, 0, ""});
     b.parameter.emplace_back(Variable({0, 0, ""}));
     REQUIRE(a == b);
   }
   SECTION("Parameter/Parameterless") {
-    Executable a({0, 0, ""});
+    Callable a({0, 0, ""});
     a.parameter.emplace_back(Variable({0, 0, ""}));
-    Executable b({0, 0, ""});
+    Callable b({0, 0, ""});
     REQUIRE_FALSE(a == b);
   }
 }
@@ -147,7 +147,7 @@ TEST_CASE("Return Comparison") {
     Return a({0, 0, ""});
     a.output = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
     Return b({0, 0, ""});
-    b.output = std::make_unique<ValueProducer>(Executable({0, 0, ""}));
+    b.output = std::make_unique<ValueProducer>(Callable({0, 0, ""}));
     REQUIRE_FALSE(a == b);
   }
   SECTION("Definition/No-Definition") {
@@ -180,7 +180,7 @@ TEST_CASE("Operator Comparison") {
       a.operand->value = Variable({0, 0, ""});
       UnaryOperator b({0, 0, ""});
       b.operand = std::make_unique<ValueProducer>();
-      b.operand->value = Executable({0, 0, ""});
+      b.operand->value = Callable({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
     SECTION("Operand/No-Operand") {
@@ -227,7 +227,7 @@ TEST_CASE("Operator Comparison") {
       a.left_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
       b.left_operand = std::make_unique<ValueProducer>();
-      b.left_operand->value = Executable({0, 0, ""});
+      b.left_operand->value = Callable({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
     SECTION("LeftOperand/No-LeftOperand") {
@@ -253,7 +253,7 @@ TEST_CASE("Operator Comparison") {
       a.right_operand->value = Variable({0, 0, ""});
       BinaryOperator b({0, 0, ""});
       b.right_operand = std::make_unique<ValueProducer>();
-      b.right_operand->value = Executable({0, 0, ""});
+      b.right_operand->value = Callable({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
     SECTION("RightOperand/No-RightOperand") {
@@ -415,7 +415,7 @@ TEST_CASE("While") {
       a.condition = std::make_unique<ValueProducer>(Variable({0, 0, ""}));
       While b({0, 0, ""});
       Condition bc({0, 0, ""});
-      b.condition = std::make_unique<ValueProducer>(Executable({0, 0, ""}));
+      b.condition = std::make_unique<ValueProducer>(Callable({0, 0, ""}));
       REQUIRE_FALSE(a == b);
     }
     SECTION("N/One") {

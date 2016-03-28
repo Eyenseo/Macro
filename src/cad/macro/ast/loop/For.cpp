@@ -18,7 +18,7 @@ void For::print_internals(IndentStream& os) const {
   os.indent();
   operation.match([&os](const UnaryOperator& op) { os << op; },
                   [&os](const BinaryOperator& op) { os << op; },
-                  [&os](const executable::Executable& op) { os << op; });
+                  [&os](const callable::Callable& op) { os << op; });
   os.dedent();
 }
 

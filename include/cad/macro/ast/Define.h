@@ -3,8 +3,8 @@
 
 #include "cad/macro/ast/AST.h"
 #include "cad/macro/ast/Variable.h"
-#include "cad/macro/ast/executable/Function.h"
-#include "cad/macro/ast/executable/EntryFunction.h"
+#include "cad/macro/ast/callable/Function.h"
+#include "cad/macro/ast/callable/EntryFunction.h"
 
 #include "cad/macro/IndentStream.h"
 
@@ -15,8 +15,8 @@ namespace cad {
 namespace macro {
 namespace ast {
 class Define : public AST {
-  using Function = executable::Function;
-  using EntryFunction = executable::EntryFunction;
+  using Function = callable::Function;
+  using EntryFunction = callable::EntryFunction;
   using Definition = core::variant<Function, EntryFunction, Variable>;
 
   void print_internals(IndentStream& os) const;

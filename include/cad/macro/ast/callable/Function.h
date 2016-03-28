@@ -1,5 +1,5 @@
-#ifndef cad_macro_ast_executable_Function_h
-#define cad_macro_ast_executable_Function_h
+#ifndef cad_macro_ast_callable_Function_h
+#define cad_macro_ast_callable_Function_h
 
 #include "cad/macro/ast/AST.h"
 
@@ -18,7 +18,7 @@ class Variable;
 namespace cad {
 namespace macro {
 namespace ast {
-namespace executable {
+namespace callable {
 class Function : public AST {
 protected:
   void print_internals(IndentStream& os) const;

@@ -6,7 +6,7 @@ namespace ast {
 ValueProducer::ValueProducer(ValueVariant op)
     : value(std::move(op)) {
 }
-ValueProducer::ValueProducer(executable::Executable op)
+ValueProducer::ValueProducer(callable::Callable op)
     : value(std::move(op)) {
 }
 ValueProducer::ValueProducer(Literal<Literals::BOOL> op)
