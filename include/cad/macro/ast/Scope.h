@@ -3,24 +3,23 @@
 
 #include "cad/macro/ast/AST.h"
 
+#include "cad/macro/ast/Break.h"
 #include "cad/macro/ast/Define.h"
-#include "cad/macro/ast/Return.h"
-#include "cad/macro/ast/Operator.h"
-#include "cad/macro/ast/Variable.h"
 #include "cad/macro/ast/Literal.h"
-#include "cad/macro/ast/callable/Function.h"
-#include "cad/macro/ast/callable/EntryFunction.h"
+#include "cad/macro/ast/Operator.h"
+#include "cad/macro/ast/Return.h"
+#include "cad/macro/ast/Variable.h"
 #include "cad/macro/ast/callable/Callable.h"
+#include "cad/macro/ast/callable/EntryFunction.h"
+#include "cad/macro/ast/callable/Function.h"
 #include "cad/macro/ast/logic/If.h"
-#include "cad/macro/ast/loop/While.h"
 #include "cad/macro/ast/loop/DoWhile.h"
 #include "cad/macro/ast/loop/For.h"
+#include "cad/macro/ast/loop/While.h"
 
 #include <core/variant.hpp>
 
 #include <vector>
-#include <iomanip>
-#include <iostream>
 
 namespace cad {
 namespace macro {
@@ -42,12 +41,11 @@ class Scope : public AST {
   using For = loop::For;
 
 public:
-  using Node =
-      core::variant<Variable, Define, EntryFunction, Callable, Function,
-                    Return, Scope, UnaryOperator, BinaryOperator, If, While,
-                    DoWhile, For, Literal<Literals::BOOL>,
-                    Literal<Literals::INT>, Literal<Literals::DOUBLE>,
-                    Literal<Literals::STRING>>;
+  using Node = core::variant<BinaryOperator, Break, Callable, Define, DoWhile,
+                             EntryFunction, For, Function, If,
+                             Literal<Literals::BOOL>, Literal<Literals::DOUBLE>,
+                             Literal<Literals::INT>, Literal<Literals::STRING>,
+                             Return, Scope, UnaryOperator, Variable, While>;
 
 private:
   void print_internals(std::ostream& os) const;

@@ -128,7 +128,7 @@ TEST_CASE("Callable") {
 
   SECTION("Space after function name") {
     Parser p;
-    //TODO check message?
+    // TODO check message?
     REQUIRE_THROWS(p.parse("fun ();"));
   }
 
@@ -684,6 +684,25 @@ TEST_CASE("While") {  // Basically an if
 }
 
 TEST_CASE("\"free\" operators") {
+  // TODO
+}
+
+TEST_CASE("break") {
+  SECTION("While") {
+    Parser p;
+    auto ast = p.parse("while(a){break;}");
+
+    Scope expected({0, 0, ""});
+    {
+      While w({1, 1, "while"});
+      w.condition = std::make_unique<ValueProducer>(Variable({1, 7, "a"}));
+      w.scope = std::make_unique<Scope>(Token(1, 9, "{"));
+      w.scope->nodes.emplace_back(Break(Token(1, 10, "break")));
+      expected.nodes.push_back(std::move(w));
+    }
+
+    REQUIRE(ast == expected);
+  }
 }
 
 // FIXME
@@ -706,32 +725,32 @@ TEST_CASE("\"free\" operators") {
 // }
 
 
-TEST_CASE("Complete") {
-  const std::string raw_macro = "\n"
-                                "var a = true;            \n"
-                                "var b = 2;               \n"
-                                "var c = \" 3\";          \n"
-                                "                         \n"
-                                "                         \n"
-                                "def fun(foo) {           \n"
-                                "  var bar;               \n"
-                                "                         \n"
-                                "  if(foo == a) {         \n"
-                                "    bar = foo;           \n"
-                                "  } else {               \n"
-                                "    bar = b;             \n"
-                                "  }                      \n"
-                                "                         \n"
-                                "  return bar;            \n"
-                                "}                        \n"
-                                "                         \n"
-                                "                         \n"
-                                "def main(foo, bar) {     \n"
-                                "  var baz = foo;         \n"
-                                "                         \n"
-                                "  fun(baz);              \n"
-                                "}                        \n"
-                                "                         \n";
-  Parser p;
-  WARN(p.parse(raw_macro));
-}
+// TEST_CASE("Complete") {
+//   const std::string raw_macro = "\n"
+//                                 "var a = true;            \n"
+//                                 "var b = 2;               \n"
+//                                 "var c = \" 3\";          \n"
+//                                 "                         \n"
+//                                 "                         \n"
+//                                 "def fun(foo) {           \n"
+//                                 "  var bar;               \n"
+//                                 "                         \n"
+//                                 "  if(foo == a) {         \n"
+//                                 "    bar = foo;           \n"
+//                                 "  } else {               \n"
+//                                 "    bar = b;             \n"
+//                                 "  }                      \n"
+//                                 "                         \n"
+//                                 "  return bar;            \n"
+//                                 "}                        \n"
+//                                 "                         \n"
+//                                 "                         \n"
+//                                 "def main(foo, bar) {     \n"
+//                                 "  var baz = foo;         \n"
+//                                 "                         \n"
+//                                 "  fun(baz);              \n"
+//                                 "}                        \n"
+//                                 "                         \n";
+//   Parser p;
+//   WARN(p.parse(raw_macro));
+// }

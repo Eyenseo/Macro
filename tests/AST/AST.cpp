@@ -527,3 +527,9 @@ TEST_CASE("Literal") {
     REQUIRE_FALSE(a == b);
   }
 }
+
+TEST_CASE("Break") {
+    Break a({0, 0, ""});
+    Break b({0, 0, ""});
+    REQUIRE(a == b);
+}

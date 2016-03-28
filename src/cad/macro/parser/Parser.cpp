@@ -348,6 +348,19 @@ core::optional<ast::Return> parse_return(const std::vector<Token>& tokens,
   return {};
 }
 
+core::optional<ast::Break> parse_break(const std::vector<Token>& tokens,
+                                       size_t& token) {
+  auto tmp = token;
+
+  if(read_token(tokens, tmp, "break")) {
+    ast::Break ret(tokens.at(token));
+
+    token = tmp;
+    return ret;
+  }
+  return {};
+}
+
 core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>>
 parse_operator(const std::vector<Token>& tokens, size_t& token) {
   auto tmp = token;
@@ -402,6 +415,10 @@ ast::ValueProducer node_to_value(ast::Scope::Node& node) {
   ast::ValueProducer value;
   node.match(
       [&value](ast::Variable& e) { value = std::move(e); },
+      [&value](ast::Break&) {
+        // TODO throw
+        assert(false && "Not a ValueProducer");
+      },
       [&value](ast::Define&) {
         // TODO throw
         assert(false && "Not a ValueProducer");
@@ -503,11 +520,12 @@ void assamble_operator(std::vector<ast::Scope::Node>& nodes, const size_t start,
         std::advance(previous, index);  // we decremented index already
         nodes.erase(previous);
       },
+      [](ast::Break&) {},                            //
       [](ast::Variable&) {},                         //
       [](ast::Define&) {},                           //
-      [](ast::callable::EntryFunction&) {},        //
-      [](ast::callable::Callable&) {},           //
-      [](ast::callable::Function&) {},             //
+      [](ast::callable::EntryFunction&) {},          //
+      [](ast::callable::Callable&) {},               //
+      [](ast::callable::Function&) {},               //
       [](ast::Return&) {},                           //
       [](ast::Scope&) {},                            //
       [](ast::logic::If&) {},                        //
@@ -533,11 +551,12 @@ void assamble_operators(std::vector<ast::Scope::Node>& nodes,
             assamble_operator(nodes, start, i);
           }
         },
+        [](ast::Break&) {},                            //
         [](ast::Variable&) {},                         //
         [](ast::Define&) {},                           //
-        [](ast::callable::EntryFunction&) {},        //
-        [](ast::callable::Callable&) {},           //
-        [](ast::callable::Function&) {},             //
+        [](ast::callable::EntryFunction&) {},          //
+        [](ast::callable::Callable&) {},               //
+        [](ast::callable::Function&) {},               //
         [](ast::Return&) {},                           //
         [](ast::Scope&) {},                            //
         [](ast::BinaryOperator&) {},                   //
@@ -565,11 +584,12 @@ void assamble_operators(std::vector<ast::Scope::Node>& nodes,
             assamble_operator(nodes, start, i);
           }
         },
+        [](ast::Break&) {},                            //
         [](ast::Variable&) {},                         //
         [](ast::Define&) {},                           //
-        [](ast::callable::EntryFunction&) {},        //
-        [](ast::callable::Callable&) {},           //
-        [](ast::callable::Function&) {},             //
+        [](ast::callable::EntryFunction&) {},          //
+        [](ast::callable::Callable&) {},               //
+        [](ast::callable::Function&) {},               //
         [](ast::Return&) {},                           //
         [](ast::Scope&) {},                            //
         [](ast::UnaryOperator&) {},                    //
@@ -606,6 +626,7 @@ assamble_conditions(std::vector<ast::Scope::Node> conditions) {
   if(conditions.size() != 1) {
     for(const auto& c : conditions) {
       c.match(
+          [](const ast::Break& e) { std::cout << e; },  //
           [](const ast::Variable& e) { std::cout << e; },
           [](const ast::Define& e) { std::cout << e; },
           [](const ast::callable::EntryFunction& e) { std::cout << e; },
@@ -749,7 +770,7 @@ void two_step_define_assign(std::vector<ast::Scope::Node>& nodes,
                       [&nodes, &index, &current](ast::Variable& v) {
                         nodes.emplace(current, v);
                         ++index;
-                      },                                 //
+                      },                               //
                       [](ast::callable::Function&) {}  //
                       );
 }
@@ -765,10 +786,11 @@ void two_step_define_assign(std::vector<ast::Scope::Node>& nodes,
       [&nodes, &index, &current](ast::Define& e) {
         two_step_define_assign(nodes, current, index, e);
       },                                             //
+      [](ast::Break&) {},                            //
       [](ast::Variable&) {},                         //
-      [](ast::callable::EntryFunction&) {},        //
-      [](ast::callable::Callable&) {},           //
-      [](ast::callable::Function&) {},             //
+      [](ast::callable::EntryFunction&) {},          //
+      [](ast::callable::Callable&) {},               //
+      [](ast::callable::Function&) {},               //
       [](ast::Return&) {},                           //
       [](ast::Scope&) {},                            //
       [](ast::UnaryOperator&) {},                    //
@@ -798,12 +820,13 @@ void two_step_define_assign(std::vector<ast::Scope::Node>& nodes,
       [&nodes, &index, &current, &previous](ast::BinaryOperator&) {
         two_step_define_assign(nodes, previous, current, index);
       },
+      [](ast::Break&) {},                            //
       [](ast::Variable&) {},                         //
       [](ast::Define&) {},                           //
       [](ast::UnaryOperator&) {},                    //
-      [](ast::callable::EntryFunction&) {},        //
-      [](ast::callable::Callable&) {},           //
-      [](ast::callable::Function&) {},             //
+      [](ast::callable::EntryFunction&) {},          //
+      [](ast::callable::Callable&) {},               //
+      [](ast::callable::Function&) {},               //
       [](ast::Return&) {},                           //
       [](ast::Scope&) {},                            //
       [](ast::logic::If&) {},                        //
@@ -828,11 +851,12 @@ void two_step_define_assign(std::vector<ast::Scope::Node>& nodes,
             two_step_define_assign(nodes, start, i);
           }
         },
+        [](ast::Break&) {},                            //
         [](ast::Variable&) {},                         //
         [](ast::Define&) {},                           //
-        [](ast::callable::EntryFunction&) {},        //
-        [](ast::callable::Callable&) {},           //
-        [](ast::callable::Function&) {},             //
+        [](ast::callable::EntryFunction&) {},          //
+        [](ast::callable::Callable&) {},               //
+        [](ast::callable::Function&) {},               //
         [](ast::Return&) {},                           //
         [](ast::Scope&) {},                            //
         [](ast::UnaryOperator&) {},                    //
@@ -875,7 +899,13 @@ parse_scope_internals(const std::vector<Token>& tokens, size_t& token,
                       bool& new_statement) {
   ast::Scope::Node node;
 
-  if(auto def = parse_callable_definition(tokens, token)) {
+  if(auto br = parse_break(tokens, token)) {
+    if(!new_statement) {
+      // TODO throw
+      assert(false && "Not new statement");
+    }
+    node = std::move(*br);
+  } else if(auto def = parse_callable_definition(tokens, token)) {
     if(!new_statement) {
       // TODO throw
       assert(false && "Not new statement");
