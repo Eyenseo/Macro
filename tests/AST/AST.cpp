@@ -453,17 +453,31 @@ TEST_CASE("For") {
   SECTION("Variable") {
     SECTION("Same") {
       For a({0, 0, ""});
-      Condition ac({0, 0, ""});
       a.variable = Variable({0, 0, ""});
       For b({0, 0, ""});
-      Condition bc({0, 0, ""});
       b.variable = Variable({0, 0, ""});
       REQUIRE(a == b);
     }
     SECTION("N/One") {
       For a({0, 0, ""});
       Condition ac({0, 0, ""});
-      a.variable = Variable({1, 0, ""});
+      a.variable = Variable({0, 0, ""});
+      For b({0, 0, ""});
+      REQUIRE_FALSE(a == b);
+    }
+  }
+  // Variable initialization
+  SECTION("Variable initialization") {
+    SECTION("Same") {
+      For a({0, 0, ""});
+      a.variable_init = BinaryOperator({0, 0, ""});
+      For b({0, 0, ""});
+      b.variable_init = BinaryOperator({0, 0, ""});
+      REQUIRE(a == b);
+    }
+    SECTION("N/One") {
+      For a({0, 0, ""});
+      a.variable_init = BinaryOperator({0, 0, ""});
       For b({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }

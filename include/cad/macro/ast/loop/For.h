@@ -4,9 +4,11 @@
 #include "cad/macro/ast/loop/While.h"
 #include "cad/macro/ast/Variable.h"
 #include "cad/macro/ast/Operator.h"
+#include "cad/macro/ast/ValueProducer.h"
 #include "cad/macro/ast/callable/Callable.h"
 
 #include <core/variant.hpp>
+#include <core/optional.hpp>
 
 namespace cad {
 namespace macro {
@@ -17,9 +19,9 @@ protected:
   void print_internals(IndentStream& os) const;
 
 public:
-  Variable variable;
-  core::variant<UnaryOperator, BinaryOperator, callable::Callable>
-      operation;
+  core::optional<Variable> variable;
+  core::optional<BinaryOperator> variable_init;
+  core::optional<ValueProducer> operation;
 
   For();
   For(const For& other);
@@ -34,8 +36,9 @@ public:
     using std::swap;
 
     swap(static_cast<While&>(first), static_cast<While&>(second));
-    swap(first.condition, second.condition);
-    swap(first.scope, second.scope);
+    swap(first.variable, second.variable);
+    swap(first.variable_init, second.variable_init);
+    swap(first.operation, second.operation);
   }
 
   bool operator==(const For& other) const;

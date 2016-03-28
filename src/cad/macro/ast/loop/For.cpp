@@ -9,17 +9,24 @@ namespace ast {
 namespace loop {
 void For::print_internals(IndentStream& os) const {
   os << "Variable:\n";
-  os.indent() << variable;
-  os.dedent();
+  if(variable) {
+    os.indent() << *variable;
+    os.dedent();
+
+    os << "Variable initialization:\n";
+    if(variable_init) {
+      os.indent() << *variable_init;
+      os.dedent();
+    }
+  }
 
   While::print_internals(os);
 
   os << "Operation:\n";
-  os.indent();
-  operation.match([&os](const UnaryOperator& op) { os << op; },
-                  [&os](const BinaryOperator& op) { os << op; },
-                  [&os](const callable::Callable& op) { os << op; });
-  os.dedent();
+  if(operation) {
+    os.indent() << *operation;
+    os.dedent();
+  }
 }
 
 For::For() {
@@ -27,6 +34,7 @@ For::For() {
 For::For(const For& other)
     : While(other)
     , variable(other.variable)
+    , variable_init(other.variable_init)
     , operation(other.operation) {
 }
 For::For(For&& other) {
@@ -47,7 +55,8 @@ bool For::operator==(const For& other) const {
   if(this == &other) {
     return true;
   } else if(While::operator==(other)) {
-    return variable == other.variable && operation == other.operation;
+    return variable == other.variable && variable_init == other.variable_init &&
+           operation == other.operation;
   }
   return false;
 }
