@@ -50,7 +50,6 @@ void Callable::print_internals(IndentStream& os) const {
           [&os](const Literal<Literals::STRING>& c) { os << c; });
     }
     os.dedent();
-    os << "\n";
   }
 }
 

@@ -5,11 +5,19 @@
 #include "cad/macro/ast/Literal.h"
 #include "cad/macro/ast/ValueProducer.h"
 
+#include <exception.h>
+
 using namespace cad::macro::parser;
 using namespace cad::macro::ast;
 using namespace cad::macro::ast::callable;
 using namespace cad::macro::ast::logic;
 using namespace cad::macro::ast::loop;
+
+CATCH_TRANSLATE_EXCEPTION(std::exception& e) {
+  std::stringstream ss;
+  exception::print_exception(e, ss);
+  return ss.str();
+}
 
 TEST_CASE("Define") {
   SECTION("EntryFunction") {
@@ -134,7 +142,6 @@ TEST_CASE("Callable") {
 
   SECTION("Space after function name") {
     Parser p;
-    // TODO check message?
     REQUIRE_THROWS(p.parse("fun ();"));
   }
 
@@ -156,21 +163,10 @@ TEST_CASE("Callable") {
     REQUIRE(ast == expected);
   }
 
-  // SECTION("Parameter") {
-  //   Parser p;
-  //   auto ast = p.parse("fun(herbert);");
-
-  //   Scope expected({0, 0, ""});
-  //   {
-  //     Callable fun({1, 1, "fun"});
-  //     Variable var1({1, 5, "herbert"});
-
-  //     fun.parameter.push_back(var1);
-  //     expected.nodes.push_back(std::move(fun));
-  //   }
-
-  //   REQUIRE_THROW(ast == expected);
-  // }
+  SECTION("Parameter") {
+    Parser p;
+    REQUIRE_THROWS(p.parse("fun(herbert);"));
+  }
 
   SECTION("Multiple Parameter") {
     Parser p;
@@ -765,7 +761,7 @@ TEST_CASE("break") {
   }
 }
 
-// FIXME
+// TODO
 // TEST_CASE("For") {
 //   Parser p;
 //   auto ast = p.parse("for(var a = 0; a < 10; a = a + 1){}");
@@ -788,30 +784,43 @@ TEST_CASE("break") {
 
 // TEST_CASE("Complete") {
 //   const std::string raw_macro = "\n"
-//                                 "var a = true;            \n"
-//                                 "var b = 2;               \n"
-//                                 "var c = \" 3\";          \n"
-//                                 "                         \n"
-//                                 "                         \n"
-//                                 "def fun(foo) {           \n"
-//                                 "  var bar;               \n"
-//                                 "                         \n"
-//                                 "  if(foo == a) {         \n"
-//                                 "    bar = foo;           \n"
-//                                 "  } else {               \n"
-//                                 "    bar = b;             \n"
-//                                 "  }                      \n"
-//                                 "                         \n"
-//                                 "  return bar;            \n"
-//                                 "}                        \n"
-//                                 "                         \n"
-//                                 "                         \n"
-//                                 "def main(foo, bar) {     \n"
-//                                 "  var baz = foo;         \n"
-//                                 "                         \n"
-//                                 "  fun(baz);              \n"
-//                                 "}                        \n"
-//                                 "                         \n";
+//                                 "var a = true;              \n"
+//                                 "var b = 2;                 \n"
+//                                 "var c = \" 3\";            \n"
+//                                 "                           \n"
+//                                 "                           \n"
+//                                 "def fun(foo) {             \n"
+//                                 "  var bar;                 \n"
+//                                 "                           \n"
+//                                 "  def gun() {              \n"
+//                                 "    var i = 0;             \n"
+//                                 "                           \n"
+//                                 "    while (i < 3) {        \n"
+//                                 "      i = i + 1;           \n"
+//                                 "    }                      \n"
+//                                 "    return i;              \n"
+//                                 "  }                        \n"
+//                                 "                           \n"
+//                                 "  {                        \n"
+//                                 "    var bar;               \n"
+//                                 "  }                        \n"
+//                                 "                           \n"
+//                                 "  if(foo == a) {           \n"
+//                                 "    bar = foo;             \n"
+//                                 "  } else {                 \n"
+//                                 "    bar = gun();           \n"
+//                                 "  }                        \n"
+//                                 "                           \n"
+//                                 "  return bar;              \n"
+//                                 "}                          \n"
+//                                 "                           \n"
+//                                 "                           \n"
+//                                 "def main(foo, bar) {       \n"
+//                                 "  var baz = foo;           \n"
+//                                 "                           \n"
+//                                 "  fun(foo:baz);            \n"
+//                                 "}                          \n"
+//                                 ;
 //   Parser p;
 //   WARN(p.parse(raw_macro));
 // }
