@@ -41,7 +41,7 @@ std::ostream& operator<<(std::ostream& os, const Token& token) {
   os << "@Token{line: " << token.line << " column: " << token.column
      << " token: " << token.token;
   if(token.source_line) {
-    os << "line: " << *token.source_line;
+    os << " line: " << *token.source_line;
   }
   os << "}\n";
 
