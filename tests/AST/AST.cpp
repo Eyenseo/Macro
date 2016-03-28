@@ -75,14 +75,14 @@ TEST_CASE("Callable Comparison") {
   }
   SECTION("Parameter") {
     Callable a({0, 0, ""});
-    a.parameter.emplace_back(Variable({0, 0, ""}));
+    a.parameter.emplace_back(Variable({0, 0, ""}), Variable({0, 0, ""}));
     Callable b({0, 0, ""});
-    b.parameter.emplace_back(Variable({0, 0, ""}));
+    b.parameter.emplace_back(Variable({0, 0, ""}), Variable({0, 0, ""}));
     REQUIRE(a == b);
   }
   SECTION("Parameter/Parameterless") {
     Callable a({0, 0, ""});
-    a.parameter.emplace_back(Variable({0, 0, ""}));
+    a.parameter.emplace_back(Variable({0, 0, ""}), Variable({0, 0, ""}));
     Callable b({0, 0, ""});
     REQUIRE_FALSE(a == b);
   }
@@ -529,7 +529,7 @@ TEST_CASE("Literal") {
 }
 
 TEST_CASE("Break") {
-    Break a({0, 0, ""});
-    Break b({0, 0, ""});
-    REQUIRE(a == b);
+  Break a({0, 0, ""});
+  Break b({0, 0, ""});
+  REQUIRE(a == b);
 }

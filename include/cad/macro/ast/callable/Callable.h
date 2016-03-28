@@ -8,6 +8,7 @@
 namespace cad {
 namespace macro {
 namespace ast {
+class Variable;
 class ValueProducer;
 }
 }
@@ -22,7 +23,7 @@ protected:
   void print_internals(IndentStream& os) const;
 
 public:
-  std::vector<ValueProducer> parameter;
+  std::vector<std::pair<Variable, ValueProducer>> parameter;
 
   Callable();
   Callable(const Callable&);
@@ -31,14 +32,6 @@ public:
   ~Callable();
 
   Callable& operator=(Callable other);
-
-  friend void swap(Callable& first, Callable& second) {
-    // enable ADL
-    using std::swap;
-
-    swap(static_cast<AST&>(first), static_cast<AST&>(second));
-    swap(first.parameter, second.parameter);
-  }
 
   bool operator==(const Callable& other) const;
   bool operator!=(const Callable& other) const;
@@ -49,6 +42,7 @@ public:
     return os;
   }
 };
+void swap(Callable& first, Callable& second);
 }
 }
 }

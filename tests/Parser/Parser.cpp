@@ -134,32 +134,51 @@ TEST_CASE("Callable") {
 
   SECTION("Parameter") {
     Parser p;
-    auto ast = p.parse("fun(herbert);");
+    auto ast = p.parse("fun(foo:herbert);");
 
     Scope expected({0, 0, ""});
     {
       Callable fun({1, 1, "fun"});
-      Variable var1({1, 5, "herbert"});
+      Variable var1({1, 5, "foo"});
+      Variable var2({1, 9, "herbert"});
 
-      fun.parameter.emplace_back(var1);
+      fun.parameter.emplace_back(var1, var2);
       expected.nodes.push_back(std::move(fun));
     }
 
     REQUIRE(ast == expected);
   }
 
+  // SECTION("Parameter") {
+  //   Parser p;
+  //   auto ast = p.parse("fun(herbert);");
+
+  //   Scope expected({0, 0, ""});
+  //   {
+  //     Callable fun({1, 1, "fun"});
+  //     Variable var1({1, 5, "herbert"});
+
+  //     fun.parameter.push_back(var1);
+  //     expected.nodes.push_back(std::move(fun));
+  //   }
+
+  //   REQUIRE_THROW(ast == expected);
+  // }
+
   SECTION("Multiple Parameter") {
     Parser p;
-    auto ast = p.parse("fun(herbert, berta);");
+    auto ast = p.parse("fun(foo:herbert, bar:berta);");
 
     Scope expected({0, 0, ""});
     {
       Callable fun({1, 1, "fun"});
-      Variable var1({1, 5, "herbert"});
-      Variable var2({1, 14, "berta"});
+      Variable var1({1, 5, "foo"});
+      Variable var2({1, 9, "herbert"});
+      Variable var3({1, 18, "bar"});
+      Variable var4({1, 22, "berta"});
 
-      fun.parameter.emplace_back(var1);
-      fun.parameter.emplace_back(var2);
+      fun.parameter.emplace_back(var1, var2);
+      fun.parameter.emplace_back(var3, var4);
       expected.nodes.push_back(std::move(fun));
     }
 
@@ -168,14 +187,15 @@ TEST_CASE("Callable") {
 
   SECTION("Function Parameter") {
     Parser p;
-    auto ast = p.parse("fun(gun());");
+    auto ast = p.parse("fun(foo:gun());");
 
     Scope expected({0, 0, ""});
     {
       Callable fun({1, 1, "fun"});
-      Callable gun({1, 5, "gun"});
+      Variable var1({1, 5, "foo"});
+      Callable gun({1, 9, "gun"});
 
-      fun.parameter.emplace_back(gun);
+      fun.parameter.emplace_back(var1, gun);
       expected.nodes.push_back(std::move(fun));
     }
 
@@ -184,16 +204,18 @@ TEST_CASE("Callable") {
 
   SECTION("Multiple Function Parameter") {
     Parser p;
-    auto ast = p.parse("fun(gun(), hun());");
+    auto ast = p.parse("fun(foo:gun(), bar:hun());");
 
     Scope expected({0, 0, ""});
     {
       Callable fun({1, 1, "fun"});
-      Callable gun({1, 5, "gun"});
-      Callable hun({1, 12, "hun"});
+      Variable var1({1, 5, "foo"});
+      Callable gun({1, 9, "gun"});
+      Variable var2({1, 16, "bar"});
+      Callable hun({1, 20, "hun"});
 
-      fun.parameter.emplace_back(gun);
-      fun.parameter.emplace_back(hun);
+      fun.parameter.emplace_back(var1, gun);
+      fun.parameter.emplace_back(var2, hun);
       expected.nodes.push_back(std::move(fun));
     }
 

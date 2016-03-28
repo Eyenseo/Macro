@@ -276,6 +276,43 @@ parse_variable_definition(const std::vector<Token>& tokens, size_t& token) {
 }
 
 core::optional<ast::callable::Callable>
+parse_callable(const std::vector<Token>& tokens, size_t& token);
+
+core::optional<std::pair<ast::Variable, ast::ValueProducer>>
+parse_callable_parameter(const std::vector<Token>& tokens, size_t& token) {
+  auto tmp = token;
+
+  if(auto fun_var = parse_variable(tokens, tmp)) {
+    if(!read_token(tokens, tmp, ":")) {
+      assert(false && "Missing colon");
+    }
+    std::pair<ast::Variable, ast::ValueProducer> ret;
+
+    if(auto exe = parse_callable(tokens, tmp)) {
+      ret = std::make_pair(std::move(*fun_var), std::move(*exe));
+    } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
+      ret = std::make_pair(std::move(*fun_var), std::move(*lit_bool));
+    } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
+      ret = std::make_pair(std::move(*fun_var), std::move(*lit_int));
+    } else if(auto lit_double = parse_literal_double(tokens, tmp)) {
+      ret = std::make_pair(std::move(*fun_var), std::move(*lit_double));
+    } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
+      ret = std::make_pair(std::move(*fun_var), std::move(*lit_string));
+    } else if(auto var = parse_variable(tokens, tmp)) {
+      ret = std::make_pair(std::move(*fun_var), std::move(*var));
+    } else if(auto con = parse_condition(tokens, tmp)) {
+      ret = std::make_pair(std::move(*fun_var), std::move(*con));
+    } else {
+      // TODO throw
+    }
+
+    token = tmp;
+    return ret;
+  }
+  return {};
+}
+
+core::optional<ast::callable::Callable>
 parse_callable(const std::vector<Token>& tokens, size_t& token) {
   const static std::regex regex("([a-z][a-z0-9_]*)");
 
@@ -285,34 +322,23 @@ parse_callable(const std::vector<Token>& tokens, size_t& token) {
        tokens.at(token + 1).column) {
       throw std::exception();
     }
-    ast::callable::Callable exec(tokens.at(token));
+    ast::callable::Callable call(tokens.at(token));
 
     while(tmp < tokens.size()) {
-      if(auto exe = parse_callable(tokens, tmp)) {
-        exec.parameter.emplace_back(std::move(*exe));
-      } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
-        exec.parameter.emplace_back(std::move(*lit_bool));
-      } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
-        exec.parameter.emplace_back(std::move(*lit_int));
-      } else if(auto lit_double = parse_literal_double(tokens, tmp)) {
-        exec.parameter.emplace_back(std::move(*lit_double));
-      } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
-        exec.parameter.emplace_back(std::move(*lit_string));
-      } else if(auto var = parse_variable(tokens, tmp)) {
-        exec.parameter.emplace_back(std::move(*var));
-      } else if(auto con = parse_condition(tokens, tmp)) {
-        exec.parameter.emplace_back(std::move(*con));
+      if(auto param = parse_callable_parameter(tokens, tmp)) {
+        call.parameter.emplace_back(std::move(*param));
+
+        if(!read_token(tokens, tmp, ",")) {
+          break;  // we do not expect another variable
+        }
       } else {
-        // TODO throw
-      }
-      if(!read_token(tokens, tmp, ",")) {
-        break;  // we do not expect another variable
+        break;
       }
     }
     // TODO catch - add information
     expect_token(tokens, tmp, ")");
     token = tmp;
-    return exec;
+    return call;
   }
   return {};
 }
