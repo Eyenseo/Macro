@@ -6,5 +6,6 @@ target_sources(
       ${CMAKE_CURRENT_SOURCE_DIR}/IndentStream.cpp
 )
 
-add_subdirectory("ast")
-add_subdirectory("parser")
+add_subdirectory(ast)
+add_subdirectory(parser)
+add_subdirectory(interpreter)

@@ -11,6 +11,7 @@ set(
     AST
     Tokenizer
     Parser
+    Stack
 )
 
 if(${BUILD_TESTING})
