@@ -21,8 +21,7 @@ CATCH_TRANSLATE_EXCEPTION(std::exception& e) {
 
 TEST_CASE("Define") {
   SECTION("EntryFunction") {
-    Parser p;
-    auto ast = p.parse("def main() {}");
+    auto ast = parse("def main() {}");
     auto line1 = std::make_shared<std::string>("def main() {}");
 
     Scope expected({0, 0, ""});
@@ -38,8 +37,7 @@ TEST_CASE("Define") {
   }
 
   SECTION("Function") {
-    Parser p;
-    auto ast = p.parse("def fun() {}");
+    auto ast = parse("def fun() {}");
     auto line1 = std::make_shared<std::string>("def fun() {}");
 
     Scope expected({0, 0, ""});
@@ -55,8 +53,7 @@ TEST_CASE("Define") {
   }
 
   SECTION("Variable") {
-    Parser p;
-    auto ast = p.parse("var foo;");
+    auto ast = parse("var foo;");
     auto line1 = std::make_shared<std::string>("var foo;");
 
     Scope expected({0, 0, ""});
@@ -71,8 +68,7 @@ TEST_CASE("Define") {
   }
 
   SECTION("Parameter") {
-    Parser p;
-    auto ast = p.parse("def fun(herbert) {}");
+    auto ast = parse("def fun(herbert) {}");
     auto line1 = std::make_shared<std::string>("def fun(herbert) {}");
 
     Scope expected({0, 0, ""});
@@ -95,8 +91,7 @@ TEST_CASE("Define") {
   }
 
   SECTION("Multiple Parameter") {
-    Parser p;
-    auto ast = p.parse("def fun(herbert, berta) {}");
+    auto ast = parse("def fun(herbert, berta) {}");
     auto line1 = std::make_shared<std::string>("def fun(herbert, berta) {}");
 
     Scope expected({0, 0, ""});
@@ -126,8 +121,7 @@ TEST_CASE("Define") {
 
 TEST_CASE("Callable") {
   SECTION("Parameterless") {
-    Parser p;
-    auto ast = p.parse("fun();");
+    auto ast = parse("fun();");
     auto line1 = std::make_shared<std::string>("fun();");
 
     Scope expected({0, 0, ""});
@@ -141,13 +135,11 @@ TEST_CASE("Callable") {
   }
 
   SECTION("Space after function name") {
-    Parser p;
-    REQUIRE_THROWS(p.parse("fun ();"));
+    REQUIRE_THROWS(parse("fun ();"));
   }
 
   SECTION("Parameter") {
-    Parser p;
-    auto ast = p.parse("fun(foo:herbert);");
+    auto ast = parse("fun(foo:herbert);");
     auto line1 = std::make_shared<std::string>("fun(foo:herbert);");
 
     Scope expected({0, 0, ""});
@@ -164,13 +156,11 @@ TEST_CASE("Callable") {
   }
 
   SECTION("Parameter") {
-    Parser p;
-    REQUIRE_THROWS(p.parse("fun(herbert);"));
+    REQUIRE_THROWS(parse("fun(herbert);"));
   }
 
   SECTION("Multiple Parameter") {
-    Parser p;
-    auto ast = p.parse("fun(foo:herbert, bar:berta);");
+    auto ast = parse("fun(foo:herbert, bar:berta);");
     auto line1 = std::make_shared<std::string>("fun(foo:herbert, bar:berta);");
 
     Scope expected({0, 0, ""});
@@ -190,8 +180,7 @@ TEST_CASE("Callable") {
   }
 
   SECTION("Function Parameter") {
-    Parser p;
-    auto ast = p.parse("fun(foo:gun());");
+    auto ast = parse("fun(foo:gun());");
     auto line1 = std::make_shared<std::string>("fun(foo:gun());");
 
     Scope expected({0, 0, ""});
@@ -208,8 +197,7 @@ TEST_CASE("Callable") {
   }
 
   SECTION("Multiple Function Parameter") {
-    Parser p;
-    auto ast = p.parse("fun(foo:gun(), bar:hun());");
+    auto ast = parse("fun(foo:gun(), bar:hun());");
     auto line1 = std::make_shared<std::string>("fun(foo:gun(), bar:hun());");
 
     Scope expected({0, 0, ""});
@@ -231,8 +219,7 @@ TEST_CASE("Callable") {
 
 TEST_CASE("Return") {
   SECTION("Variable") {
-    Parser p;
-    auto ast = p.parse("return foo;");
+    auto ast = parse("return foo;");
     auto line1 = std::make_shared<std::string>("return foo;");
 
     Scope expected({0, 0, ""});
@@ -248,8 +235,7 @@ TEST_CASE("Return") {
   }
 
   SECTION("Function") {
-    Parser p;
-    auto ast = p.parse("return fun();");
+    auto ast = parse("return fun();");
     auto line1 = std::make_shared<std::string>("return fun();");
 
     Scope expected({0, 0, ""});
@@ -268,8 +254,7 @@ TEST_CASE("Return") {
 TEST_CASE("If") {
   SECTION("Input") {
     SECTION("Variable") {
-      Parser p;
-      auto ast = p.parse("if(a){}");
+      auto ast = parse("if(a){}");
       auto line1 = std::make_shared<std::string>("if(a){}");
 
       Scope expected({0, 0, ""});
@@ -285,8 +270,7 @@ TEST_CASE("If") {
     }
 
     SECTION("Function") {
-      Parser p;
-      auto ast = p.parse("if(fun()){}");
+      auto ast = parse("if(fun()){}");
       auto line1 = std::make_shared<std::string>("if(fun()){}");
 
       Scope expected({0, 0, ""});
@@ -301,8 +285,7 @@ TEST_CASE("If") {
       REQUIRE(ast == expected);
     }
     SECTION("Literal") {
-      Parser p;
-      auto ast = p.parse("if(true){}");
+      auto ast = parse("if(true){}");
       auto line1 = std::make_shared<std::string>("if(true){}");
 
       Scope expected({0, 0, ""});
@@ -321,8 +304,7 @@ TEST_CASE("If") {
 
   SECTION("Operator") {
     SECTION("Equal") {
-      Parser p;
-      auto ast = p.parse("if(a == b){}");
+      auto ast = parse("if(a == b){}");
       auto line1 = std::make_shared<std::string>("if(a == b){}");
 
       Scope expected({0, 0, ""});
@@ -344,8 +326,7 @@ TEST_CASE("If") {
     }
 
     SECTION("Not Equal") {
-      Parser p;
-      auto ast = p.parse("if(a != b){}");
+      auto ast = parse("if(a != b){}");
       auto line1 = std::make_shared<std::string>("if(a != b){}");
 
       Scope expected({0, 0, ""});
@@ -367,8 +348,7 @@ TEST_CASE("If") {
     }
 
     SECTION("Greater") {
-      Parser p;
-      auto ast = p.parse("if(a > b){}");
+      auto ast = parse("if(a > b){}");
       auto line1 = std::make_shared<std::string>("if(a > b){}");
 
       Scope expected({0, 0, ""});
@@ -390,8 +370,7 @@ TEST_CASE("If") {
     }
 
     SECTION("Greater Equal") {
-      Parser p;
-      auto ast = p.parse("if(a >= b){}");
+      auto ast = parse("if(a >= b){}");
       auto line1 = std::make_shared<std::string>("if(a >= b){}");
 
       Scope expected({0, 0, ""});
@@ -413,8 +392,7 @@ TEST_CASE("If") {
     }
 
     SECTION("Smaller") {
-      Parser p;
-      auto ast = p.parse("if(a < b){}");
+      auto ast = parse("if(a < b){}");
       auto line1 = std::make_shared<std::string>("if(a < b){}");
 
       Scope expected({0, 0, ""});
@@ -436,8 +414,7 @@ TEST_CASE("If") {
     }
 
     SECTION("Smaller Equal") {
-      Parser p;
-      auto ast = p.parse("if(a <= b){}");
+      auto ast = parse("if(a <= b){}");
       auto line1 = std::make_shared<std::string>("if(a <= b){}");
 
       Scope expected({0, 0, ""});
@@ -459,8 +436,7 @@ TEST_CASE("If") {
     }
 
     SECTION("Not var") {
-      Parser p;
-      auto ast = p.parse("if(!a){}");
+      auto ast = parse("if(!a){}");
       auto line1 = std::make_shared<std::string>("if(!a){}");
 
       Scope expected({0, 0, ""});
@@ -480,8 +456,7 @@ TEST_CASE("If") {
     }
 
     SECTION("Not operator") {
-      Parser p;
-      auto ast = p.parse("if(!(a == b)){}");
+      auto ast = parse("if(!(a == b)){}");
       auto line1 = std::make_shared<std::string>("if(!(a == b)){}");
 
       Scope expected({0, 0, ""});
@@ -506,16 +481,14 @@ TEST_CASE("If") {
     }
 
     SECTION("Missing Operator") {
-      Parser p;
 
-      REQUIRE_THROWS(p.parse("if(a b){}"));
+      REQUIRE_THROWS(parse("if(a b){}"));
     }
   }
 
   SECTION("Literals") {
     SECTION("Boolean") {
-      Parser p;
-      auto ast = p.parse("if(true == false){}");
+      auto ast = parse("if(true == false){}");
       auto line1 = std::make_shared<std::string>("if(true == false){}");
 
       Scope expected({0, 0, ""});
@@ -539,8 +512,7 @@ TEST_CASE("If") {
     }
 
     SECTION("Integer") {
-      Parser p;
-      auto ast = p.parse("if(1 == 1){}");
+      auto ast = parse("if(1 == 1){}");
       auto line1 = std::make_shared<std::string>("if(1 == 1){}");
 
       Scope expected({0, 0, ""});
@@ -564,8 +536,7 @@ TEST_CASE("If") {
     }
 
     SECTION("Double") {
-      Parser p;
-      auto ast = p.parse("if(.1 == .1){}");
+      auto ast = parse("if(.1 == .1){}");
       auto line1 = std::make_shared<std::string>("if(.1 == .1){}");
 
       Scope expected({0, 0, ""});
@@ -589,9 +560,8 @@ TEST_CASE("If") {
     }
 
     SECTION("String") {
-      Parser p;
       // The escaped " counts one!
-      auto ast = p.parse("if(\"a\" == \"a\"){}");
+      auto ast = parse("if(\"a\" == \"a\"){}");
       auto line1 = std::make_shared<std::string>("if(\"a\" == \"a\"){}");
 
       Scope expected({0, 0, ""});
@@ -617,8 +587,7 @@ TEST_CASE("If") {
 
   SECTION("Combination") {
     SECTION("Brackets") {
-      Parser p;
-      auto ast = p.parse("if(a == b && (a == c || c == b)){}");
+      auto ast = parse("if(a == b && (a == c || c == b)){}");
       auto line1 =
           std::make_shared<std::string>("if(a == b && (a == c || c == b)){}");
 
@@ -663,8 +632,7 @@ TEST_CASE("If") {
     }
 
     SECTION("Bracketless") {
-      Parser p;
-      auto ast = p.parse("if(a == b && a == c || c == b){}");
+      auto ast = parse("if(a == b && a == c || c == b){}");
       auto line1 =
           std::make_shared<std::string>("if(a == b && a == c || c == b){}");
 
@@ -708,8 +676,7 @@ TEST_CASE("If") {
     }
 
     SECTION("Else") {
-      Parser p;
-      auto ast = p.parse("if(a){}else{}");
+      auto ast = parse("if(a){}else{}");
       auto line1 = std::make_shared<std::string>("if(a){}else{}");
 
       Scope expected({0, 0, ""});
@@ -728,8 +695,7 @@ TEST_CASE("If") {
 }
 
 TEST_CASE("While") {  // Basically an if
-  Parser p;
-  auto ast = p.parse("while(a){}");
+  auto ast = parse("while(a){}");
   auto line1 = std::make_shared<std::string>("while(a){}");
 
   Scope expected({0, 0, ""});
@@ -746,8 +712,7 @@ TEST_CASE("While") {  // Basically an if
 TEST_CASE("\"free\" operators") {
   // TODO
   SECTION("Variable define and assign") {
-    Parser p;
-    auto ast = p.parse("var foo = foo + 1;");
+    auto ast = parse("var foo = foo + 1;");
     auto line1 = std::make_shared<std::string>("var foo = foo + 1;");
 
     Scope expected({0, 0, ""});
@@ -769,8 +734,7 @@ TEST_CASE("\"free\" operators") {
 
       op_as.left_operand =
           std::make_unique<ValueProducer>(Variable({1, 5, "foo", line1}));
-      op_as.right_operand =
-          std::make_unique<ValueProducer>(op_ad);
+      op_as.right_operand = std::make_unique<ValueProducer>(op_ad);
       op_as.operation = BinaryOperation::ASSIGNMENT;
 
       expected.nodes.push_back(std::move(def));
@@ -780,19 +744,16 @@ TEST_CASE("\"free\" operators") {
     REQUIRE(ast == expected);
   }
   SECTION("Missing semicolon") {
-    Parser p;
-    REQUIRE_THROWS(p.parse("var foo = foo + 1"));
+    REQUIRE_THROWS(parse("var foo = foo + 1"));
   }
   SECTION("Missing operator") {
-    Parser p;
-    REQUIRE_THROWS(p.parse("var foo = foo  1;"));
+    REQUIRE_THROWS(parse("var foo = foo  1;"));
   }
 }
 
 TEST_CASE("break") {
   SECTION("While") {
-    Parser p;
-    auto ast = p.parse("while(a){break;}");
+    auto ast = parse("while(a){break;}");
     auto line1 = std::make_shared<std::string>("while(a){break;}");
 
     Scope expected({0, 0, ""});
@@ -811,8 +772,7 @@ TEST_CASE("break") {
 
 // TODO
 // TEST_CASE("For") {
-//   Parser p;
-//   auto ast = p.parse("for(var a = 0; a < 10; a = a + 1){}");
+//   auto ast = parse("for(var a = 0; a < 10; a = a + 1){}");
 
 //   Scope expected({0, 0, "",line1});
 //   {
@@ -867,6 +827,5 @@ TEST_CASE("break") {
 //                                 "                           \n"
 //                                 "  fun(foo:baz);            \n"
 //                                 "}                          \n";
-//   Parser p;
-//   WARN(p.parse(raw_macro));
+//   WARN(parse(raw_macro));
 // }

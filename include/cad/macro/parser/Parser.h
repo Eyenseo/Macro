@@ -14,15 +14,10 @@ class Scope;
 namespace cad {
 namespace macro {
 namespace parser {
-class Parser {
-public:
-  enum class UserE { SOURCE, TAIL };
-  enum class InternalE { STRING_END, BAD_CONVERSION, MISSING_OPERATOR };
+enum class UserE { SOURCE, TAIL };
+enum class InternalE { STRING_END, BAD_CONVERSION, MISSING_OPERATOR };
 
-  Parser();
-
-  ast::Scope parse(std::string macro, std::string file_name = "Line") const;
-};
+ast::Scope parse(std::string macro, std::string file_name = "Line");
 }
 }
 }

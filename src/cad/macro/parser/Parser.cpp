@@ -16,11 +16,11 @@ namespace cad {
 namespace macro {
 namespace parser {
 namespace {
-using ConversionExc = Exc<Parser::InternalE, Parser::InternalE::BAD_CONVERSION>;
-using OperatorExc = Exc<Parser::InternalE, Parser::InternalE::MISSING_OPERATOR>;
-using StringEndExc = Exc<Parser::InternalE, Parser::InternalE::STRING_END>;
-using UserSourceExc = Exc<Parser::UserE, Parser::UserE::SOURCE>;
-using UserTailExc = Exc<Parser::UserE, Parser::UserE::TAIL>;
+using ConversionExc = Exc<InternalE, InternalE::BAD_CONVERSION>;
+using OperatorExc = Exc<InternalE, InternalE::MISSING_OPERATOR>;
+using StringEndExc = Exc<InternalE, InternalE::STRING_END>;
+using UserSourceExc = Exc<UserE, UserE::SOURCE>;
+using UserTailExc = Exc<UserE, UserE::TAIL>;
 
 struct Tokens {
   const std::vector<Token>& tokens;
@@ -75,7 +75,7 @@ Token node_to_token(const ast::Scope::Node& node) {
 
 template <typename FUN>
 void add_exception_info(const Token& token, const std::string& file,
-                        ExceptionBase<Parser::UserE>& e, FUN fun) {
+                        ExceptionBase<UserE>& e, FUN fun) {
   e << file << ':' << token.line << ':' << token.column << ": ";
   fun();
   if(token.source_line) {
@@ -85,7 +85,7 @@ void add_exception_info(const Token& token, const std::string& file,
 }
 template <typename FUN>
 void add_exception_info(const Tokens& tokens, const size_t token,
-                        ExceptionBase<Parser::UserE>& e, FUN fun) {
+                        ExceptionBase<UserE>& e, FUN fun) {
   add_exception_info(tokens.at(token), tokens.file, e, fun);
 }
 
@@ -325,7 +325,7 @@ parse_entry_function(const Tokens& tokens, size_t& token) {
       token = tmp;
       return fun;
     }
-  } catch(ExceptionBase<Parser::UserE>&) {
+  } catch(ExceptionBase<UserE>&) {
     UserTailExc e;
     add_exception_info(tokens, token, e,
                        [&e] { e << "In the 'main' function defined here:"; });
@@ -354,7 +354,7 @@ core::optional<ast::callable::Function> parse_function(const Tokens& tokens,
       token = tmp;
       return fun;
     }
-  } catch(ExceptionBase<Parser::UserE>&) {
+  } catch(ExceptionBase<UserE>&) {
     UserTailExc e;
     add_exception_info(tokens, token, e, [&tokens, &token, &e] {
       e << "In the '" << tokens.at(token).token << "' function defined here:";
@@ -405,7 +405,7 @@ core::optional<ast::Define> parse_variable_definition(const Tokens& tokens,
       token = tmp;
       return def;
     }
-  } catch(ExceptionBase<Parser::UserE>&) {
+  } catch(ExceptionBase<UserE>&) {
     UserTailExc e;
     add_exception_info(tokens, token, e, [&tokens, &token, &e] {
       e << "At the '" << tokens.at(token).token << "' variable defined here:";
@@ -494,7 +494,7 @@ core::optional<ast::callable::Callable> parse_callable(const Tokens& tokens,
       token = tmp;
       return call;
     }
-  } catch(ExceptionBase<Parser::UserE>&) {
+  } catch(ExceptionBase<UserE>&) {
     UserTailExc e;
     add_exception_info(tokens, token, e, [&tokens, &token, &e] {
       e << "In the function call '" << tokens.at(token).token
@@ -539,7 +539,7 @@ core::optional<ast::Return> parse_return(const Tokens& tokens, size_t& token) {
       token = tmp;
       return ret;
     }
-  } catch(ExceptionBase<Parser::UserE>&) {
+  } catch(ExceptionBase<UserE>&) {
     UserTailExc e;
     add_exception_info(tokens, token, e,
                        [&e] { e << "At the return statement defined here:"; });
@@ -558,7 +558,7 @@ core::optional<ast::Break> parse_break(const Tokens& tokens, size_t& token) {
       token = tmp;
       return ret;
     }
-  } catch(ExceptionBase<Parser::UserE>&) {
+  } catch(ExceptionBase<UserE>&) {
     UserTailExc e;
     add_exception_info(tokens, token, e,
                        [&e] { e << "At the break statement defined here:"; });
@@ -612,7 +612,7 @@ parse_operator(const Tokens& tokens, size_t& token) {
         ret.emplace(std::move(op));
       }
     }
-  } catch(ExceptionBase<Parser::UserE>&) {
+  } catch(ExceptionBase<UserE>&) {
     UserTailExc e;
     add_exception_info(tokens, token, e, [&tokens, &token, &e] {
       e << "At the operator '" << tokens.at(token).token << "' defined here:";
@@ -958,7 +958,7 @@ core::optional<ast::logic::If> parse_if(const Tokens& tokens, size_t& token) {
           }
           iff.false_scope =
               std::make_unique<ast::Scope>(std::move(*false_scope));
-        } catch(ExceptionBase<Parser::UserE>&) {
+        } catch(ExceptionBase<UserE>&) {
           UserTailExc e;
           add_exception_info(tokens, tok_else, e,
                              [&e] { e << "In the else part defined here:"; });
@@ -968,7 +968,7 @@ core::optional<ast::logic::If> parse_if(const Tokens& tokens, size_t& token) {
       token = tmp;
       return iff;
     }
-  } catch(ExceptionBase<Parser::UserE>&) {
+  } catch(ExceptionBase<UserE>&) {
     UserTailExc e;
     add_exception_info(tokens, token, e,
                        [&e] { e << "In the if defined here:"; });
@@ -1007,7 +1007,7 @@ core::optional<ast::loop::While> parse_while(const Tokens& tokens,
       token = tmp;
       return w;
     }
-  } catch(ExceptionBase<Parser::UserE>&) {
+  } catch(ExceptionBase<UserE>&) {
     UserTailExc e;
     add_exception_info(tokens, token, e,
                        [&e] { e << "In the while defined here:"; });
@@ -1357,10 +1357,7 @@ void parse_scope_internals(const Tokens& tokens, size_t& token,
 }
 }
 
-Parser::Parser() {
-}
-
-ast::Scope Parser::parse(std::string macro, std::string file_name) const {
+ast::Scope parse(std::string macro, std::string file_name) {
   Tokens tokens = {tokenizer::tokenize(macro), std::move(file_name)};
   auto root = ast::Scope(Token(0, 0, ""));
 
