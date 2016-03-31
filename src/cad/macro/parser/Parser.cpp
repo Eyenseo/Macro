@@ -20,6 +20,18 @@ using ConversionExc = Exc<InternalE, InternalE::BAD_CONVERSION>;
 using OperatorExc = Exc<InternalE, InternalE::MISSING_OPERATOR>;
 using UserSourceExc = Exc<UserE, UserE::SOURCE>;
 using UserTailExc = Exc<UserE, UserE::TAIL>;
+using UserExc = ExceptionBase<UserE>;
+
+template <typename T>
+using is_Function = typename std::enable_if<
+    std::is_same<T, ast::callable::Function>::value ||
+        std::is_same<T, ast::callable::EntryFunction>::value,
+    bool>;
+template <typename T>
+using is_Operator =
+    typename std::enable_if<std::is_same<T, ast::UnaryOperator>::value ||
+                                std::is_same<T, ast::BinaryOperator>::value,
+                            bool>;
 
 struct Tokens {
   const std::vector<Token>& tokens;
@@ -34,69 +46,257 @@ struct Tokens {
   }
 };
 
+enum class Statement { TERMINATED, NON_TERMINATED };
+
 static std::vector<std::string> keywords{"if",    "else",   "do",   "while",
                                          "for",   "var",    "def",  "main",
                                          "break", "return", "true", "false"};
 
+//////////////////////////////////////////
+/// Exception
+//////////////////////////////////////////
+Token node_to_token(const ast::Scope::Node& node);
+template <typename FUN>
+void add_exception_info(const Token& token, const std::string& file, UserExc& e,
+                        FUN fun, const size_t arrow_position);
+template <typename FUN>
+void add_exception_info(const Token& token, const std::string& file, UserExc& e,
+                        FUN fun);
+template <typename FUN>
+void add_exception_info_end(const Token& token, const std::string& file,
+                            UserExc& e, FUN fun);
+template <typename FUN>
+void add_exception_info(const Tokens& tokens, const size_t token, UserExc& e,
+                        FUN fun);
+[[noreturn]] void throw_unexprected_token(const Tokens& tokens,
+                                          const size_t token);
+[[noreturn]] void throw_unexprected_token(const Token& token,
+                                          const std::string& file);
+[[noreturn]] void throw_conversion(const char* const file, const size_t line,
+                                   const char* const prefix);
+[[noreturn]] void throw_conversion(const char* const file, const size_t line,
+                                   const char* const prefix);
+void expect_no_space_between_bracket(const Tokens& tokens, const size_t token);
+
+//////////////////////////////////////////
+/// Token reading
+//////////////////////////////////////////
+void expect_token(const Tokens& tokens, size_t& token,
+                  const char* const token_literal);
+
+bool read_token(const Tokens& tokens, size_t& token,
+                const char* const token_literal);
+
+bool read_token(const Tokens& tokens, size_t& token,
+                const std::regex& token_regex);
+
+//////////////////////////////////////////
+/// Literal parsing
+//////////////////////////////////////////
+core::optional<ast::Literal<ast::Literals::BOOL>>
+parse_literal_bool(const Tokens& tokens, size_t& token);
+
+core::optional<ast::Literal<ast::Literals::INT>>
+parse_literal_int(const Tokens& tokens, size_t& token);
+
+core::optional<ast::Literal<ast::Literals::DOUBLE>>
+parse_literal_double(const Tokens& tokens, size_t& token);
+
+void unescape_string(std::string& s);
+
+core::optional<ast::Literal<ast::Literals::STRING>>
+parse_literal_string(const Tokens& tokens, size_t& token);
+
+//////////////////////////////////////////
+/// Definition parsing
+//////////////////////////////////////////
+bool is_keyword(const std::string& token);
+void expect_not_keyword(const Tokens& tokens, const size_t token);
+template <typename T, typename is_Function<T>::type = false>
+void parse_function_parameter(const Tokens& tokens, size_t& token, T& fun);
+template <typename T, typename is_Function<T>::type = false>
+void define_parameter_in_scope(ast::Scope& fun_scope, T& fun);
+template <typename T, typename is_Function<T>::type = true>
+core::optional<T> parse_function_internals(const Tokens& tokens, size_t& token,
+                                           T&& fun);
+core::optional<ast::callable::EntryFunction>
+parse_entry_function(const Tokens& tokens, size_t& token);
+core::optional<ast::callable::Function> parse_function(const Tokens& tokens,
+                                                       size_t& token);
+core::optional<ast::Define> parse_function_definition(const Tokens& tokens,
+                                                      size_t& token);
+core::optional<ast::Define> parse_variable_definition(const Tokens& tokens,
+                                                      size_t& token);
+
+//////////////////////////////////////////
+/// Callable parsing
+//////////////////////////////////////////
+void expect_named_parameter(const Tokens& tokens, size_t& token);
+core::optional<std::pair<ast::Variable, ast::ValueProducer>>
+parse_callable_parameter(const Tokens& tokens, size_t& token);
+core::optional<ast::callable::Callable> parse_callable(const Tokens& tokens,
+                                                       size_t& token);
+
+//////////////////////////////////////////
+/// Scope parsing
+//////////////////////////////////////////
+core::optional<ast::Scope::Node>
+parse_scope_internals(const Tokens& tokens, size_t& token,
+                      std::vector<ast::Scope::Node>& nodes,
+                      Statement& last_statement);
 void parse_scope_internals(const Tokens& tokens, size_t& token,
                            ast::Scope& scope);
+core::optional<ast::Scope> parse_scope(const Tokens& tokens, size_t& token);
+
+
+//////////////////////////////////////////
+/// Variable parsing
+//////////////////////////////////////////
+core::optional<ast::Variable> parse_variable(const Tokens& tokens,
+                                             size_t& token);
+
+//////////////////////////////////////////
+/// Return parsing
+//////////////////////////////////////////
+core::optional<ast::Return> parse_return(const Tokens& tokens, size_t& token);
+
+//////////////////////////////////////////
+/// Break parsing
+//////////////////////////////////////////
+core::optional<ast::Break> parse_break(const Tokens& tokens, size_t& token);
+
+
+//////////////////////////////////////////
+/// Operator parsing
+//////////////////////////////////////////
+template <typename T, typename is_Operator<T>::type = false>
+void expect_operator_type(const char* const file, const size_t line,
+                          const T& op);
+ast::ValueProducer node_to_value(ast::Scope::Node& node);
+ast::Scope::Node value_to_node(ast::ValueProducer& producer);
+core::variant<ast::UnaryOperator, ast::BinaryOperator>
+node_to_operator(const Tokens& tokens, ast::Scope::Node& node);
+core::optional<ast::Variable> extract_var_def(ast::Scope::Node& node);
+void setup_operator_wokespace(
+    std::vector<ast::Scope::Node>& workspace,
+    std::vector<ast::Scope::Node>& nodes,
+    core::variant<ast::UnaryOperator, ast::BinaryOperator>& op);
+void expect_operatees(const Token& token, const std::string& file,
+                      const std::vector<ast::Scope::Node>::iterator& previous,
+                      const std::vector<ast::Scope::Node>::iterator& next,
+                      const std::vector<ast::Scope::Node>::iterator& end);
+void assamble_unary(const std::string& file,
+                    std::vector<ast::Scope::Node>& nodes,
+                    std::vector<ast::Scope::Node>::iterator& next,
+                    ast::UnaryOperator& op);
+void assamble_binary(const std::string& file,
+                     std::vector<ast::Scope::Node>& nodes, size_t& index,
+                     std::vector<ast::Scope::Node>::iterator& previous,
+                     std::vector<ast::Scope::Node>::iterator& next,
+                     ast::BinaryOperator& op);
+void assamble_operator(const std::string& file,
+                       std::vector<ast::Scope::Node>& nodes, size_t& index);
+void assamble_operators(const std::string& file,
+                        std::vector<ast::Scope::Node>& nodes,
+                        const ast::UnaryOperation operaton);
+void assamble_operators(const std::string& file,
+                        std::vector<ast::Scope::Node>& nodes,
+                        const ast::BinaryOperation operaton);
+void assamble_operator(const std::string& file,
+                       std::vector<ast::Scope::Node>& nodes);
+core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>>
+parse_operator_internals(const Tokens& tokens, size_t& token);
+core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>>
+parse_operator(const Tokens& tokens, size_t& token,
+               std::vector<ast::Scope::Node>& nodes);
+
+//////////////////////////////////////////
+/// Condition parsing
+//////////////////////////////////////////
+ast::ValueProducer
+assamble_conditions(const std::string& file,
+                    std::vector<ast::Scope::Node> conditions);
 core::optional<ast::ValueProducer> parse_condition(const Tokens& tokens,
                                                    size_t& token);
 
+//////////////////////////////////////////
+/// If parsing
+//////////////////////////////////////////
+void parse_if_condition(const Tokens& tokens, size_t& token,
+                        ast::logic::If& iff);
+void parse_true(const Tokens& tokens, size_t& token, ast::logic::If& iff);
+void parse_false(const Tokens& tokens, size_t& token, ast::logic::If& iff);
+core::optional<ast::logic::If> parse_if(const Tokens& tokens, size_t& token);
+
+//////////////////////////////////////////
+/// While parsing
+//////////////////////////////////////////
+void parse_while_condition(const Tokens& tokens, size_t& token,
+                           ast::loop::While& whi);
+void parse_while_scope(const Tokens& tokens, size_t& token,
+                       ast::loop::While& whi);
+core::optional<ast::loop::While> parse_while(const Tokens& tokens,
+                                             size_t& token);
+
+//////////////////////////////////////////
+/// Implementation
+//////////////////////////////////////////
+
+//////////////////////////////////////////
+/// Exception
+//////////////////////////////////////////
 Token node_to_token(const ast::Scope::Node& node) {
+  using namespace ast;
   Token token;
-  node.match(
-      [&token](const ast::Break& e) { token = e.token; },
-      [&token](const ast::Variable& e) { token = e.token; },
-      [&token](const ast::Define& e) { token = e.token; },
-      [&token](const ast::callable::EntryFunction& e) { token = e.token; },
-      [&token](const ast::callable::Callable& e) { token = e.token; },
-      [&token](const ast::callable::Function& e) { token = e.token; },
-      [&token](const ast::Return& e) { token = e.token; },
-      [&token](const ast::Scope& e) { token = e.token; },
-      [&token](const ast::UnaryOperator& e) { token = e.token; },
-      [&token](const ast::BinaryOperator& e) { token = e.token; },
-      [&token](const ast::logic::If& e) { token = e.token; },
-      [&token](const ast::loop::While& e) { token = e.token; },
-      [&token](const ast::loop::DoWhile& e) { token = e.token; },
-      [&token](const ast::loop::For& e) { token = e.token; },
-      [&token](const ast::Literal<ast::Literals::BOOL>& e) { token = e.token; },
-      [&token](const ast::Literal<ast::Literals::INT>& e) { token = e.token; },
-      [&token](const ast::Literal<ast::Literals::DOUBLE>& e) {
-        token = e.token;
-      },
-      [&token](const ast::Literal<ast::Literals::STRING>& e) {
-        token = e.token;
-      });
+
+  node.match([&token](const Break& e) { token = e.token; },
+             [&token](const Variable& e) { token = e.token; },
+             [&token](const Define& e) { token = e.token; },
+             [&token](const callable::EntryFunction& e) { token = e.token; },
+             [&token](const callable::Callable& e) { token = e.token; },
+             [&token](const callable::Function& e) { token = e.token; },
+             [&token](const Return& e) { token = e.token; },
+             [&token](const Scope& e) { token = e.token; },
+             [&token](const UnaryOperator& e) { token = e.token; },
+             [&token](const BinaryOperator& e) { token = e.token; },
+             [&token](const logic::If& e) { token = e.token; },
+             [&token](const loop::While& e) { token = e.token; },
+             [&token](const loop::DoWhile& e) { token = e.token; },
+             [&token](const loop::For& e) { token = e.token; },
+             [&token](const Literal<Literals::BOOL>& e) { token = e.token; },
+             [&token](const Literal<Literals::INT>& e) { token = e.token; },
+             [&token](const Literal<Literals::DOUBLE>& e) { token = e.token; },
+             [&token](const Literal<Literals::STRING>& e) { token = e.token; });
   return token;
 }
 
-
 template <typename FUN>
-void add_exception_info(const Token& token, const std::string& file,
-                        ExceptionBase<UserE>& e, FUN fun) {
+void add_exception_info(const Token& token, const std::string& file, UserExc& e,
+                        FUN fun, const size_t arrow_position) {
   e << file << ':' << token.line << ':' << token.column << ": ";
   fun();
   if(token.source_line) {
-    e << '\n' << *token.source_line << '\n'
-      << std::string(token.column - 1, ' ') << "^";
+    e << '\n' << *token.source_line << '\n' << std::string(arrow_position, ' ')
+      << "^";
   }
+}
+
+template <typename FUN>
+void add_exception_info(const Token& token, const std::string& file, UserExc& e,
+                        FUN fun) {
+  add_exception_info(token, file, e, fun, token.column - 1);
 }
 
 template <typename FUN>
 void add_exception_info_end(const Token& token, const std::string& file,
-                            ExceptionBase<UserE>& e, FUN fun) {
-  e << file << ':' << token.line << ':' << token.column << ": ";
-  fun();
-  if(token.source_line) {
-    e << '\n' << *token.source_line << '\n'
-      << std::string(token.column + token.token.size() - 1, ' ') << "^";
-  }
+                            UserExc& e, FUN fun) {
+  add_exception_info(token, file, e, fun,
+                     token.column + token.token.size() - 1);
 }
 
 template <typename FUN>
-void add_exception_info(const Tokens& tokens, const size_t token,
-                        ExceptionBase<UserE>& e, FUN fun) {
+void add_exception_info(const Tokens& tokens, const size_t token, UserExc& e,
+                        FUN fun) {
   if(token == tokens.size()) {
     add_exception_info_end(tokens.at(token - 1), tokens.file, e, fun);
   } else {
@@ -104,6 +304,32 @@ void add_exception_info(const Tokens& tokens, const size_t token,
   }
 }
 
+[[noreturn]] void throw_unexprected_token(const Tokens& tokens,
+                                          const size_t token) {
+  UserSourceExc e;
+  add_exception_info(tokens, token, e, [&] {
+    e << "Unexpected token '" << tokens.at(token).token << '\'';
+  });
+  throw e;
+}
+[[noreturn]] void throw_unexprected_token(const Token& token,
+                                          const std::string& file) {
+  UserSourceExc e;
+  add_exception_info(token, file, e,
+                     [&] { e << "Unexpected token '" << token.token << '\''; });
+  throw e;
+}
+
+[[noreturn]] void throw_conversion(const char* const file, const size_t line,
+                                   const char* const prefix) {
+  ConversionExc e(file, line, "Bad conversion");
+  e << prefix << " is not convertible to a ValueProducer.";
+  throw e;
+}
+
+//////////////////////////////////////////
+/// Token reading
+//////////////////////////////////////////
 void expect_token(const Tokens& tokens, size_t& token,
                   const char* const token_literal) {
   if(token >= tokens.size() || tokens.at(token).token != token_literal) {
@@ -135,6 +361,9 @@ bool read_token(const Tokens& tokens, size_t& token,
   return true;
 }
 
+//////////////////////////////////////////
+/// Literal parsing
+//////////////////////////////////////////
 core::optional<ast::Literal<ast::Literals::BOOL>>
 parse_literal_bool(const Tokens& tokens, size_t& token) {
   auto tmp = token;
@@ -194,7 +423,6 @@ void unescape_string(std::string& s) {
       if(pos == std::string::npos) {
         break;
       }
-
       s.erase(pos, search.length());
       s.insert(pos, replace);
     }
@@ -228,21 +456,9 @@ parse_literal_string(const Tokens& tokens, size_t& token) {
   return {};
 }
 
-core::optional<ast::Scope> parse_scope(const Tokens& tokens, size_t& token) {
-  auto tmp = token;
-
-  if(read_token(tokens, tmp, "{")) {
-    ast::Scope sub_scope(tokens.at(token));
-
-    parse_scope_internals(tokens, tmp, sub_scope);
-    expect_token(tokens, tmp, "}");
-
-    token = tmp;
-    return sub_scope;
-  }
-  return {};
-}
-
+//////////////////////////////////////////
+/// Definition parsing
+//////////////////////////////////////////
 bool is_keyword(const std::string& token) {
   for(const auto& w : keywords) {
     if(token == w) {
@@ -252,42 +468,47 @@ bool is_keyword(const std::string& token) {
   return false;
 }
 
-core::optional<ast::Variable> parse_variable(const Tokens& tokens,
-                                             size_t& token) {
-  const static std::regex regex("([a-z][a-z0-9_]*)");
-  auto tmp = token;
-
-  if(read_token(tokens, tmp, regex)) {
-    ast::Variable var(Token(tokens.at(token)));
-    if(is_keyword(var.token.token)) {
-      UserSourceExc e;
-      add_exception_info(tokens, token, e, [&] {
-        e << "'" << var.token.token
-          << "' is a keyword an may not be used as qualifier.";
-      });
-      throw e;
-    }
-    token = tmp;
-    return var;
+void expect_not_keyword(const Tokens& tokens, const size_t token) {
+  if(is_keyword(tokens.at(token).token)) {
+    UserSourceExc e;
+    add_exception_info(tokens, token, e, [&] {
+      e << "'" << tokens.at(token).token
+        << "' is a keyword an may not be used as qualifier.";
+    });
+    throw e;
   }
-  return {};
 }
 
-template <typename T,
-          typename std::enable_if<
-              std::is_same<T, ast::callable::Function>::value ||
-                  std::is_same<T, ast::callable::EntryFunction>::value,
-              bool>::type = true>
+template <typename T, typename is_Function<T>::type>
+void parse_function_parameter(const Tokens& tokens, size_t& token, T& fun) {
+  while(auto var = parse_variable(tokens, token)) {
+    fun.parameter.push_back(std::move(*var));
+    if(!read_token(tokens, token, ",")) {
+      break;  // we do not expect another variable
+    }
+  }
+}
+
+template <typename T, typename is_Function<T>::type>
+void define_parameter_in_scope(ast::Scope& fun_scope, T& fun) {
+  const auto definitions = fun_scope.nodes.size();
+
+  for(const auto& v : fun.parameter) {
+    // Add the variables to the scope definitions in the right order
+    auto it = fun_scope.nodes.end();
+    std::advance(it, -definitions);
+    ast::Define def(v.token);
+    def.definition.emplace(v);
+    fun_scope.nodes.emplace(it, std::move(def));
+  }
+}
+
+template <typename T, typename is_Function<T>::type>
 core::optional<T> parse_function_internals(const Tokens& tokens, size_t& token,
                                            T&& fun) {
   auto tmp = token;
 
-  while(auto var = parse_variable(tokens, tmp)) {
-    fun.parameter.push_back(std::move(*var));
-    if(!read_token(tokens, tmp, ",")) {
-      break;  // we do not expect another variable
-    }
-  }
+  parse_function_parameter(tokens, tmp, fun);
   expect_token(tokens, tmp, ")");
 
   auto fun_scope = parse_scope(tokens, tmp);
@@ -296,15 +517,7 @@ core::optional<T> parse_function_internals(const Tokens& tokens, size_t& token,
     add_exception_info(tokens, tmp, e, [&] { e << "Expected a scope."; });
     throw e;
   }
-  const auto definitions = fun_scope->nodes.size();
-  for(const auto& v : fun.parameter) {
-    // Add the variables to the scope definitions in the right order
-    auto it = fun_scope->nodes.end();
-    std::advance(it, -definitions);
-    ast::Define def(v.token);
-    def.definition.emplace(v);
-    fun_scope->nodes.emplace(it, std::move(def));
-  }
+  define_parameter_in_scope(*fun_scope, fun);
   fun.scope = std::make_unique<ast::Scope>(*std::move(fun_scope));
   token = tmp;
 
@@ -314,7 +527,6 @@ core::optional<T> parse_function_internals(const Tokens& tokens, size_t& token,
 core::optional<ast::callable::EntryFunction>
 parse_entry_function(const Tokens& tokens, size_t& token) {
   auto tmp = token;
-
   try {
     if(read_token(tokens, tmp, "main")) {
       expect_token(tokens, tmp, "(");
@@ -323,7 +535,7 @@ parse_entry_function(const Tokens& tokens, size_t& token) {
       token = tmp;
       return fun;
     }
-  } catch(ExceptionBase<UserE>&) {
+  } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e,
                        [&e] { e << "In the 'main' function defined here:"; });
@@ -336,23 +548,18 @@ core::optional<ast::callable::Function> parse_function(const Tokens& tokens,
                                                        size_t& token) {
   const static std::regex regex("([a-z][a-z0-9_]*)");
   auto tmp = token;
-
   try {
     if(read_token(tokens, tmp, regex) && read_token(tokens, tmp, "(")) {
-      if(is_keyword(tokens.at(token).token)) {
-        UserSourceExc e;
-        add_exception_info(tokens, token, e, [&] {
-          e << "'" << tokens.at(token).token
-            << "' is a keyword an may not be used as qualifier.";
-        });
-        throw e;
-      }
+      expect_not_keyword(tokens, token);
+      expect_no_space_between_bracket(tokens, token);
+
       auto fun = parse_function_internals(
           tokens, tmp, ast::callable::Function(tokens.at(token)));
+
       token = tmp;
       return fun;
     }
-  } catch(ExceptionBase<UserE>&) {
+  } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e, [&tokens, &token, &e] {
       e << "In the '" << tokens.at(token).token << "' function defined here:";
@@ -373,17 +580,14 @@ core::optional<ast::Define> parse_function_definition(const Tokens& tokens,
     } else if(auto function = parse_function(tokens, tmp)) {
       def.definition.emplace(std::move(*function));
     } else {
-      UserSourceExc e;
-      add_exception_info(tokens, tmp, e, [&] {
-        e << "Unexpected token '" << tokens.at(tmp).token << '\'';
-      });
-      throw e;
+      throw_unexprected_token(tokens, tmp);
     }
     token = tmp;
     return def;
   }
   return {};
 }
+
 core::optional<ast::Define> parse_variable_definition(const Tokens& tokens,
                                                       size_t& token) {
   auto tmp = token;
@@ -394,16 +598,12 @@ core::optional<ast::Define> parse_variable_definition(const Tokens& tokens,
       if(auto variable = parse_variable(tokens, tmp)) {
         def.definition.emplace(std::move(*variable));
       } else {
-        UserSourceExc e;
-        add_exception_info(tokens, tmp, e, [&] {
-          e << "Unexpected token '" << tokens.at(tmp).token << '\'';
-        });
-        throw e;
+        throw_unexprected_token(tokens, tmp);
       }
       token = tmp;
       return def;
     }
-  } catch(ExceptionBase<UserE>&) {
+  } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e, [&tokens, &token, &e] {
       e << "At the '" << tokens.at(token).token << "' variable defined here:";
@@ -413,22 +613,38 @@ core::optional<ast::Define> parse_variable_definition(const Tokens& tokens,
   return {};
 }
 
-core::optional<ast::callable::Callable> parse_callable(const Tokens& tokens,
-                                                       size_t& token);
+//////////////////////////////////////////
+/// Callable parsing
+//////////////////////////////////////////
+void expect_named_parameter(const Tokens& tokens, size_t& token) {
+  if(!read_token(tokens, token, ":")) {
+    UserSourceExc e;
+    add_exception_info(tokens, token, e, [&] {
+      e << "Expected a ':' after '" << tokens.at(token - 1).token
+        << "' followed by an expression as value.";
+    });
+    throw e;
+  }
+}
+
+void expect_no_space_between_bracket(const Tokens& tokens, const size_t token) {
+  if(tokens.at(token).column + tokens.at(token).token.length() !=
+     tokens.at(token + 1).column) {
+    UserSourceExc e;
+    add_exception_info(tokens, token, e, [&] {
+      e << "There my not be any space between the function identifier and "
+           "parentheses.";
+    });
+    throw e;
+  }
+}
 
 core::optional<std::pair<ast::Variable, ast::ValueProducer>>
 parse_callable_parameter(const Tokens& tokens, size_t& token) {
   auto tmp = token;
 
   if(auto fun_var = parse_variable(tokens, tmp)) {
-    if(!read_token(tokens, tmp, ":")) {
-      UserSourceExc e;
-      add_exception_info(tokens, tmp, e, [&] {
-        e << "Expected a ':' after '" << tokens.at(tmp - 1).token
-          << "' followed by an expression as value.";
-      });
-      throw e;
-    }
+    expect_named_parameter(tokens, tmp);
     std::pair<ast::Variable, ast::ValueProducer> ret;
 
     if(auto exe = parse_callable(tokens, tmp)) {
@@ -453,7 +669,6 @@ parse_callable_parameter(const Tokens& tokens, size_t& token) {
       });
       throw e;
     }
-
     token = tmp;
     return ret;
   }
@@ -467,15 +682,8 @@ core::optional<ast::callable::Callable> parse_callable(const Tokens& tokens,
   auto tmp = token;
   try {
     if(read_token(tokens, tmp, regex) && read_token(tokens, tmp, "(")) {
-      if(tokens.at(token).column + tokens.at(token).token.length() !=
-         tokens.at(token + 1).column) {
-        UserSourceExc e;
-        add_exception_info(tokens, tmp, e, [&] {
-          e << "There my not be any space between the function identifier "
-               "and parentheses.";
-        });
-        throw e;
-      }
+      expect_no_space_between_bracket(tokens, token);
+
       ast::callable::Callable call(tokens.at(token));
 
       while(tmp < tokens.size()) {
@@ -486,14 +694,14 @@ core::optional<ast::callable::Callable> parse_callable(const Tokens& tokens,
             break;  // we do not expect another variable
           }
         } else {
-          break;
+          break;  // the exception comes from the parenthesis check
         }
       }
       expect_token(tokens, tmp, ")");
       token = tmp;
       return call;
     }
-  } catch(ExceptionBase<UserE>&) {
+  } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e, [&tokens, &token, &e] {
       e << "In the function call '" << tokens.at(token).token
@@ -504,9 +712,152 @@ core::optional<ast::callable::Callable> parse_callable(const Tokens& tokens,
   return {};
 }
 
-core::optional<ast::Return> parse_return(const Tokens& tokens, size_t& token) {
+//////////////////////////////////////////
+/// Scope parsing
+//////////////////////////////////////////
+core::optional<ast::Scope::Node>
+parse_scope_internals(const Tokens& tokens, size_t& token,
+                      std::vector<ast::Scope::Node>& nodes,
+                      Statement& last_statement) {
+  ast::Scope::Node node;
+
+  if(auto br = parse_break(tokens, token)) {
+    last_statement = Statement::NON_TERMINATED;
+    node = std::move(*br);
+  } else if(auto def = parse_function_definition(tokens, token)) {
+    last_statement = Statement::TERMINATED;
+    node = std::move(*def);
+  } else if(auto var_def = parse_variable_definition(tokens, token)) {
+    auto tmp = token;
+    if(read_token(tokens, tmp, "=")) {
+      last_statement = Statement::TERMINATED;
+    } else {
+      last_statement = Statement::NON_TERMINATED;
+    }
+    node = std::move(*var_def);
+  } else if(auto iff = parse_if(tokens, token)) {
+    last_statement = Statement::TERMINATED;
+    node = std::move(*iff);
+  } else if(auto whi = parse_while(tokens, token)) {
+    last_statement = Statement::TERMINATED;
+    node = std::move(*whi);
+  } else if(auto call = parse_callable(tokens, token)) {
+    last_statement = Statement::NON_TERMINATED;
+    node = std::move(*call);
+  } else if(auto ret = parse_return(tokens, token)) {
+    last_statement = Statement::NON_TERMINATED;
+    node = std::move(*ret);
+  } else if(auto lit_bool = parse_literal_bool(tokens, token)) {
+    last_statement = Statement::NON_TERMINATED;
+    node = std::move(*lit_bool);
+  } else if(auto lit_int = parse_literal_int(tokens, token)) {
+    last_statement = Statement::NON_TERMINATED;
+    node = std::move(*lit_int);
+  } else if(auto lit_double = parse_literal_double(tokens, token)) {
+    last_statement = Statement::NON_TERMINATED;
+    node = std::move(*lit_double);
+  } else if(auto lit_string = parse_literal_string(tokens, token)) {
+    last_statement = Statement::NON_TERMINATED;
+    node = std::move(*lit_string);
+  } else if(auto op = parse_operator(tokens, token, nodes)) {
+    last_statement = Statement::NON_TERMINATED;
+    op->match([&node](ast::UnaryOperator& op) { node = std::move(op); },
+              [&node](ast::BinaryOperator& op) { node = std::move(op); });
+  } else if(auto var = parse_variable(tokens, token)) {
+    auto tmp = token;
+    if(read_token(tokens, tmp, "=")) {
+      last_statement = Statement::TERMINATED;
+    } else {
+      last_statement = Statement::NON_TERMINATED;
+    }
+    node = std::move(*var);
+  } else if(auto scope = parse_scope(tokens, token)) {
+    last_statement = Statement::TERMINATED;
+    node = std::move(*scope);
+  } else if(read_token(tokens, token, "(")) {
+    if(auto condition = parse_condition(tokens, token)) {
+      node = value_to_node(*condition);
+      expect_token(tokens, token, ")");
+    } else {
+      UserSourceExc e;
+      add_exception_info(tokens, token, e,
+                         [&] { e << "Expected an expression."; });
+      throw e;
+    }
+  } else {
+    return {};
+  }
+  return node;
+}
+
+void parse_scope_internals(const Tokens& tokens, size_t& token,
+                           ast::Scope& scope) {
+  Statement last_statement = Statement::TERMINATED;
+
+  while(token < tokens.size()) {
+    if(read_token(tokens, token, ";")) {
+      last_statement = Statement::TERMINATED;
+    } else if(last_statement == Statement::NON_TERMINATED) {
+      UserSourceExc e;
+      add_exception_info(tokens, token, e, [&] { e << "Expected a ';'"; });
+      throw e;
+    } else if(auto node = parse_scope_internals(tokens, token, scope.nodes,
+                                                last_statement)) {
+      scope.nodes.push_back(std::move(*node));
+    } else {
+      auto tmp = token;  // No advance - that is done by the scope
+      if(read_token(tokens, tmp, "}")) {
+        break;  // done with the scope
+      } else {
+        throw_unexprected_token(tokens, tmp);
+      }
+    }
+  }
+  if(last_statement == Statement::NON_TERMINATED) {
+    UserSourceExc e;
+    add_exception_info(tokens, token, e, [&] { e << "Expected a ';'"; });
+    throw e;
+  }
+}
+
+core::optional<ast::Scope> parse_scope(const Tokens& tokens, size_t& token) {
   auto tmp = token;
 
+  if(read_token(tokens, tmp, "{")) {
+    ast::Scope sub_scope(tokens.at(token));
+
+    parse_scope_internals(tokens, tmp, sub_scope);
+    expect_token(tokens, tmp, "}");
+
+    token = tmp;
+    return sub_scope;
+  }
+  return {};
+}
+
+//////////////////////////////////////////
+/// Variable parsing
+//////////////////////////////////////////
+core::optional<ast::Variable> parse_variable(const Tokens& tokens,
+                                             size_t& token) {
+  const static std::regex regex("([a-z][a-z0-9_]*)");
+  auto tmp = token;
+
+  if(read_token(tokens, tmp, regex)) {
+    expect_not_keyword(tokens, token);
+
+    ast::Variable var(Token(tokens.at(token)));
+    token = tmp;
+    return var;
+  }
+  return {};
+}
+
+//////////////////////////////////////////
+/// Return parsing
+//////////////////////////////////////////
+core::optional<ast::Return> parse_return(const Tokens& tokens, size_t& token) {
+  auto tmp = token;
   try {
     if(read_token(tokens, tmp, "return")) {
       ast::Return ret(tokens.at(token));
@@ -528,110 +879,117 @@ core::optional<ast::Return> parse_return(const Tokens& tokens, size_t& token) {
       } else if(auto con = parse_condition(tokens, tmp)) {
         ret.output = std::make_unique<ast::ValueProducer>(std::move(*con));
       } else {
-        UserSourceExc e;
-        add_exception_info(tokens, tmp, e, [&] {
-          e << "Unexpected token '" << tokens.at(tmp).token << '\'';
-        });
-        throw e;
+        throw_unexprected_token(tokens, tmp);
       }
 
       token = tmp;
       return ret;
     }
-  } catch(ExceptionBase<UserE>&) {
+  } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e,
-                       [&e] { e << "At the return statement defined here:"; });
+                       [&e] { e << "At return defined here:"; });
     std::throw_with_nested(e);
   }
   return {};
 }
 
+//////////////////////////////////////////
+/// Break parsing
+//////////////////////////////////////////
 core::optional<ast::Break> parse_break(const Tokens& tokens, size_t& token) {
   auto tmp = token;
 
-  try {
-    if(read_token(tokens, tmp, "break")) {
-      ast::Break ret(tokens.at(token));
+  if(read_token(tokens, tmp, "break")) {
+    ast::Break ret(tokens.at(token));
 
-      token = tmp;
-      return ret;
-    }
-  } catch(ExceptionBase<UserE>&) {
-    UserTailExc e;
-    add_exception_info(tokens, token, e,
-                       [&e] { e << "At the break statement defined here:"; });
-    std::throw_with_nested(e);
+    token = tmp;
+    return ret;
   }
   return {};
 }
 
+//////////////////////////////////////////
+/// Operator parsing
+//////////////////////////////////////////
+template <typename T, typename is_Operator<T>::type>
+void expect_operator_type(const char* const file, const size_t line,
+                          const T& op) {
+  using Operation =
+      typename std::conditional<std::is_same<T, ast::UnaryOperator>::value,
+                                ast::UnaryOperation,
+                                ast::BinaryOperation>::type;
+  if(op.operation == Operation::NONE) {
+    OperatorExc e(file, line, "Missing operator");
+    e << "There was no type specified for the operator:" << op;
+    throw e;
+  }
+}
+
 ast::ValueProducer node_to_value(ast::Scope::Node& node) {
+  using namespace ast;
+  using namespace callable;
+  using EF = EntryFunction;
   ast::ValueProducer value;
+
   node.match(
-      [&value](ast::Variable& e) { value = std::move(e); },
-      [&value](ast::callable::Callable& e) { value = std::move(e); },
-      [&value](ast::UnaryOperator& e) { value = std::move(e); },
-      [&value](ast::BinaryOperator& e) { value = std::move(e); },
-      [&value](ast::Literal<ast::Literals::BOOL>& e) { value = std::move(e); },
-      [&value](ast::Literal<ast::Literals::INT>& e) { value = std::move(e); },
-      [&value](ast::Literal<ast::Literals::DOUBLE>& e) {
-        value = std::move(e);
-      },
-      [&value](ast::Literal<ast::Literals::STRING>& e) {
-        value = std::move(e);
-      },
-      [&value](ast::Break&) {
-        ConversionExc e(__FILE__, __LINE__, "Bad conversion");
-        e << "Break is not convertible to a ValueProducer.";
-        throw e;
-      },
-      [&value](ast::Define&) {
-        ConversionExc e(__FILE__, __LINE__, "Bad conversion");
-        e << "Define is not convertible to a ValueProducer.";
-        throw e;
-      },
-      [&value](ast::callable::EntryFunction&) {
-        ConversionExc e(__FILE__, __LINE__, "Bad conversion");
-        e << "EntryFunction is not convertible to a ValueProducer.";
-        throw e;
-      },
-      [&value](ast::callable::Function&) {
-        ConversionExc e(__FILE__, __LINE__, "Bad conversion");
-        e << "Function is not convertible to a ValueProducer.";
-        throw e;
-      },
-      [&value](ast::Return&) {
-        ConversionExc e(__FILE__, __LINE__, "Bad conversion");
-        e << "Return is not convertible to a ValueProducer.";
-        throw e;
-      },
-      [&value](ast::Scope&) {
-        ConversionExc e(__FILE__, __LINE__, "Bad conversion");
-        e << "Scope is not convertible to a ValueProducer.";
-        throw e;
-      },
-      [&value](ast::logic::If&) {
-        ConversionExc e(__FILE__, __LINE__, "Bad conversion");
-        e << "If is not convertible to a ValueProducer.";
-        throw e;
-      },
-      [&value](ast::loop::While&) {
-        ConversionExc e(__FILE__, __LINE__, "Bad conversion");
-        e << "While is not convertible to a ValueProducer.";
-        throw e;
-      },
-      [&value](ast::loop::DoWhile&) {
-        ConversionExc e(__FILE__, __LINE__, "Bad conversion");
-        e << "DoWhile is not convertible to a ValueProducer.";
-        throw e;
-      },
-      [&value](ast::loop::For&) {
-        ConversionExc e(__FILE__, __LINE__, "Bad conversion");
-        e << "For is not convertible to a ValueProducer.";
-        throw e;
-      });
+      [&value](Variable& e) { value = std::move(e); },
+      [&value](Callable& e) { value = std::move(e); },
+      [&value](UnaryOperator& e) { value = std::move(e); },
+      [&value](BinaryOperator& e) { value = std::move(e); },
+      [&value](Literal<Literals::BOOL>& e) { value = std::move(e); },
+      [&value](Literal<Literals::INT>& e) { value = std::move(e); },
+      [&value](Literal<Literals::DOUBLE>& e) { value = std::move(e); },
+      [&value](Literal<Literals::STRING>& e) { value = std::move(e); },
+      [](Break&) { throw_conversion(__FILE__, __LINE__, "Break"); },
+      [](Define&) { throw_conversion(__FILE__, __LINE__, "Define"); },
+      [](EF&) { throw_conversion(__FILE__, __LINE__, "EntryFunction"); },
+      [](Function&) { throw_conversion(__FILE__, __LINE__, "Function"); },
+      [](Return&) { throw_conversion(__FILE__, __LINE__, "Return"); },
+      [](Scope&) { throw_conversion(__FILE__, __LINE__, "Scope"); },
+      [](logic::If&) { throw_conversion(__FILE__, __LINE__, "If"); },
+      [](loop::While&) { throw_conversion(__FILE__, __LINE__, "While"); },
+      [](loop::DoWhile&) { throw_conversion(__FILE__, __LINE__, "DoWhile"); },
+      [](loop::For&) { throw_conversion(__FILE__, __LINE__, "For"); });
   return value;
+}
+
+core::variant<ast::UnaryOperator, ast::BinaryOperator>
+node_to_operator(const Tokens& tokens, ast::Scope::Node& node) {
+  using namespace ast;
+
+  core::variant<ast::UnaryOperator, ast::BinaryOperator> ret;
+  core::optional<Token> token;
+
+  node.match(
+      [&ret](UnaryOperator& op) {
+        expect_operator_type(__FILE__, __LINE__, op);
+        ret = std::move(op);
+      },
+      [&ret](BinaryOperator& op) {
+        expect_operator_type(__FILE__, __LINE__, op);
+        ret = std::move(op);
+      },
+      [&token](Break& ele) { token = ele.token; },
+      [&token](Variable& ele) { token = ele.token; },
+      [&token](Define& ele) { token = ele.token; },
+      [&token](callable::EntryFunction& ele) { token = ele.token; },
+      [&token](callable::Callable& ele) { token = ele.token; },
+      [&token](callable::Function& ele) { token = ele.token; },
+      [&token](Return& ele) { token = ele.token; },
+      [&token](Scope& ele) { token = ele.token; },
+      [&token](logic::If& ele) { token = ele.token; },
+      [&token](loop::While& ele) { token = ele.token; },
+      [&token](loop::DoWhile& ele) { token = ele.token; },
+      [&token](loop::For& ele) { token = ele.token; },
+      [&token](Literal<Literals::BOOL>& ele) { token = ele.token; },
+      [&token](Literal<Literals::INT>& ele) { token = ele.token; },
+      [&token](Literal<Literals::DOUBLE>& ele) { token = ele.token; },
+      [&token](Literal<Literals::STRING>& ele) { token = ele.token; });
+  if(token) {
+    throw_unexprected_token(*token, tokens.file);
+  }
+  return ret;
 }
 
 ast::Scope::Node value_to_node(ast::ValueProducer& producer) {
@@ -648,6 +1006,168 @@ ast::Scope::Node value_to_node(ast::ValueProducer& producer) {
   return node;
 }
 
+core::optional<ast::Variable> extract_var_def(ast::Scope::Node& node) {
+  core::optional<ast::Variable> ret;
+
+  node.match(
+      [&ret](const ast::Define& def) {
+        if(def.definition) {
+          def.definition->match([&ret](const ast::Variable& var) { ret = var; },
+                                [](const ast::callable::Function&) {},
+                                [](const ast::callable::EntryFunction&) {});
+        }
+      },                                                  //
+      [](const ast::Break&) {},                           //
+      [](const ast::Variable&) {},                        //
+      [](const ast::callable::EntryFunction&) {},         //
+      [](const ast::callable::Callable&) {},              //
+      [](const ast::callable::Function&) {},              //
+      [](const ast::Return&) {},                          //
+      [](const ast::Scope&) {},                           //
+      [](const ast::UnaryOperator&) {},                   //
+      [](const ast::BinaryOperator&) {},                  //
+      [](const ast::logic::If&) {},                       //
+      [](const ast::loop::While&) {},                     //
+      [](const ast::loop::DoWhile&) {},                   //
+      [](const ast::loop::For&) {},                       //
+      [](const ast::Literal<ast::Literals::BOOL>&) {},    //
+      [](const ast::Literal<ast::Literals::INT>&) {},     //
+      [](const ast::Literal<ast::Literals::DOUBLE>&) {},  //
+      [](const ast::Literal<ast::Literals::STRING>&) {});
+  return ret;
+}
+
+void setup_operator_wokespace(
+    std::vector<ast::Scope::Node>& workspace,
+    std::vector<ast::Scope::Node>& nodes,
+    core::variant<ast::UnaryOperator, ast::BinaryOperator>& op) {
+  op.match(
+      [&workspace](ast::UnaryOperator& op) {
+        expect_operator_type(__FILE__, __LINE__, op);
+        workspace.push_back(std::move(op));
+      },
+      [&nodes, &workspace](ast::BinaryOperator& op) {
+        expect_operator_type(__FILE__, __LINE__, op);
+        if(nodes.size() > 0) {
+          if(auto var = extract_var_def(nodes.back())) {
+            workspace.push_back(std::move(*var));
+          } else {
+            workspace.push_back(std::move(nodes.back()));
+            nodes.erase(nodes.end() - 1);
+          }
+        }
+        workspace.push_back(std::move(op));
+      });
+}
+
+void parse_operants(const Tokens& tokens, size_t& token,
+                    std::vector<ast::Scope::Node>& workspace) {
+  auto tmp = token;
+
+  while(tmp < tokens.size()) {
+    if(auto exe = parse_callable(tokens, tmp)) {
+      workspace.push_back(std::move(*exe));
+    } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
+      workspace.push_back(std::move(*lit_bool));
+    } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
+      workspace.push_back(std::move(*lit_int));
+    } else if(auto lit_double = parse_literal_double(tokens, tmp)) {
+      workspace.push_back(std::move(*lit_double));
+    } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
+      workspace.push_back(std::move(*lit_string));
+    } else if(auto var = parse_variable(tokens, tmp)) {
+      workspace.push_back(std::move(*var));
+    } else if(auto op = parse_operator_internals(tokens, tmp)) {
+      op->match(
+          [&workspace](ast::UnaryOperator& op) {
+            workspace.push_back(std::move(op));
+          },
+          [&workspace](ast::BinaryOperator& op) {
+            workspace.push_back(std::move(op));
+          });
+    } else if(read_token(tokens, tmp, "(")) {
+      if(auto con = parse_condition(tokens, tmp)) {
+        workspace.push_back(value_to_node(*con));
+        expect_token(tokens, tmp, ")");
+      } else {
+        UserSourceExc e;
+        add_exception_info(tokens, tmp, e,
+                           [&] { e << "Expected an expression."; });
+        throw e;
+      }
+    } else {
+      break;  // We are done
+    }
+  }
+
+  token = tmp;
+}
+
+
+void expect_operatees(const Token& token, const std::string& file,
+                      const std::vector<ast::Scope::Node>::iterator& previous,
+                      const std::vector<ast::Scope::Node>::iterator& next,
+                      const std::vector<ast::Scope::Node>::iterator& end) {
+  if(previous == end && next == end) {
+    UserSourceExc e;
+    add_exception_info(token, file, e, [&] {
+      e << "Missing left and right hand token for binary operator '"
+        << token.token << '\'';
+    });
+    throw e;
+  }
+  if(previous == end) {
+    UserSourceExc e;
+    add_exception_info(token, file, e, [&] {
+      e << "Missing left hand token for binary operator '" << token.token
+        << '\'';
+    });
+    throw e;
+  }
+  if(next == end) {
+    UserSourceExc e;
+    add_exception_info(token, file, e, [&] {
+      e << "Missing right hand token for binary operator '" << token.token
+        << '\'';
+    });
+    throw e;
+  }
+}
+
+void assamble_unary(const std::string& file,
+                    std::vector<ast::Scope::Node>& nodes,
+                    std::vector<ast::Scope::Node>::iterator& next,
+                    ast::UnaryOperator& op) {
+  if(next == nodes.end()) {
+    UserSourceExc e;
+    add_exception_info(op.token, file, e, [&] {
+      e << "Missing token for unary operator '" << op.token.token << '\'';
+    });
+    throw e;
+  }
+  op.operand = std::make_unique<ast::ValueProducer>(node_to_value(*next));
+  nodes.erase(next);
+}
+
+void assamble_binary(const std::string& file,
+                     std::vector<ast::Scope::Node>& nodes, size_t& index,
+                     std::vector<ast::Scope::Node>::iterator& previous,
+                     std::vector<ast::Scope::Node>::iterator& next,
+                     ast::BinaryOperator& op) {
+  expect_operatees(op.token, file, previous, next, nodes.end());
+
+  op.left_operand =
+      std::make_unique<ast::ValueProducer>(node_to_value(*previous));
+  op.right_operand = std::make_unique<ast::ValueProducer>(node_to_value(*next));
+
+  --index;  // we used the left
+  nodes.erase(next);
+  // We changed the vector - get new, VALID iterator
+  previous = nodes.begin();
+  std::advance(previous, index);  // we decremented index already
+  nodes.erase(previous);
+}
+
 void assamble_operator(const std::string& file,
                        std::vector<ast::Scope::Node>& nodes, size_t& index) {
   auto next = nodes.begin();
@@ -661,51 +1181,10 @@ void assamble_operator(const std::string& file,
 
   nodes.at(index).match(
       [&file, &nodes, &next](ast::UnaryOperator& op) {
-        if(next == nodes.end()) {
-          UserSourceExc e;
-          add_exception_info(op.token, file, e, [&] {
-            e << "Missing token for unary operator '" << op.token.token << '\'';
-          });
-          throw e;
-        }
-        op.operand = std::make_unique<ast::ValueProducer>(node_to_value(*next));
-        nodes.erase(next);
+        assamble_unary(file, nodes, next, op);
       },
       [&file, &nodes, &index, &next, &previous](ast::BinaryOperator& op) {
-        if(previous == nodes.end() && next == nodes.end()) {
-          UserSourceExc e;
-          add_exception_info(op.token, file, e, [&] {
-            e << "Missing left and right hand token for binary operator '"
-              << op.token.token << '\'';
-          });
-          throw e;
-        }
-        if(previous == nodes.end()) {
-          UserSourceExc e;
-          add_exception_info(op.token, file, e, [&] {
-            e << "Missing left hand token for binary operator '"
-              << op.token.token << '\'';
-          });
-          throw e;
-        }
-        if(next == nodes.end()) {
-          UserSourceExc e;
-          add_exception_info(op.token, file, e, [&] {
-            e << "Missing right hand token for binary operator '"
-              << op.token.token << '\'';
-          });
-          throw e;
-        }
-        op.left_operand =
-            std::make_unique<ast::ValueProducer>(node_to_value(*previous));
-        op.right_operand =
-            std::make_unique<ast::ValueProducer>(node_to_value(*next));
-        --index;
-        nodes.erase(next);
-        // We changed the vector - get new, VALID iterator
-        previous = nodes.begin();
-        std::advance(previous, index);  // we decremented index already
-        nodes.erase(previous);
+        assamble_binary(file, nodes, index, previous, next, op);
       },
       [](ast::Break&) {},                            //
       [](ast::Variable&) {},                         //
@@ -731,11 +1210,9 @@ void assamble_operators(const std::string& file,
   for(size_t i = 0; i < nodes.size(); ++i) {
     nodes.at(i).match(
         [&file, &nodes, &i, operaton](ast::UnaryOperator& op) {
-          if(op.operation == ast::UnaryOperation::NONE) {
-            OperatorExc e(__FILE__, __LINE__, "Missing operator");
-            e << "1There was no type specified for the operator:" << op;
-            throw e;
-          } else if(op.operation == operaton && !op.operand) {
+          expect_operator_type(__FILE__, __LINE__, op);
+
+          if(op.operation == operaton && !op.operand) {
             assamble_operator(file, nodes, i);
           }
         },
@@ -765,12 +1242,10 @@ void assamble_operators(const std::string& file,
   for(size_t i = 0; i < nodes.size(); ++i) {
     nodes.at(i).match(
         [&file, &nodes, &i, operaton](ast::BinaryOperator& op) {
-          if(op.operation == ast::BinaryOperation::NONE) {
-            OperatorExc e(__FILE__, __LINE__, "Missing operator");
-            e << "2There was no type specified for the operator:" << op;
-            throw e;
-          } else if(op.operation == operaton && !op.left_operand &&
-                    !op.right_operand) {
+          expect_operator_type(__FILE__, __LINE__, op);
+
+          if(op.operation == operaton && !op.left_operand &&
+             !op.right_operand) {
             assamble_operator(file, nodes, i);
           }
         },
@@ -816,13 +1291,7 @@ void assamble_operator(const std::string& file,
   assamble_operators(file, nodes, ast::BinaryOperation::ASSIGNMENT);
 
   if(nodes.size() > 1) {
-    Token token = node_to_token(nodes.at(1));
-
-    UserSourceExc e;
-    add_exception_info(token, file, e, [&] {
-      e << "Unexpected token '" << token.token << '\'';
-    });
-    throw e;
+    throw_unexprected_token(node_to_token(nodes.at(1)), file);
   }
 }
 
@@ -877,37 +1346,6 @@ parse_operator_internals(const Tokens& tokens, size_t& token) {
   return ret;
 }
 
-core::optional<ast::Variable> extract_var_def(ast::Scope::Node& node) {
-  core::optional<ast::Variable> ret;
-
-  node.match(
-      [&ret](const ast::Define& def) {
-        if(def.definition) {
-          def.definition->match([&ret](const ast::Variable& var) { ret = var; },
-                                [](const ast::callable::Function&) {},
-                                [](const ast::callable::EntryFunction&) {});
-        }
-      },                                                  //
-      [](const ast::Break&) {},                           //
-      [](const ast::Variable&) {},                        //
-      [](const ast::callable::EntryFunction&) {},         //
-      [](const ast::callable::Callable&) {},              //
-      [](const ast::callable::Function&) {},              //
-      [](const ast::Return&) {},                          //
-      [](const ast::Scope&) {},                           //
-      [](const ast::UnaryOperator&) {},                   //
-      [](const ast::BinaryOperator&) {},                  //
-      [](const ast::logic::If&) {},                       //
-      [](const ast::loop::While&) {},                     //
-      [](const ast::loop::DoWhile&) {},                   //
-      [](const ast::loop::For&) {},                       //
-      [](const ast::Literal<ast::Literals::BOOL>&) {},    //
-      [](const ast::Literal<ast::Literals::INT>&) {},     //
-      [](const ast::Literal<ast::Literals::DOUBLE>&) {},  //
-      [](const ast::Literal<ast::Literals::STRING>&) {});
-  return ret;
-}
-
 core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>>
 parse_operator(const Tokens& tokens, size_t& token,
                std::vector<ast::Scope::Node>& nodes) {
@@ -915,206 +1353,18 @@ parse_operator(const Tokens& tokens, size_t& token,
   core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>> ret;
 
   try {
-    std::vector<ast::Scope::Node> workplace;
+    std::vector<ast::Scope::Node> workspace;
 
     if(auto op = parse_operator_internals(tokens, tmp)) {
-      op->match(
-          [&workplace](ast::UnaryOperator& op) {
-            if(op.operation == ast::UnaryOperation::NONE) {
-              OperatorExc e(__FILE__, __LINE__, "Missing operator");
-              e << "3There was no type specified for the operator:" << op;
-              throw e;
-            }
-            workplace.push_back(std::move(op));
-          },
-          [&nodes, &workplace](ast::BinaryOperator& op) {
-            if(op.operation == ast::BinaryOperation::NONE) {
-              OperatorExc e(__FILE__, __LINE__, "Missing operator");
-              e << "4There was no type specified for the operator:" << op;
-              throw e;
-            }
-            if(nodes.size() > 0) {
-              if(auto var = extract_var_def(nodes.back())) {
-                workplace.push_back(std::move(*var));
-              } else {
-                workplace.push_back(std::move(nodes.back()));
-                nodes.erase(nodes.end() - 1);
-              }
-            }
-            workplace.push_back(std::move(op));
-          });
+      setup_operator_wokespace(workspace, nodes, *op);
+      parse_operants(tokens, tmp, workspace);
+      assamble_operator(tokens.file, workspace);
 
-      while(tmp < tokens.size()) {
-        if(auto exe = parse_callable(tokens, tmp)) {
-          workplace.push_back(std::move(*exe));
-        } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
-          workplace.push_back(std::move(*lit_bool));
-        } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
-          workplace.push_back(std::move(*lit_int));
-        } else if(auto lit_double = parse_literal_double(tokens, tmp)) {
-          workplace.push_back(std::move(*lit_double));
-        } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
-          workplace.push_back(std::move(*lit_string));
-        } else if(auto var = parse_variable(tokens, tmp)) {
-          workplace.push_back(std::move(*var));
-        } else if(auto op = parse_operator_internals(tokens, tmp)) {
-          op->match(
-              [&workplace](ast::UnaryOperator& op) {
-                workplace.push_back(std::move(op));
-              },
-              [&workplace](ast::BinaryOperator& op) {
-                workplace.push_back(std::move(op));
-              });
-        } else if(read_token(tokens, tmp, "(")) {
-          if(auto con = parse_condition(tokens, tmp)) {
-            workplace.push_back(value_to_node(*con));
-            expect_token(tokens, tmp, ")");
-          } else {
-            UserSourceExc e;
-            add_exception_info(tokens, tmp, e,
-                               [&] { e << "Expected an expression."; });
-            throw e;
-          }
-        } else {
-          break;  // We are done
-        }
-      }
-
-      assamble_operator(tokens.file, workplace);
-
-      if(workplace.size() == 1) {
-        workplace.front().match(
-            [&ret](ast::UnaryOperator& op) {
-              if(op.operation == ast::UnaryOperation::NONE) {
-                OperatorExc e(__FILE__, __LINE__, "Missing operator");
-                e << "5There was no type specified for the operator:" << op;
-                throw e;
-              }
-              ret.emplace(std::move(op));
-            },
-            [&ret](ast::BinaryOperator& op) {
-              if(op.operation == ast::BinaryOperation::NONE) {
-                OperatorExc e(__FILE__, __LINE__, "Missing operator");
-                e << "6There was no type specified for the operator:" << op;
-                throw e;
-              }
-              ret.emplace(std::move(op));
-            },
-            [&tokens](ast::Break& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            },
-            [&tokens](ast::Variable& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            },
-            [&tokens](ast::Define& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            },
-            [&tokens](ast::callable::EntryFunction& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            },
-            [&tokens](ast::callable::Callable& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            },
-            [&tokens](ast::callable::Function& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            },
-            [&tokens](ast::Return& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            },
-            [&tokens](ast::Scope& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            },
-            [&tokens](ast::logic::If& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            },
-            [&tokens](ast::loop::While& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            },
-            [&tokens](ast::loop::DoWhile& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            },
-            [&tokens](ast::loop::For& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            },
-            [&tokens](ast::Literal<ast::Literals::BOOL>& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            },
-            [&tokens](ast::Literal<ast::Literals::INT>& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            },
-            [&tokens](ast::Literal<ast::Literals::DOUBLE>& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            },
-            [&tokens](ast::Literal<ast::Literals::STRING>& ele) {
-              UserSourceExc e;
-              add_exception_info(ele.token, tokens.file, e, [&] {
-                e << "Unexpected token '" << ele.token.token << '\'';
-              });
-              throw e;
-            });
+      if(workspace.size() == 1) {
+        ret = node_to_operator(tokens, workspace.front());
       }
     }
-  } catch(ExceptionBase<UserE>&) {
+  } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e, [&tokens, &token, &e] {
       e << "At the operator '" << tokens.at(token).token << "' defined here:";
@@ -1127,6 +1377,9 @@ parse_operator(const Tokens& tokens, size_t& token,
   return ret;
 }
 
+//////////////////////////////////////////
+/// Condition parsing
+//////////////////////////////////////////
 ast::ValueProducer
 assamble_conditions(const std::string& file,
                     std::vector<ast::Scope::Node> conditions) {
@@ -1148,13 +1401,7 @@ assamble_conditions(const std::string& file,
   assamble_operators(file, conditions, ast::BinaryOperation::OR);
 
   if(conditions.size() > 1) {
-    Token token = node_to_token(conditions.at(1));
-
-    UserSourceExc e;
-    add_exception_info(token, file, e, [&] {
-      e << "Unexpected token '" << token.token << '\'';
-    });
-    throw e;
+    throw_unexprected_token(node_to_token(conditions.at(1)), file);
   }
   return node_to_value(conditions.front());
 }
@@ -1208,6 +1455,65 @@ core::optional<ast::ValueProducer> parse_condition(const Tokens& tokens,
   }
 }
 
+//////////////////////////////////////////
+/// If parsing
+//////////////////////////////////////////
+void parse_if_condition(const Tokens& tokens, size_t& token,
+                        ast::logic::If& iff) {
+  auto tmp = token;
+
+  expect_token(tokens, tmp, "(");
+  auto condition = parse_condition(tokens, tmp);
+  if(!condition) {
+    UserSourceExc e;
+    add_exception_info(tokens, tmp, e, [&] { e << "Expected an expression."; });
+    throw e;
+  }
+
+  expect_token(tokens, tmp, ")");
+
+  token = tmp;
+  iff.condition = std::make_unique<ast::ValueProducer>(std::move(*condition));
+}
+
+void parse_true(const Tokens& tokens, size_t& token, ast::logic::If& iff) {
+  auto tmp = token;
+
+  auto true_scope = parse_scope(tokens, tmp);
+
+  if(!true_scope) {
+    UserSourceExc e;
+    add_exception_info(tokens, tmp, e, [&] { e << "Expected a scope."; });
+    throw e;
+  }
+  token = tmp;
+  iff.true_scope = std::make_unique<ast::Scope>(std::move(*true_scope));
+}
+
+void parse_false(const Tokens& tokens, size_t& token, ast::logic::If& iff) {
+  auto tmp = token;
+
+  if(read_token(tokens, tmp, "else")) {
+    try {
+      auto scope = parse_scope(tokens, tmp);
+
+      if(!scope) {
+        UserSourceExc e;
+        add_exception_info(tokens, tmp, e, [&] { e << "Expected a scope."; });
+        throw e;
+      }
+
+      token = tmp;
+      iff.false_scope = std::make_unique<ast::Scope>(std::move(*scope));
+    } catch(UserExc&) {
+      UserTailExc e;
+      add_exception_info(tokens, token, e,
+                         [&e] { e << "In the else part defined here:"; });
+      std::throw_with_nested(e);
+    }
+  }
+}
+
 core::optional<ast::logic::If> parse_if(const Tokens& tokens, size_t& token) {
   auto tmp = token;
 
@@ -1215,55 +1521,55 @@ core::optional<ast::logic::If> parse_if(const Tokens& tokens, size_t& token) {
     if(read_token(tokens, tmp, "if")) {
       ast::logic::If iff(tokens.at(token));
 
-      expect_token(tokens, tmp, "(");
-      auto condition = parse_condition(tokens, tmp);
-      if(!condition) {
-        UserSourceExc e;
-        add_exception_info(tokens, tmp, e,
-                           [&] { e << "Expected an expression."; });
-        throw e;
-      }
-      iff.condition =
-          std::make_unique<ast::ValueProducer>(std::move(*condition));
-      expect_token(tokens, tmp, ")");
+      parse_if_condition(tokens, tmp, iff);
+      parse_true(tokens, tmp, iff);
 
-      auto true_scope = parse_scope(tokens, tmp);
-      if(!true_scope) {
-        UserSourceExc e;
-        add_exception_info(tokens, tmp, e, [&] { e << "Expected a scope."; });
-        throw e;
-      }
-      iff.true_scope = std::make_unique<ast::Scope>(std::move(*true_scope));
-
-      auto tok_else = tmp;
-      if(tmp < tokens.size() && read_token(tokens, tmp, "else")) {
-        try {
-          auto false_scope = parse_scope(tokens, tmp);
-          if(!false_scope) {
-            UserSourceExc e;
-            add_exception_info(tokens, tmp, e,
-                               [&] { e << "Expected a scope."; });
-            throw e;
-          }
-          iff.false_scope =
-              std::make_unique<ast::Scope>(std::move(*false_scope));
-        } catch(ExceptionBase<UserE>&) {
-          UserTailExc e;
-          add_exception_info(tokens, tok_else, e,
-                             [&e] { e << "In the else part defined here:"; });
-          std::throw_with_nested(e);
-        }
+      if(tmp < tokens.size()) {
+        parse_false(tokens, tmp, iff);
       }
       token = tmp;
       return iff;
     }
-  } catch(ExceptionBase<UserE>&) {
+  } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e,
                        [&e] { e << "In the if defined here:"; });
     std::throw_with_nested(e);
   }
   return {};
+}
+
+//////////////////////////////////////////
+/// While parsing
+//////////////////////////////////////////
+void parse_while_condition(const Tokens& tokens, size_t& token,
+                           ast::loop::While& whi) {
+  auto tmp = token;
+
+  expect_token(tokens, tmp, "(");
+  auto condition = parse_condition(tokens, tmp);
+  if(!condition) {
+    UserSourceExc e;
+    add_exception_info(tokens, tmp, e, [&] { e << "Expected a condition."; });
+    throw e;
+  }
+  whi.condition = std::make_unique<ast::ValueProducer>(std::move(*condition));
+  expect_token(tokens, tmp, ")");
+  token = tmp;
+}
+
+void parse_while_scope(const Tokens& tokens, size_t& token,
+                       ast::loop::While& whi) {
+  auto tmp = token;
+
+  auto scope = parse_scope(tokens, tmp);
+  if(!scope) {
+    UserSourceExc e;
+    add_exception_info(tokens, tmp, e, [&] { e << "Expected a scope."; });
+    throw e;
+  }
+  whi.scope = std::make_unique<ast::Scope>(std::move(*scope));
+  token = tmp;
 }
 
 core::optional<ast::loop::While> parse_while(const Tokens& tokens,
@@ -1274,146 +1580,18 @@ core::optional<ast::loop::While> parse_while(const Tokens& tokens,
     if(read_token(tokens, tmp, "while")) {
       ast::loop::While w(tokens.at(token));
 
-      expect_token(tokens, tmp, "(");
-      auto condition = parse_condition(tokens, tmp);
-      if(!condition) {
-        UserSourceExc e;
-        add_exception_info(tokens, tmp, e,
-                           [&] { e << "Expected a condition."; });
-        throw e;
-      }
-      w.condition = std::make_unique<ast::ValueProducer>(std::move(*condition));
-      expect_token(tokens, tmp, ")");
-
-      auto scope = parse_scope(tokens, tmp);
-      if(!scope) {
-        UserSourceExc e;
-        add_exception_info(tokens, tmp, e, [&] { e << "Expected a scope."; });
-        throw e;
-      }
-      w.scope = std::make_unique<ast::Scope>(std::move(*scope));
-
+      parse_while_condition(tokens, tmp, w);
+      parse_while_scope(tokens, tmp, w);
       token = tmp;
       return w;
     }
-  } catch(ExceptionBase<UserE>&) {
+  } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e,
                        [&e] { e << "In the while defined here:"; });
     std::throw_with_nested(e);
   }
   return {};
-}
-
-enum class Statement { TERMINAL, NONTERMINAL };
-
-core::optional<ast::Scope::Node>
-parse_scope_internals(const Tokens& tokens, size_t& token,
-                      std::vector<ast::Scope::Node>& nodes,
-                      Statement& last_statement) {
-  ast::Scope::Node node;
-
-  if(auto br = parse_break(tokens, token)) {
-    last_statement = Statement::NONTERMINAL;
-    node = std::move(*br);
-  } else if(auto def = parse_function_definition(tokens, token)) {
-    last_statement = Statement::TERMINAL;
-    node = std::move(*def);
-  } else if(auto var_def = parse_variable_definition(tokens, token)) {
-    auto tmp = token;
-    if(read_token(tokens, tmp, "=")) {
-      last_statement = Statement::TERMINAL;
-    } else {
-      last_statement = Statement::NONTERMINAL;
-    }
-    node = std::move(*var_def);
-  } else if(auto iff = parse_if(tokens, token)) {
-    last_statement = Statement::TERMINAL;
-    node = std::move(*iff);
-  } else if(auto whi = parse_while(tokens, token)) {
-    last_statement = Statement::TERMINAL;
-    node = std::move(*whi);
-  } else if(auto call = parse_callable(tokens, token)) {
-    last_statement = Statement::NONTERMINAL;
-    node = std::move(*call);
-  } else if(auto ret = parse_return(tokens, token)) {
-    last_statement = Statement::NONTERMINAL;
-    node = std::move(*ret);
-  } else if(auto lit_bool = parse_literal_bool(tokens, token)) {
-    last_statement = Statement::NONTERMINAL;
-    node = std::move(*lit_bool);
-  } else if(auto lit_int = parse_literal_int(tokens, token)) {
-    last_statement = Statement::NONTERMINAL;
-    node = std::move(*lit_int);
-  } else if(auto lit_double = parse_literal_double(tokens, token)) {
-    last_statement = Statement::NONTERMINAL;
-    node = std::move(*lit_double);
-  } else if(auto lit_string = parse_literal_string(tokens, token)) {
-    last_statement = Statement::NONTERMINAL;
-    node = std::move(*lit_string);
-  } else if(auto op = parse_operator(tokens, token, nodes)) {
-    last_statement = Statement::NONTERMINAL;
-    op->match([&node](ast::UnaryOperator& op) { node = std::move(op); },
-              [&node](ast::BinaryOperator& op) { node = std::move(op); });
-  } else if(auto var = parse_variable(tokens, token)) {
-    auto tmp = token;
-    if(read_token(tokens, tmp, "=")) {
-      last_statement = Statement::TERMINAL;
-    } else {
-      last_statement = Statement::NONTERMINAL;
-    }
-    node = std::move(*var);
-  } else if(auto scope = parse_scope(tokens, token)) {
-    last_statement = Statement::TERMINAL;
-    node = std::move(*scope);
-  } else if(read_token(tokens, token, "(")) {
-    if(auto condition = parse_condition(tokens, token)) {
-      node = value_to_node(*condition);
-      expect_token(tokens, token, ")");
-    } else {
-      UserSourceExc e;
-      add_exception_info(tokens, token, e,
-                         [&] { e << "Expected an expression."; });
-      throw e;
-    }
-  } else {
-    return {};
-  }
-  return node;
-}
-
-void parse_scope_internals(const Tokens& tokens, size_t& token,
-                           ast::Scope& scope) {
-  Statement last_statement = Statement::TERMINAL;
-
-  while(token < tokens.size()) {
-    if(read_token(tokens, token, ";")) {
-      last_statement = Statement::TERMINAL;
-    } else if(last_statement == Statement::NONTERMINAL) {
-      UserSourceExc e;
-      add_exception_info(tokens, token, e, [&] { e << "Expected a ';'"; });
-      throw e;
-    } else if(auto node = parse_scope_internals(tokens, token, scope.nodes,
-                                                last_statement)) {
-      scope.nodes.push_back(std::move(*node));
-    } else {
-      auto tmp = token;  // No advance - that is done by the scope
-      if(read_token(tokens, tmp, "}")) {
-        break;  // done with the scope
-      } else {
-        UserSourceExc e;
-        add_exception_info(tokens, tmp, e, [&] {
-          e << "Unexpected token '" << tokens.at(tmp).token << '\'';
-        });
-        throw e;
-      }
-    }
-  }
-  if(last_statement == Statement::NONTERMINAL) {
-    UserSourceExc e;
-    add_exception_info(tokens, token, e, [&] { e << "Expected a ';'"; });
-    throw e;
-  }
 }
 }
 
@@ -1425,7 +1603,8 @@ ast::Scope parse(std::string macro, std::string file_name) {
     parse_scope_internals(tokens, i, root);
   }
 
-  // TODO check that no break is in a scope that is not contained by a loop
+  // TODO check that no break is in a scope that is not contained by a
+  // loop
   // (functions reset the counter)
   // TODO check that no ast elements follow a break
   // TODO check that no ast elements follow a return
