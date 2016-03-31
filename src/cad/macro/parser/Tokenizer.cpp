@@ -176,8 +176,6 @@ std::vector<Token> tokenize(Macro macro) {
   Position position = {1, 1, 0, 0, std::make_shared<std::string>()};
   token_begin(macro, position);
 
-  // TODO add line string to Token
-
   while(position.string < macro.size()) {
     tokens.push_back(next_token(macro, position));
     token_begin(macro, position);

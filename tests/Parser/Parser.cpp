@@ -135,7 +135,7 @@ TEST_CASE("Callable") {
   }
 
   SECTION("Space after function name") {
-    REQUIRE_THROWS(parse("fun ();"));
+    REQUIRE_THROWS_AS(parse("fun ();"), ExceptionBase<UserE>);
   }
 
   SECTION("Parameter") {
@@ -156,7 +156,7 @@ TEST_CASE("Callable") {
   }
 
   SECTION("Parameter") {
-    REQUIRE_THROWS(parse("fun(herbert);"));
+    REQUIRE_THROWS_AS(parse("fun(herbert);"), ExceptionBase<UserE>);
   }
 
   SECTION("Multiple Parameter") {
@@ -481,8 +481,7 @@ TEST_CASE("If") {
     }
 
     SECTION("Missing Operator") {
-
-      REQUIRE_THROWS(parse("if(a b){}"));
+      REQUIRE_THROWS_AS(parse("if(a b){}"), ExceptionBase<UserE>);
     }
   }
 
@@ -695,23 +694,25 @@ TEST_CASE("If") {
 }
 
 TEST_CASE("While") {  // Basically an if
-  auto ast = parse("while(a){}");
-  auto line1 = std::make_shared<std::string>("while(a){}");
+  SECTION("default") {
+    auto ast = parse("while(a){}");
+    auto line1 = std::make_shared<std::string>("while(a){}");
 
-  Scope expected({0, 0, ""});
-  {
-    While w({1, 1, "while", line1});
-    w.condition = std::make_unique<ValueProducer>(Variable({1, 7, "a", line1}));
-    w.scope = std::make_unique<Scope>(Token(1, 9, "{", line1));
-    expected.nodes.push_back(std::move(w));
+    Scope expected({0, 0, ""});
+    {
+      While w({1, 1, "while", line1});
+      w.condition =
+          std::make_unique<ValueProducer>(Variable({1, 7, "a", line1}));
+      w.scope = std::make_unique<Scope>(Token(1, 9, "{", line1));
+      expected.nodes.push_back(std::move(w));
+    }
+
+    REQUIRE(ast == expected);
   }
-
-  REQUIRE(ast == expected);
 }
 
-TEST_CASE("\"free\" operators") {
-  // TODO
-  SECTION("Variable define and assign") {
+TEST_CASE("Variable define and assign") {
+  SECTION("define and assign") {
     auto ast = parse("var foo = foo + 1;");
     auto line1 = std::make_shared<std::string>("var foo = foo + 1;");
 
@@ -743,11 +744,114 @@ TEST_CASE("\"free\" operators") {
 
     REQUIRE(ast == expected);
   }
-  SECTION("Missing semicolon") {
-    REQUIRE_THROWS(parse("var foo = foo + 1"));
+
+  SECTION("Missing right operand") {
+    REQUIRE_THROWS_AS(parse("var foo = foo + ;"), ExceptionBase<UserE>);
   }
   SECTION("Missing operator") {
-    REQUIRE_THROWS(parse("var foo = foo  1;"));
+    REQUIRE_THROWS_AS(parse("var foo = foo  1;"), ExceptionBase<UserE>);
+  }
+  SECTION("Missing left operand") {
+    REQUIRE_THROWS_AS(parse("var foo =  + 1;"), ExceptionBase<UserE>);
+  }
+  SECTION("Missing both operands") {
+    REQUIRE_THROWS_AS(parse("var foo =  + ;"), ExceptionBase<UserE>);
+  }
+  SECTION("Missing everything") {
+    REQUIRE_THROWS_AS(parse("var foo =  ;"), ExceptionBase<UserE>);
+  }
+  SECTION("Missing everything and var") {
+    REQUIRE_THROWS_AS(parse("var foo =  ; foo"), ExceptionBase<UserE>);
+  }
+
+  SECTION("Missing semicolon") {
+    REQUIRE_THROWS_AS(parse("var foo = foo + 1"), ExceptionBase<UserE>);
+
+    SECTION("Missing right operand") {
+      REQUIRE_THROWS_AS(parse("var foo = foo + "), ExceptionBase<UserE>);
+    }
+    SECTION("Missing operator") {
+      REQUIRE_THROWS_AS(parse("var foo = foo  1"), ExceptionBase<UserE>);
+    }
+    SECTION("Missing left operand") {
+      REQUIRE_THROWS_AS(parse("var foo =  + 1"), ExceptionBase<UserE>);
+    }
+    SECTION("Missing both operands") {
+      REQUIRE_THROWS_AS(parse("var foo =  +"), ExceptionBase<UserE>);
+    }
+    SECTION("Missing everything") {
+      REQUIRE_THROWS_AS(parse("var foo =  "), ExceptionBase<UserE>);
+    }
+  }
+}
+
+TEST_CASE("\"free\" operators") {
+  SECTION("free assign") {
+    SECTION("define and assign") {
+      auto ast = parse("foo = foo + 1;");
+      auto line1 = std::make_shared<std::string>("foo = foo + 1;");
+
+      Scope expected({0, 0, ""});
+      {
+        BinaryOperator op_as({1, 5, "=", line1});
+        BinaryOperator op_ad({1, 11, "+", line1});
+        Literal<Literals::INT> right({1, 13, "1", line1});
+        right.data = 1;
+
+        op_ad.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 7, "foo", line1}));
+        op_ad.right_operand = std::make_unique<ValueProducer>(right);
+        op_ad.operation = BinaryOperation::ADD;
+
+        op_as.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 1, "foo", line1}));
+        op_as.right_operand = std::make_unique<ValueProducer>(op_ad);
+        op_as.operation = BinaryOperation::ASSIGNMENT;
+
+        expected.nodes.push_back(std::move(op_as));
+      }
+
+      REQUIRE(ast == expected);
+    }
+
+    SECTION("Missing right operand") {
+      REQUIRE_THROWS_AS(parse("foo = foo + ;"), ExceptionBase<UserE>);
+    }
+    SECTION("Missing operator") {
+      REQUIRE_THROWS_AS(parse("foo = foo  1;"), ExceptionBase<UserE>);
+    }
+    SECTION("Missing left operand") {
+      REQUIRE_THROWS_AS(parse("foo =  + 1;"), ExceptionBase<UserE>);
+    }
+    SECTION("Missing both operands") {
+      REQUIRE_THROWS_AS(parse("foo =  + ;"), ExceptionBase<UserE>);
+    }
+    SECTION("Missing everything") {
+      REQUIRE_THROWS_AS(parse("foo =  ;"), ExceptionBase<UserE>);
+    }
+    SECTION("Missing everything and var") {
+      REQUIRE_THROWS_AS(parse("foo =  ; foo"), ExceptionBase<UserE>);
+    }
+
+    SECTION("Missing semicolon") {
+      REQUIRE_THROWS_AS(parse("foo = foo + 1"), ExceptionBase<UserE>);
+
+      SECTION("Missing right operand") {
+        REQUIRE_THROWS_AS(parse("foo = foo + "), ExceptionBase<UserE>);
+      }
+      SECTION("Missing operator") {
+        REQUIRE_THROWS_AS(parse("foo = foo  1"), ExceptionBase<UserE>);
+      }
+      SECTION("Missing left operand") {
+        REQUIRE_THROWS_AS(parse("foo =  + 1"), ExceptionBase<UserE>);
+      }
+      SECTION("Missing both operands") {
+        REQUIRE_THROWS_AS(parse("foo =  +"), ExceptionBase<UserE>);
+      }
+      SECTION("Missing everything") {
+        REQUIRE_THROWS_AS(parse("foo = "), ExceptionBase<UserE>);
+      }
+    }
   }
 }
 
