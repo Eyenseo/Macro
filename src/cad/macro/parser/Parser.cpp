@@ -18,7 +18,6 @@ namespace parser {
 namespace {
 using ConversionExc = Exc<InternalE, InternalE::BAD_CONVERSION>;
 using OperatorExc = Exc<InternalE, InternalE::MISSING_OPERATOR>;
-using StringEndExc = Exc<InternalE, InternalE::STRING_END>;
 using UserSourceExc = Exc<UserE, UserE::SOURCE>;
 using UserTailExc = Exc<UserE, UserE::TAIL>;
 
@@ -83,57 +82,56 @@ void add_exception_info(const Token& token, const std::string& file,
       << std::string(token.column - 1, ' ') << "^";
   }
 }
+
+template <typename FUN>
+void add_exception_info_end(const Token& token, const std::string& file,
+                            ExceptionBase<UserE>& e, FUN fun) {
+  e << file << ':' << token.line << ':' << token.column << ": ";
+  fun();
+  if(token.source_line) {
+    e << '\n' << *token.source_line << '\n'
+      << std::string(token.column + token.token.size() - 1, ' ') << "^";
+  }
+}
+
 template <typename FUN>
 void add_exception_info(const Tokens& tokens, const size_t token,
                         ExceptionBase<UserE>& e, FUN fun) {
-  add_exception_info(tokens.at(token), tokens.file, e, fun);
+  if(token == tokens.size()) {
+    add_exception_info_end(tokens.at(token - 1), tokens.file, e, fun);
+  } else {
+    add_exception_info(tokens.at(token), tokens.file, e, fun);
+  }
 }
 
 void expect_token(const Tokens& tokens, size_t& token,
                   const char* const token_literal) {
-  if(tokens.at(token).token != token_literal) {
+  if(token >= tokens.size() || tokens.at(token).token != token_literal) {
     UserSourceExc e;
     add_exception_info(tokens, token, e,
                        [&] { e << "Missing '" << token_literal << "'"; });
     throw e;
   }
-  auto tmp = token + 1;
-  if(token + 1 > tokens.size()) {
-    StringEndExc e(__FILE__, __LINE__, "Unexpected string end");
-    e << "The string ended unexpectedly " << tokens.at(token);
-    throw e;
-  }
-  token = tmp;
+  ++token;
 }
 
 bool read_token(const Tokens& tokens, size_t& token,
                 const char* const token_literal) {
-  if(tokens.at(token).token != token_literal) {
+  if(token >= tokens.size() || tokens.at(token).token != token_literal) {
     return false;
   }
-  auto tmp = token + 1;
-  if(tmp > tokens.size()) {
-    StringEndExc e(__FILE__, __LINE__, "Unexpected string end");
-    e << "The string ended unexpectedly " << tokens.at(token).token;
-    throw e;
-  }
-  token = tmp;
+  ++token;
   return true;
 }
 
 bool read_token(const Tokens& tokens, size_t& token,
                 const std::regex& token_regex) {
   std::smatch match;
-  if(!std::regex_match(tokens.at(token).token, match, token_regex)) {
+  if(token >= tokens.size() ||
+     !std::regex_match(tokens.at(token).token, match, token_regex)) {
     return false;
   }
-  auto tmp = token + 1;
-  if(tmp > tokens.size()) {
-    StringEndExc e(__FILE__, __LINE__, "Unexpected string end");
-    e << "The string ended unexpectedly " << tokens.at(token).token;
-    throw e;
-  }
-  token = tmp;
+  ++token;
   return true;
 }
 
@@ -450,7 +448,8 @@ parse_callable_parameter(const Tokens& tokens, size_t& token) {
     } else {
       UserSourceExc e;
       add_exception_info(tokens, tmp, e, [&] {
-        e << "Unexpected token '" << tokens.at(tmp).token << '\'';
+        e << "Expected an expression, but found this unexpected token '"
+          << tokens.at(tmp).token << '\'';
       });
       throw e;
     }
@@ -1364,6 +1363,12 @@ ast::Scope parse(std::string macro, std::string file_name) {
   for(size_t i = 0; i < tokens.size(); ++i) {
     parse_scope_internals(tokens, i, root);
   }
+
+  // TODO check that no break is in a scope that is not contained by a loop
+  // (functions reset the counter)
+  // TODO check that no ast elements follow a break
+  // TODO check that no ast elements follow a return
+  // TODO check that a main function is given
 
   return root;
 }
