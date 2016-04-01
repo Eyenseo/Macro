@@ -10,24 +10,9 @@ Define::Define(parser::Token token)
 }
 
 void Define::print_internals(IndentStream& os) const {
-  if(definition) {
-    // TODO check if this works https://llvm.org/bugs/show_bug.cgi?id=26929
-    // TODO fixed in clang 3.8+
-    // definition->match([&os](const Function& v) { os << v; },
-    //                   [&os](const EntryFunction& v) { os << v; });
-
-    switch(definition->which()) {
-    case 0:
-      os << core::get<0>(*definition);
-      break;
-    case 1:
-      os << core::get<1>(*definition);
-      break;
-    case 2:
-      os << core::get<2>(*definition);
-      break;
-    }
-  }
+  definition.match([&os](const Function& d) { os << d; },
+                   [&os](const EntryFunction& d) { os << d; },
+                   [&os](const Variable& d) { os << d; });
 }
 
 bool Define::operator==(const Define& other) const {

@@ -117,14 +117,15 @@ TEST_CASE("Define Comparison") {
   }
   SECTION("Definition") {
     Define a({0, 0, ""});
-    a.definition.emplace(Function({0, 0, ""}));
+    a.definition = Variable({0, 0, ""});
     Define b({0, 0, ""});
-    b.definition.emplace(Function({0, 0, ""}));
+    b.definition = Variable({0, 0, ""});
     REQUIRE(a == b);
   }
   SECTION("Definition/No-Definition") {
     Define a({0, 0, ""});
-    a.definition.emplace(Function({0, 0, ""}));
+    a.definition = Variable({0, 0, ""});
+    // We are using by default Function
     Define b({0, 0, ""});
     REQUIRE_FALSE(a == b);
   }

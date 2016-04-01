@@ -496,7 +496,7 @@ void define_parameter_in_scope(ast::Scope& fun_scope, T& fun) {
     auto it = fun_scope.nodes.end();
     std::advance(it, -definitions);
     ast::Define def(v.token);
-    def.definition.emplace(v);
+    def.definition = std::move(v);
     fun_scope.nodes.emplace(it, std::move(def));
   }
 }
@@ -574,9 +574,9 @@ core::optional<ast::Define> parse_function_definition(const Tokens& tokens,
     ast::Define def(tokens.at(token));
 
     if(auto entry_function = parse_entry_function(tokens, tmp)) {
-      def.definition.emplace(std::move(*entry_function));
+      def.definition = std::move(*entry_function);
     } else if(auto function = parse_function(tokens, tmp)) {
-      def.definition.emplace(std::move(*function));
+      def.definition = std::move(*function);
     } else {
       throw_unexprected_token(tokens, tmp);
     }
@@ -594,7 +594,7 @@ core::optional<ast::Define> parse_variable_definition(const Tokens& tokens,
       ast::Define def(tokens.at(token));
 
       if(auto variable = parse_variable(tokens, tmp)) {
-        def.definition.emplace(std::move(*variable));
+        def.definition = std::move(*variable);
       } else {
         throw_unexprected_token(tokens, tmp);
       }
@@ -1004,11 +1004,10 @@ core::optional<ast::Variable> extract_var_def(ast::Scope::Node& node) {
 
   node.match(
       [&ret](const ast::Define& def) {
-        if(def.definition) {
-          def.definition->match([&ret](const ast::Variable& var) { ret = var; },
-                                [](const ast::callable::Function&) {},
-                                [](const ast::callable::EntryFunction&) {});
-        }
+        def.definition.match([&ret](const ast::Variable& var) { ret = var; },
+                             [](const ast::callable::Function&) {},
+                             [](const ast::callable::EntryFunction&) {});
+
       },                                                  //
       [](const ast::Break&) {},                           //
       [](const ast::Variable&) {},                        //

@@ -9,7 +9,6 @@
 #include "cad/macro/IndentStream.h"
 
 #include <core/variant.hpp>
-#include <core/optional.hpp>
 
 namespace cad {
 namespace macro {
@@ -22,7 +21,7 @@ class Define : public AST {
   void print_internals(IndentStream& os) const;
 
 public:
-  core::optional<Definition> definition;
+  Definition definition;
 
   Define() = default;
   Define(parser::Token token);

@@ -29,7 +29,7 @@ TEST_CASE("Define") {
       Define def({1, 1, "def", line1});
       EntryFunction fun({1, 5, "main", line1});
       fun.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
-      def.definition.emplace(std::move(fun));
+      def.definition = std::move(fun);
       expected.nodes.push_back(std::move(def));
     }
 
@@ -45,7 +45,7 @@ TEST_CASE("Define") {
       Define def({1, 1, "def", line1});
       Function fun({1, 5, "fun", line1});
       fun.scope = std::make_unique<Scope>(Token(1, 11, "{", line1));
-      def.definition.emplace(std::move(fun));
+      def.definition = std::move(fun);
       expected.nodes.push_back(std::move(def));
     }
 
@@ -60,7 +60,7 @@ TEST_CASE("Define") {
     {
       Define def({1, 1, "var", line1});
       Variable var({1, 5, "foo", line1});
-      def.definition.emplace(std::move(var));
+      def.definition = std::move(var);
       expected.nodes.push_back(std::move(def));
     }
 
@@ -80,10 +80,10 @@ TEST_CASE("Define") {
       Define var_def(var.token);
 
       fun.parameter.push_back(var);
-      var_def.definition.emplace(Variable(var));
+      var_def.definition = Variable(var);
       scope.nodes.push_back(std::move(var_def));
       fun.scope = std::make_unique<Scope>(scope);
-      def.definition.emplace(std::move(fun));
+      def.definition = std::move(fun);
       expected.nodes.push_back(std::move(def));
     }
 
@@ -105,13 +105,13 @@ TEST_CASE("Define") {
       Define var2_def(var2.token);
 
       fun.parameter.push_back(var1);
-      var1_def.definition.emplace(Variable(var1));
+      var1_def.definition = Variable(var1);
       scope.nodes.push_back(std::move(var1_def));
       fun.parameter.push_back(var2);
-      var2_def.definition.emplace(Variable(var2));
+      var2_def.definition = Variable(var2);
       scope.nodes.push_back(std::move(var2_def));
       fun.scope = std::make_unique<Scope>(scope);
-      def.definition.emplace(std::move(fun));
+      def.definition = std::move(fun);
       expected.nodes.push_back(std::move(def));
     }
 
@@ -719,8 +719,7 @@ TEST_CASE("Variable define and assign") {
     Scope expected({0, 0, ""});
     {
       Define def({1, 1, "var", line1});
-      Variable var({1, 5, "foo", line1});
-      def.definition.emplace(var);
+      def.definition = Variable({1, 5, "foo", line1});
 
 
       BinaryOperator op_as({1, 9, "=", line1});
