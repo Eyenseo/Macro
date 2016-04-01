@@ -252,9 +252,7 @@ Token node_to_token(const ast::Scope::Node& node) {
   node.match([&token](const Break& e) { token = e.token; },
              [&token](const Variable& e) { token = e.token; },
              [&token](const Define& e) { token = e.token; },
-             [&token](const callable::EntryFunction& e) { token = e.token; },
              [&token](const callable::Callable& e) { token = e.token; },
-             [&token](const callable::Function& e) { token = e.token; },
              [&token](const Return& e) { token = e.token; },
              [&token](const Scope& e) { token = e.token; },
              [&token](const UnaryOperator& e) { token = e.token; },
@@ -929,7 +927,6 @@ void expect_operator_type(const char* const file, const size_t line,
 ast::ValueProducer node_to_value(ast::Scope::Node& node) {
   using namespace ast;
   using namespace callable;
-  using EF = EntryFunction;
   ast::ValueProducer value;
 
   node.match(
@@ -943,8 +940,6 @@ ast::ValueProducer node_to_value(ast::Scope::Node& node) {
       [&value](Literal<Literals::STRING>& e) { value = std::move(e); },
       [](Break&) { throw_conversion(__FILE__, __LINE__, "Break"); },
       [](Define&) { throw_conversion(__FILE__, __LINE__, "Define"); },
-      [](EF&) { throw_conversion(__FILE__, __LINE__, "EntryFunction"); },
-      [](Function&) { throw_conversion(__FILE__, __LINE__, "Function"); },
       [](Return&) { throw_conversion(__FILE__, __LINE__, "Return"); },
       [](Scope&) { throw_conversion(__FILE__, __LINE__, "Scope"); },
       [](logic::If&) { throw_conversion(__FILE__, __LINE__, "If"); },
@@ -973,9 +968,7 @@ node_to_operator(const Tokens& tokens, ast::Scope::Node& node) {
       [&token](Break& ele) { token = ele.token; },
       [&token](Variable& ele) { token = ele.token; },
       [&token](Define& ele) { token = ele.token; },
-      [&token](callable::EntryFunction& ele) { token = ele.token; },
       [&token](callable::Callable& ele) { token = ele.token; },
-      [&token](callable::Function& ele) { token = ele.token; },
       [&token](Return& ele) { token = ele.token; },
       [&token](Scope& ele) { token = ele.token; },
       [&token](logic::If& ele) { token = ele.token; },
@@ -1019,9 +1012,7 @@ core::optional<ast::Variable> extract_var_def(ast::Scope::Node& node) {
       },                                                  //
       [](const ast::Break&) {},                           //
       [](const ast::Variable&) {},                        //
-      [](const ast::callable::EntryFunction&) {},         //
       [](const ast::callable::Callable&) {},              //
-      [](const ast::callable::Function&) {},              //
       [](const ast::Return&) {},                          //
       [](const ast::Scope&) {},                           //
       [](const ast::UnaryOperator&) {},                   //
@@ -1189,9 +1180,7 @@ void assamble_operator(const std::string& file,
       [](ast::Break&) {},                            //
       [](ast::Variable&) {},                         //
       [](ast::Define&) {},                           //
-      [](ast::callable::EntryFunction&) {},          //
       [](ast::callable::Callable&) {},               //
-      [](ast::callable::Function&) {},               //
       [](ast::Return&) {},                           //
       [](ast::Scope&) {},                            //
       [](ast::logic::If&) {},                        //
@@ -1219,9 +1208,7 @@ void assamble_operators(const std::string& file,
         [](ast::Break&) {},                            //
         [](ast::Variable&) {},                         //
         [](ast::Define&) {},                           //
-        [](ast::callable::EntryFunction&) {},          //
         [](ast::callable::Callable&) {},               //
-        [](ast::callable::Function&) {},               //
         [](ast::Return&) {},                           //
         [](ast::Scope&) {},                            //
         [](ast::BinaryOperator&) {},                   //
@@ -1252,9 +1239,7 @@ void assamble_operators(const std::string& file,
         [](ast::Break&) {},                            //
         [](ast::Variable&) {},                         //
         [](ast::Define&) {},                           //
-        [](ast::callable::EntryFunction&) {},          //
         [](ast::callable::Callable&) {},               //
-        [](ast::callable::Function&) {},               //
         [](ast::Return&) {},                           //
         [](ast::Scope&) {},                            //
         [](ast::UnaryOperator&) {},                    //
@@ -1609,6 +1594,7 @@ ast::Scope parse(std::string macro, std::string file_name) {
   // TODO check that no ast elements follow a break
   // TODO check that no ast elements follow a return
   // TODO check that a main function is given
+  // TODO validate root scope - only definitions
 
   return root;
 }

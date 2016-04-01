@@ -19,9 +19,7 @@ void Scope::print_internals(std::ostream& os) const {
             [&os](const Callable& n) { os << n; },                   //
             [&os](const Define& n) { os << n; },                     //
             [&os](const DoWhile& n) { os << n; },                    //
-            [&os](const EntryFunction& n) { os << n; },              //
             [&os](const For& n) { os << n; },                        //
-            [&os](const Function& n) { os << n; },                   //
             [&os](const If& n) { os << n; },                         //
             [&os](const Literal<Literals::BOOL>& n) { os << n; },    //
             [&os](const Literal<Literals::DOUBLE>& n) { os << n; },  //
