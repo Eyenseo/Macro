@@ -12,6 +12,8 @@ set(
     Tokenizer
     Parser
     Stack
+    Interpreter
+    OperatorProvider
 )
 
 if(${BUILD_TESTING})
@@ -56,8 +58,8 @@ if(${BUILD_TESTING})
     set_property(TARGET ${CHECK_GROUP} PROPERTY FOLDER ${TEST_FOLDER})
 
     foreach(TEST ${TEST_TARGETS})
-      set(TEST_NAME "${TEST_GROUP}_${TEST}")
-      string(TOUPPER ${TEST_NAME} TEST_NAME_UPPER)
+      set(TEST_NAME "${TEST}")
+      string(TOUPPER "${TEST_GROUP}_${TEST}" TEST_NAME_UPPER)
 
       set(
         ${TEST_NAME_UPPER}

@@ -180,7 +180,7 @@ core::optional<ast::Variable> extract_var_def(ast::Scope::Node& node);
 void setup_operator_wokespace(
     std::vector<ast::Scope::Node>& workspace,
     std::vector<ast::Scope::Node>& nodes,
-    core::variant<ast::UnaryOperator, ast::BinaryOperator>& op);
+    ::core::variant<ast::UnaryOperator, ast::BinaryOperator>& op);
 void expect_operatees(const Token& token, const std::string& file,
                       const std::vector<ast::Scope::Node>::iterator& previous,
                       const std::vector<ast::Scope::Node>::iterator& next,
@@ -739,12 +739,12 @@ parse_scope_internals(const Tokens& tokens, size_t& token,
   } else if(auto whi = parse_while(tokens, token)) {
     last_statement = Statement::TERMINATED;
     node = std::move(*whi);
-  } else if(auto call = parse_callable(tokens, token)) {
-    last_statement = Statement::NON_TERMINATED;
-    node = std::move(*call);
   } else if(auto ret = parse_return(tokens, token)) {
     last_statement = Statement::NON_TERMINATED;
     node = std::move(*ret);
+  } else if(auto call = parse_callable(tokens, token)) {
+    last_statement = Statement::NON_TERMINATED;
+    node = std::move(*call);
   } else if(auto lit_bool = parse_literal_bool(tokens, token)) {
     last_statement = Statement::NON_TERMINATED;
     node = std::move(*lit_bool);
@@ -862,6 +862,8 @@ core::optional<ast::Return> parse_return(const Tokens& tokens, size_t& token) {
 
       if(auto exe = parse_callable(tokens, tmp)) {
         ret.output = std::make_unique<ast::ValueProducer>(std::move(*exe));
+      } else if(auto con = parse_condition(tokens, tmp)) {
+        ret.output = std::make_unique<ast::ValueProducer>(std::move(*con));
       } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
         ret.output = std::make_unique<ast::ValueProducer>(std::move(*lit_bool));
       } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
@@ -874,8 +876,6 @@ core::optional<ast::Return> parse_return(const Tokens& tokens, size_t& token) {
             std::make_unique<ast::ValueProducer>(std::move(*lit_string));
       } else if(auto var = parse_variable(tokens, tmp)) {
         ret.output = std::make_unique<ast::ValueProducer>(std::move(*var));
-      } else if(auto con = parse_condition(tokens, tmp)) {
-        ret.output = std::make_unique<ast::ValueProducer>(std::move(*con));
       } else {
         throw_unexprected_token(tokens, tmp);
       }
@@ -953,8 +953,8 @@ core::variant<ast::UnaryOperator, ast::BinaryOperator>
 node_to_operator(const Tokens& tokens, ast::Scope::Node& node) {
   using namespace ast;
 
-  core::variant<ast::UnaryOperator, ast::BinaryOperator> ret;
-  core::optional<Token> token;
+  ::core::variant<ast::UnaryOperator, ast::BinaryOperator> ret;
+  ::core::optional<Token> token;
 
   node.match(
       [&ret](UnaryOperator& op) {
@@ -1000,7 +1000,7 @@ ast::Scope::Node value_to_node(ast::ValueProducer& producer) {
 }
 
 core::optional<ast::Variable> extract_var_def(ast::Scope::Node& node) {
-  core::optional<ast::Variable> ret;
+  ::core::optional<ast::Variable> ret;
 
   node.match(
       [&ret](const ast::Define& def) {
@@ -1030,7 +1030,7 @@ core::optional<ast::Variable> extract_var_def(ast::Scope::Node& node) {
 void setup_operator_wokespace(
     std::vector<ast::Scope::Node>& workspace,
     std::vector<ast::Scope::Node>& nodes,
-    core::variant<ast::UnaryOperator, ast::BinaryOperator>& op) {
+    ::core::variant<ast::UnaryOperator, ast::BinaryOperator>& op) {
   op.match(
       [&workspace](ast::UnaryOperator& op) {
         expect_operator_type(__FILE__, __LINE__, op);
@@ -1282,7 +1282,7 @@ void assamble_operator(const std::string& file,
 core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>>
 parse_operator_internals(const Tokens& tokens, size_t& token) {
   auto tmp = token;
-  core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>> ret;
+  ::core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>> ret;
 
   if(read_token(tokens, tmp, "!")) {
     ast::UnaryOperator op(tokens.at(token));
@@ -1334,7 +1334,7 @@ core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>>
 parse_operator(const Tokens& tokens, size_t& token,
                std::vector<ast::Scope::Node>& nodes) {
   auto tmp = token;
-  core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>> ret;
+  ::core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>> ret;
 
   try {
     std::vector<ast::Scope::Node> workspace;
@@ -1588,12 +1588,14 @@ ast::Scope parse(std::string macro, std::string file_name) {
   }
 
   // TODO check that no break is in a scope that is not contained by a
-  // loop
-  // (functions reset the counter)
+  // loop (functions reset the counter)
   // TODO check that no ast elements follow a break
   // TODO check that no ast elements follow a return
   // TODO check that a main function is given
   // TODO validate root scope - only definitions
+  // TODO check unique parameter
+  // TODO check unique pointer are set
+  // TODO check left assignment operator is variable
 
   return root;
 }

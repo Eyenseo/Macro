@@ -19,9 +19,9 @@ protected:
   void print_internals(IndentStream& os) const;
 
 public:
-  core::optional<Variable> variable;
-  core::optional<BinaryOperator> variable_init;
-  core::optional<ValueProducer> operation;
+  ::core::optional<Variable> variable;
+  ::core::optional<BinaryOperator> variable_init;
+  ::core::optional<ValueProducer> operation;
 
   For();
   For(const For& other);

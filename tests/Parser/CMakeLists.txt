@@ -1,5 +1,4 @@
-set(THIS_TEST Parser)
-set(THIS_TEST_TARGET ${TEST_GROUP}-${THIS_TEST})
+set(THIS_TEST_TARGET ${TEST_GROUP}-${TEST_NAME})
 
 add_custom_target(
   check-${THIS_TEST_TARGET}
@@ -20,7 +19,7 @@ set_property(
 
 add_executable(
   ${THIS_TEST_TARGET}
-    "${CMAKE_CURRENT_SOURCE_DIR}/${THIS_TEST}.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/${TEST_NAME}.cpp"
     $<TARGET_OBJECTS:Catch::Catch-Main>
 )
 add_test(

@@ -16,7 +16,7 @@ namespace ast {
 class Define : public AST {
   using Function = callable::Function;
   using EntryFunction = callable::EntryFunction;
-  using Definition = core::variant<Function, EntryFunction, Variable>;
+  using Definition = ::core::variant<Function, EntryFunction, Variable>;
 
   void print_internals(IndentStream& os) const;
 

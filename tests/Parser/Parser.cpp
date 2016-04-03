@@ -249,6 +249,12 @@ TEST_CASE("Return") {
 
     REQUIRE(ast == expected);
   }
+
+  SECTION("Function") {
+    // TODO better error message
+    REQUIRE_THROWS_AS(parse("retrun fun();"), ExceptionBase<UserE>);
+    //                          ^
+  }
 }
 
 TEST_CASE("If") {
@@ -872,6 +878,7 @@ TEST_CASE("break") {
     REQUIRE(ast == expected);
   }
 }
+
 
 // TODO
 // TEST_CASE("For") {

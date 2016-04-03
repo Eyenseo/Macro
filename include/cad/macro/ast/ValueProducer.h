@@ -13,9 +13,9 @@ namespace macro {
 namespace ast {
 class ValueProducer {
   using ValueVariant =
-      core::variant<callable::Callable, Variable, Literal<Literals::BOOL>,
-                    Literal<Literals::INT>, Literal<Literals::DOUBLE>,
-                    Literal<Literals::STRING>, UnaryOperator, BinaryOperator>;
+      ::core::variant<callable::Callable, Variable, Literal<Literals::BOOL>,
+                      Literal<Literals::INT>, Literal<Literals::DOUBLE>,
+                      Literal<Literals::STRING>, UnaryOperator, BinaryOperator>;
 
 public:
   ValueVariant value;
