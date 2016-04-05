@@ -99,7 +99,7 @@ TEST_CASE("Function return") {
   REQUIRE(core::any_cast<int>(ret) == 1);
 }
 
-TEST_CASE("Function named parameter ") {
+TEST_CASE("Function named parameter") {
   auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
   Interpreter in(cp, nullptr);
 

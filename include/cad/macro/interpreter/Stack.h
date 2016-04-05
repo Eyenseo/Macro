@@ -1,6 +1,8 @@
 #ifndef cad_macro_interpreter_Stack_h
 #define cad_macro_interpreter_Stack_h
 
+#include "cad/macro/ast/callable/Callable.h"
+#include "cad/macro/ast/ValueProducer.h"
 #include "cad/macro/ast/callable/Function.h"
 
 #include <exception.h>
@@ -9,6 +11,16 @@
 
 #include <memory>
 #include <vector>
+
+namespace cad {
+namespace macro {
+namespace ast {
+namespace callable {
+class Function;
+}
+}
+}
+}
 
 namespace cad {
 namespace macro {
@@ -28,9 +40,65 @@ class Stack : public std::enable_shared_from_this<Stack> {
     return std::find_if(map.begin(), map.end(),
                         [&key](const auto& pair) { return pair.first == key; });
   }
-  template <typename T1, typename T2>
-  auto exists(const VecMap<T1, T2>& map, const T1& key) const {
-    return find(map, key) != map.end();
+
+  auto find_function(const ast::callable::Callable& key) const {
+    return std::find_if(
+        functions_.begin(), functions_.end(), [&key](const auto& fun) {
+          if(fun.get().token.token == key.token.token &&
+             fun.get().parameter.size() == key.parameter.size()) {
+            for(const auto& fp : fun.get().parameter) {
+              bool found = false;
+              for(const auto& cp : key.parameter) {
+                if(fp.token.token == cp.first.token.token) {
+                  found = true;
+                  break;
+                }
+              }
+              if(!found) {
+                return false;
+              }
+            }
+          } else {
+            return false;
+          }
+          return true;
+        });
+  }
+  auto exists_function(const ast::callable::Function& key) {
+    return std::find_if(
+               functions_.begin(), functions_.end(), [&key](const auto& fun) {
+                 if(fun.get().token.token == key.token.token &&
+                    fun.get().parameter.size() == key.parameter.size()) {
+                   for(const auto& fp : fun.get().parameter) {
+                     bool found = false;
+                     for(const auto& cp : key.parameter) {
+                       if(fp.token.token == cp.token.token) {
+                         found = true;
+                         break;
+                       }
+                     }
+                     if(!found) {
+                       return false;
+                     }
+                   }
+                 } else {
+                   return false;
+                 }
+                 return true;
+               }) != functions_.end();
+  }
+  auto exists_function(const ast::callable::Callable& call) {
+    return find_function(call) != functions_.end();
+  }
+  auto exists_function(const std::string& name) {
+    return functions_.end() !=
+           std::find_if(functions_.begin(), functions_.end(),
+                        [&name](const auto& fun) {
+                          return fun.get().token.token == name;
+                        });
+  }
+  auto exists_variable(const std::string& key) const {
+    return find(variables_, key) != variables_.end();
   }
 
 protected:
@@ -38,7 +106,7 @@ protected:
 
   VecMap<std::string, ::core::any> variables_;
   VecMap<std::string, std::reference_wrapper<::core::any>> aliases_;
-  VecMap<std::string, FunctionRef> functions_;
+  std::vector<FunctionRef> functions_;
 
 public:
   enum class E {
@@ -54,13 +122,13 @@ public:
   void add_alias(std::string name, ::core::any& variable);
   void remove_alias(std::string name);
   void add_variable(std::string name);
-  void add_function(std::string name, FunctionRef fun);
+  void add_function(FunctionRef fun);
 
   bool is_alias(const std::string& name) const;
   bool owns_variable(const std::string& name) const;
 
   bool has_variable(const std::string& name) const;
-  bool has_function(const std::string& name) const;
+  bool has_function(const ast::callable::Callable& call) const;
 
   std::shared_ptr<Stack> parent() const;
 
@@ -90,22 +158,33 @@ public:
   }
 
   template <typename FUN>
-  auto function(const std::string& name, FUN fun)
+  auto function(const ast::callable::Callable& call, FUN fun)
       -> decltype(std::result_of_t<FUN(const ast::callable::Function&,
                                        std::shared_ptr<Stack>)>()) {
-    auto it = find(functions_, name);
+    auto it = find_function(call);
 
     if(it == functions_.end()) {
       if(parent_) {
-        return parent_->function(name, std::move(fun));
+        return parent_->function(call, std::move(fun));
       } else {
+        bool first = true;
+
         Exc<E, E::NOT_A_FUNCTION> e(__FILE__, __LINE__, "Not a function");
-        e << "The is no function '" << name
-          << "' in this or any parent stacks.";
+        e << "The is no function '" << call.token.token
+          << "', with the parameter signature '(";
+        for(const auto& p : call.parameter) {
+          if(first) {
+            e << p.first.token.token;
+            first = false;
+          } else {
+            e << ", " << p.first.token.token;
+          }
+        }
+        e << ")' in this or any parent stacks.";
         throw e;
       }
     } else {
-      return fun(it->second, shared_from_this());
+      return fun(*it, shared_from_this());
     }
   }
 };

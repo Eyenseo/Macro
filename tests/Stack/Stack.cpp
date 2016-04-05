@@ -3,8 +3,10 @@
 #include "cad/macro/interpreter/Stack.h"
 
 #include "cad/macro/ast/callable/Function.h"
+#include "cad/macro/ast/callable/Callable.h"
 
 using Function = cad::macro::ast::callable::Function;
+using Callable = cad::macro::ast::callable::Callable;
 
 class TestStack : public cad::macro::interpreter::Stack {
 public:
@@ -65,34 +67,35 @@ TEST_CASE("Variable") {
 
 TEST_CASE("Function") {
   auto stack = std::make_shared<TestStack>();
-  Function orig_fun({0, 0, ""});
+  Callable call({0, 0, "fun"});
+  Function orig_fun({0, 0, "fun"});
 
   REQUIRE(stack->functions().empty());
-  REQUIRE_FALSE(stack->has_function("fun"));
+  REQUIRE_FALSE(stack->has_function(call));
 
   SECTION("Add") {
-    stack->add_function("fun", std::cref(orig_fun));
+    stack->add_function(std::cref(orig_fun));
 
     REQUIRE(stack->functions().size() == 1);
-    REQUIRE(stack->has_function("fun"));
+    REQUIRE(stack->has_function(call));
 
     stack->function(
-        "fun", [&](const Function& fun, auto) { REQUIRE(orig_fun == fun); });
+        call, [&](const Function& fun, auto) { REQUIRE(orig_fun == fun); });
 
     SECTION("Access") {
-      stack->function("fun", [](const Function& fun, auto) {
+      stack->function(call, [](const Function& fun, auto) {
         // yes yes evil and so on ... We are tester, we are evil, we are legion
         const_cast<Function*>(&fun)->token.line = 1;
       });
-      stack->function("fun", [](const Function& fun, auto) {
+      stack->function(call, [](const Function& fun, auto) {
         REQUIRE(fun.token.line == 1);
       });
 
       SECTION("Move") {
         Function my_fun;
         stack->function(
-            "fun", [&my_fun](const Function& fun,
-                             std::shared_ptr<cad::macro::interpreter::Stack>) {
+            call, [&my_fun](const Function& fun,
+                            std::shared_ptr<cad::macro::interpreter::Stack>) {
               my_fun = fun;
             });
 
@@ -100,6 +103,7 @@ TEST_CASE("Function") {
       }
     }
   }
+  // TODO test variables with same function name
 }
 
 TEST_CASE("Parent") {

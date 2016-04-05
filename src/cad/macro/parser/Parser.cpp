@@ -515,7 +515,6 @@ core::optional<T> parse_function_internals(const Tokens& tokens, size_t& token,
     add_exception_info(tokens, tmp, e, [&] { e << "Expected a scope."; });
     throw e;
   }
-  define_parameter_in_scope(*fun_scope, fun);
   fun.scope = std::make_unique<ast::Scope>(*std::move(fun_scope));
   token = tmp;
 

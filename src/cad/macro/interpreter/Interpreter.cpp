@@ -28,14 +28,19 @@ struct Interpreter::State {
   bool loopscope;
   bool returning;
 
-  State()
-      : State(std::make_shared<Stack>(), "") {
-  }
-  State(std::shared_ptr<Stack> s, std::string scope)
-      : stack(std::move(s))
+  State(std::string scop)
+      : stack(std::make_shared<Stack>())
+      , scope(std::move(scop))
       , breaking(false)
       , loopscope(false)
       , returning(false) {
+  }
+  State(const State& other, std::shared_ptr<Stack> s)
+      : stack(std::move(s))
+      , scope(other.scope)
+      , breaking(other.breaking)
+      , loopscope(other.loopscope)
+      , returning(other.returning) {
   }
 };
 
@@ -63,8 +68,7 @@ Interpreter::Interpreter(std::shared_ptr<CommandProvider> command_provider,
                                    std::string command_scope,
                                    std::string file_name) const {
   auto scope = parser::parse(macro, file_name);
-  State state;
-  state.scope = std::move(command_scope);
+  State state(std::move(command_scope));
 
   interpret(state, scope);
   return interpret_main(state, std::move(args));
@@ -116,12 +120,8 @@ void Interpreter::define_functions(State& state, const Scope& scope) const {
 }
 void Interpreter::define_function(State& state, const Define& def) const {
   def.definition.match(
-      [&](const Function& fun) {
-        state.stack->add_function(fun.token.token, fun);
-      },
-      [&](const EntryFunction& fun) {
-        state.stack->add_function(fun.token.token, fun);
-      },
+      [&](const Function& fun) { state.stack->add_function(fun); },
+      [&](const EntryFunction& fun) { state.stack->add_function(fun); },
       [&](const Variable&) {});
 }
 void Interpreter::define_variable(State& state, const Define& def) const {
@@ -469,7 +469,7 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
 }
 ::core::any Interpreter::interpret(State& state, const Scope& scope) const {
   State inner(state);
-  auto&& ret = interpret_shared(inner, scope);
+  auto ret = interpret_shared(inner, scope);
 
   if(inner.breaking) {
     state.breaking = true;
@@ -607,15 +607,15 @@ void Interpreter::add_arguments(State& state, Arguments& args,
                                    const ast::callable::Callable& call) const {
   ::core::any ret;
 
-  if(state.stack->has_function(call.token.token)) {
-    state.stack->function(
-        call.token.token, [&](const Function& fun, auto stack) {
-          State inner(std::make_shared<Stack>(std::move(stack)), state.scope);
+  if(state.stack->has_function(call)) {
+    state.stack->function(call, [&](const Function& fun, auto stack) {
+      State inner(state, std::make_shared<Stack>(std::move(stack)));
+      inner.loopscope = false;
 
-          add_parameter(inner, state, call, fun);
+      add_parameter(inner, state, call, fun);
 
-          ret = interpret(inner, *fun.scope);
-        });
+      ret = interpret_shared(inner, *fun.scope);
+    });
   } else {
     try {
       auto com = command_provider_->get_command(state.scope, call.token.token);
@@ -631,17 +631,17 @@ void Interpreter::add_arguments(State& state, Arguments& args,
 ::core::any Interpreter::interpret_main(State& state, Arguments args) const {
   ::core::any ret;
 
-  if(state.stack->has_function("main")) {
-    state.stack->function("main", [&](const Function& fun, auto stack) {
-      State inner(std::move(stack), state.scope);
-
-      add_arguments(inner, args, fun);
-      ret = interpret(inner, *fun.scope);
-    });
-  } else {
-    assert(false);
-    // TODO throw
+  Callable call({0, 0, "main"});
+  for(const auto& p : args) {
+    call.parameter.emplace_back(Variable({0, 0, p.name()}), Variable());
   }
+
+  state.stack->function(call, [&](const Function& fun, auto stack) {
+    State inner(state, std::make_shared<Stack>(std::move(stack)));
+
+    add_arguments(inner, args, fun);
+    ret = interpret_shared(inner, *fun.scope);
+  });
   return ret;
 }
 }
