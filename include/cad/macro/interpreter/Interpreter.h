@@ -124,6 +124,9 @@ protected:
   //////////////////////////////////////////
   // interpret function
   //////////////////////////////////////////
+  Arguments args_from_call(State& state, const ast::callable::Callable& call,
+                           const Arguments& command_args) const;
+
   void add_parameter(State& state, State& outer_state,
                      const ast::ValueProducer& val,
                      const std::string& parameter) const;
@@ -144,8 +147,8 @@ public:
   Interpreter(std::shared_ptr<CommandProvider> command_provider,
               std::shared_ptr<OperatorProvider> operator_provider);
 
-  ::core::any interpret(std::string macro, Arguments args,
-                        std::string file_name = "Line") const;
+  ::core::any interpret(std::string macro, Arguments args, std::string scope = "",
+                        std::string file_name = "Anonymous") const;
 };
 }
 }

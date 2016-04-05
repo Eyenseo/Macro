@@ -20,6 +20,7 @@ set_property(
 add_executable(
   ${THIS_TEST_TARGET}
     "${CMAKE_CURRENT_SOURCE_DIR}/${TEST_NAME}.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/LCommand.cpp"
     $<TARGET_OBJECTS:Catch::Catch-Main>
 )
 add_test(

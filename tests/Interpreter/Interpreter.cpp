@@ -1,10 +1,14 @@
 #include <Catch/catch.hpp>
 
+#include "LCommand.h"
+
 #include "cad/macro/interpreter/Interpreter.h"
 #include "cad/macro/interpreter/OperatorProvider.h"
 
 #include <cad/core/command/CommandProvider.h>
 #include <cad/core/command/argument/Arguments.h>
+#include <cad/core/command/MenuAdder.h>
+#include <cad/core/ApplicationSettingsProvider.h>
 
 #include <exception.h>
 
@@ -12,6 +16,7 @@ using Interpreter = cad::macro::interpreter::Interpreter;
 using OperatorProvider = cad::macro::interpreter::OperatorProvider;
 using CommandProvider = cad::core::command::CommandProvider;
 using Arguments = cad::core::command::argument::Arguments;
+using ApplicationSettingsProvider = cad::core::ApplicationSettingsProvider;
 
 class TestInterpreter : public cad::macro::interpreter::Interpreter {
 public:
@@ -113,6 +118,35 @@ TEST_CASE("Return global variable from function parameter") {
   REQUIRE(core::any_cast<int>(ret) == 1);
 }
 
+TEST_CASE("CommandPrvider fall through") {
+  auto asp = std::make_shared<ApplicationSettingsProvider>();
+  auto cp = std::make_shared<CommandProvider>(asp, nullptr);
+  Interpreter in(cp, nullptr);
+
+  SECTION("Call") {
+    cad::core::command::MenuAdder m(cp, [] {});
+    m.name("fun").scope("").add<LCommand>("fun", cp,
+                                          [](Arguments) { return 10; });
+
+    auto ret = in.interpret("def main(){return fun();}", Arguments());
+    REQUIRE(core::any_cast<int>(ret) == 10);
+  }
+
+  SECTION("Return") {
+    Arguments args;
+    args.add("foo", "int", 1);
+
+    cad::core::command::MenuAdder m(cp, [] {});
+    m.name("gun").scope("").add<LCommand>("gun", cp, [](Arguments args) {
+      return *args.get<int>("foo") + 2;
+    }, args);
+
+    auto ret =
+        in.interpret("var a = 40; def main(){return gun(foo:a);}", Arguments());
+    REQUIRE(core::any_cast<int>(ret) == 42);
+  }
+}
+
 TEST_CASE("Operator") {
   auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
   auto op = std::make_shared<OperatorProvider>();
@@ -150,16 +184,19 @@ TEST_CASE("While") {
   REQUIRE(core::any_cast<int>(ret) == 3);
 
 
-  ret = in.interpret(
-      "def main(){var i = 0; while(i < 3){ i = i +1; if(i == 2){break;}} return i;}", Arguments());
+  ret = in.interpret("def main(){var i = 0; while(i < 3){ i = i +1; if(i == "
+                     "2){break;}} return i;}",
+                     Arguments());
   REQUIRE(core::any_cast<int>(ret) == 2);
 
   ret = in.interpret(
-      "def main(){var i = 0; while(i < 3){ i = i +1; return i;} return i;}", Arguments());
+      "def main(){var i = 0; while(i < 3){ i = i +1; return i;} return i;}",
+      Arguments());
   REQUIRE(core::any_cast<int>(ret) == 1);
 
   ret = in.interpret(
-      "def main(){var i = 0; while(i < 3){ i = i +1; return 42;} return i;}", Arguments());
+      "def main(){var i = 0; while(i < 3){ i = i +1; return 42;} return i;}",
+      Arguments());
   REQUIRE(core::any_cast<int>(ret) == 42);
 }
 

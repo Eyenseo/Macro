@@ -6,6 +6,8 @@
 #include "cad/macro/parser/Parser.h"
 
 #include <cad/core/command/argument/Arguments.h>
+#include <cad/core/command/CommandProvider.h>
+#include <cad/core/command/CommandInvoker.h>
 
 #include <cassert>
 
@@ -21,20 +23,35 @@ using namespace ast::logic;
 
 struct Interpreter::State {
   std::shared_ptr<Stack> stack;
+  std::string scope;
   bool breaking;
   bool loopscope;
   bool returning;
 
   State()
-      : State(std::make_shared<Stack>()) {
+      : State(std::make_shared<Stack>(), "") {
   }
-  State(std::shared_ptr<Stack> s)
+  State(std::shared_ptr<Stack> s, std::string scope)
       : stack(std::move(s))
       , breaking(false)
       , loopscope(false)
       , returning(false) {
   }
 };
+
+template <typename T>
+struct Interpreter::SmartRef {
+  T value;
+
+  std::reference_wrapper<T> ref;
+  SmartRef()
+      : ref(value) {
+  }
+  operator ::core::any&() {
+    return ref.get();
+  }
+};
+
 
 Interpreter::Interpreter(std::shared_ptr<CommandProvider> command_provider,
                          std::shared_ptr<OperatorProvider> operator_provider)
@@ -43,9 +60,11 @@ Interpreter::Interpreter(std::shared_ptr<CommandProvider> command_provider,
 }
 
 ::core::any Interpreter::interpret(std::string macro, Arguments args,
+                                   std::string command_scope,
                                    std::string file_name) const {
   auto scope = parser::parse(macro, file_name);
   State state;
+  state.scope = std::move(command_scope);
 
   interpret(state, scope);
   return interpret_main(state, std::move(args));
@@ -122,19 +141,6 @@ void Interpreter::interpret_none() const {
 //////////////////////////////////////////
 /// Binary
 //////////////////////////////////////////
-
-template <typename T>
-struct Interpreter::SmartRef {
-  T a;
-  std::reference_wrapper<T> b;
-  SmartRef()
-      : b(a) {
-  }
-  operator ::core::any&() {
-    return b;
-  }
-};
-
 ::core::any Interpreter::interpret_divide(State& state,
                                           const BinaryOperator& op) const {
   auto lhs = interpret(state, *op.left_operand);
@@ -350,22 +356,26 @@ Interpreter::interpret(State& state, const ValueProducer& vp) const {
   SmartRef<::core::any> f;
 
   vp.value.match(
-      [&](const callable::Callable& o) { f.a = interpret(state, o); },
-      [&](const UnaryOperator& o) { f.a = interpret(state, o); },
-      [&](const BinaryOperator& o) { f.a = interpret(state, o); },
+      [&](const callable::Callable& o) { f.value = interpret(state, o); },
+      [&](const UnaryOperator& o) { f.value = interpret(state, o); },
+      [&](const BinaryOperator& o) { f.value = interpret(state, o); },
       [&](const Variable& o) {
         if(state.stack->has_variable(o.token.token)) {
           return state.stack->variable(o.token.token,
-                                       [&](::core::any& var) { f.b = var; });
+                                       [&](::core::any& var) { f.ref = var; });
         } else {
           assert(false);
           // TODO throw
         }
       },
-      [&](const Literal<Literals::BOOL>& o) { f.a = ::core::any(o.data); },
-      [&](const Literal<Literals::INT>& o) { f.a = ::core::any(o.data); },
-      [&](const Literal<Literals::DOUBLE>& o) { f.a = ::core::any(o.data); },
-      [&](const Literal<Literals::STRING>& o) { f.a = ::core::any(o.data); });
+      [&](const Literal<Literals::BOOL>& o) { f.value = ::core::any(o.data); },
+      [&](const Literal<Literals::INT>& o) { f.value = ::core::any(o.data); },
+      [&](const Literal<Literals::DOUBLE>& o) {
+        f.value = ::core::any(o.data);
+      },
+      [&](const Literal<Literals::STRING>& o) {
+        f.value = ::core::any(o.data);
+      });
   return f;
 }
 
@@ -502,6 +512,25 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
 //////////////////////////////////////////
 // interpret function
 //////////////////////////////////////////
+Interpreter::Arguments
+Interpreter::args_from_call(State& state, const Callable& call,
+                            const Arguments& command_args) const {
+  Arguments args;
+
+  for(const auto& p : call.parameter) {
+    const auto& name = p.first.token.token;
+
+    if(command_args.has(name)) {
+      auto val = interpret(state, p.second);
+      args.add(p.first.token.token, "macro_call", val.ref.get());
+    } else {
+      // TODO throw
+      assert(false && "Too many arguments!");
+    }
+  }
+  return args;
+}
+
 void Interpreter::add_parameter(State& state, State& outer,
                                 const ValueProducer& val,
                                 const std::string& par) const {
@@ -551,6 +580,7 @@ void Interpreter::add_parameter(State& state, State& outer,
     if(fun.parameter.end() != it) {
       add_parameter(state, outer, p.second, par);
     } else {
+      // parameter that is not an parameter
       assert(false);
       // TODO throw
     }
@@ -580,15 +610,20 @@ void Interpreter::add_arguments(State& state, Arguments& args,
   if(state.stack->has_function(call.token.token)) {
     state.stack->function(
         call.token.token, [&](const Function& fun, auto stack) {
-          State inner(std::make_shared<Stack>(std::move(stack)));
+          State inner(std::make_shared<Stack>(std::move(stack)), state.scope);
 
           add_parameter(inner, state, call, fun);
 
           ret = interpret(inner, *fun.scope);
         });
   } else {
-    assert(false);
-    // TODO throw
+    try {
+      auto com = command_provider_->get_command(state.scope, call.token.token);
+      ret = com.execute(args_from_call(state, call, com.arguments()));
+    } catch(...) {
+      assert(false);
+      // TODO throw
+    }
   }
   return ret;
 }
@@ -598,7 +633,7 @@ void Interpreter::add_arguments(State& state, Arguments& args,
 
   if(state.stack->has_function("main")) {
     state.stack->function("main", [&](const Function& fun, auto stack) {
-      State inner(std::move(stack));
+      State inner(std::move(stack), state.scope);
 
       add_arguments(inner, args, fun);
       ret = interpret(inner, *fun.scope);
