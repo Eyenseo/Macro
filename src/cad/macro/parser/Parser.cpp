@@ -114,8 +114,6 @@ bool is_keyword(const std::string& token);
 void expect_not_keyword(const Tokens& tokens, const size_t token);
 template <typename T, typename is_Function<T>::type = false>
 void parse_function_parameter(const Tokens& tokens, size_t& token, T& fun);
-template <typename T, typename is_Function<T>::type = false>
-void define_parameter_in_scope(ast::Scope& fun_scope, T& fun);
 template <typename T, typename is_Function<T>::type = true>
 core::optional<T> parse_function_internals(const Tokens& tokens, size_t& token,
                                            T&& fun);
@@ -164,7 +162,6 @@ core::optional<ast::Return> parse_return(const Tokens& tokens, size_t& token);
 /// Break parsing
 //////////////////////////////////////////
 core::optional<ast::Break> parse_break(const Tokens& tokens, size_t& token);
-
 
 //////////////////////////////////////////
 /// Operator parsing
@@ -484,20 +481,6 @@ void parse_function_parameter(const Tokens& tokens, size_t& token, T& fun) {
     if(!read_token(tokens, token, ",")) {
       break;  // we do not expect another variable
     }
-  }
-}
-
-template <typename T, typename is_Function<T>::type>
-void define_parameter_in_scope(ast::Scope& fun_scope, T& fun) {
-  const auto definitions = fun_scope.nodes.size();
-
-  for(const auto& v : fun.parameter) {
-    // Add the variables to the scope definitions in the right order
-    auto it = fun_scope.nodes.end();
-    std::advance(it, -definitions);
-    ast::Define def(v.token);
-    def.definition = std::move(v);
-    fun_scope.nodes.emplace(it, std::move(def));
   }
 }
 

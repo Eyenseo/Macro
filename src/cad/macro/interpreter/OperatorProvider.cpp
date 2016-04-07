@@ -415,6 +415,7 @@ bool OperatorProvider::has(const UnaryOperation op,
 
 OperatorProvider::OperatorProvider(const bool initialize) {
   using BiOp = BinaryOperation;
+  using UnOp = UnaryOperation;
 
   if(initialize) {
     add<int, int, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::MODULO, BiOp::ADD,
@@ -443,6 +444,16 @@ OperatorProvider::OperatorProvider(const bool initialize) {
         BiOp::EQUAL, BiOp::NOT_EQUAL>();
     add<std::string, std::string, BiOp::ADD, BiOp::SMALLER, BiOp::SMALLER_EQUAL,
         BiOp::GREATER, BiOp::GREATER_EQUAL, BiOp::EQUAL, BiOp::NOT_EQUAL>();
+
+    add<bool, UnOp::BOOL>();
+    add<int, UnOp::BOOL>();
+    add<double, UnOp::BOOL>();
+    add(UnOp::BOOL, std::type_index(typeid(std::string)),
+        [](const ::core::any& a) {
+          return ::core::any_cast<std::string>(a).size() > 0;
+        });
+    add(UnOp::BOOL, std::type_index(typeid(void)),
+        [](const ::core::any&) { return false; });
   }
 }
 }

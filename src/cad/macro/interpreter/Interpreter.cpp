@@ -261,6 +261,7 @@ Interpreter::interpret_greater_equal(State& state,
     }
   };
 
+  // TODO refactor
   op.right_operand->value.match(
       [&](const callable::Callable& o) { ret_par(state, o); },
       [&](const UnaryOperator& o) { ret_par(state, o); },

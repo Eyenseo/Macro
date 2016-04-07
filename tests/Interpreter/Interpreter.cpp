@@ -179,12 +179,13 @@ TEST_CASE("While") {
   auto op = std::make_shared<OperatorProvider>();
   Interpreter in(cp, op);
 
-  auto ret = in.interpret(
-      "def main(){var i = 0; while(i < 3){ i = i +1;} return i;}", Arguments());
+  auto ret =
+      in.interpret("def main(){var i = 0; while(i < 3){ i = i + 1;} return i;}",
+                   Arguments());
   REQUIRE(core::any_cast<int>(ret) == 3);
 
 
-  ret = in.interpret("def main(){var i = 0; while(i < 3){ i = i +1; if(i == "
+  ret = in.interpret("def main(){var i = 0; while(i < 3){ i = i + 1; if(i == "
                      "2){break;}} return i;}",
                      Arguments());
   REQUIRE(core::any_cast<int>(ret) == 2);

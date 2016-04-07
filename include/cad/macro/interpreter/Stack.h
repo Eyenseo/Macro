@@ -132,6 +132,7 @@ public:
 
   std::shared_ptr<Stack> parent() const;
 
+  // TODO no retrun
   template <typename FUN>
   auto variable(const std::string& name, FUN fun)
       -> decltype(std::result_of_t<FUN(::core::any&)>()) {
