@@ -37,7 +37,7 @@ protected:
   template <bool...>
   struct bool_pack;
   template <bool... v>
-  using all = std::is_same<bool_pack<true, v...>, bool_pack<v..., true>>;
+  using none = std::is_same<bool_pack<false, v...>, bool_pack<v..., false>>;
 
   template <typename T, T O1, T O2>
   struct Same
@@ -110,8 +110,8 @@ public:
   template <typename LHS, typename RHS, BinaryOperation... OPs,
             typename std::enable_if<
                 (sizeof...(OPs) > 0) &&
-                    !all<BiSame<BinaryOperation::AND, OPs>{}...>::value &&
-                    !all<BiSame<BinaryOperation::OR, OPs>{}...>::value,
+                    none<BiSame<BinaryOperation::AND, OPs>{}...>::value &&
+                    none<BiSame<BinaryOperation::OR, OPs>{}...>::value,
                 bool>::type = false>
   void add() {
     std::type_index lhs(typeid(LHS));
@@ -127,7 +127,9 @@ public:
   template <typename RHS, UnaryOperation... OPs,
             typename std::enable_if<
                 (sizeof...(OPs) > 0) &&
-                    !all<UnSame<UnaryOperation::NOT, OPs>{}...>::value,
+                    none<UnSame<UnaryOperation::NOT, OPs>{}...>::value &&
+                    none<UnSame<UnaryOperation::TYPEOF, OPs>{}...>::value &&
+                    none<UnSame<UnaryOperation::PRINT, OPs>{}...>::value,
                 bool>::type = false>
   void add() {
     std::type_index rhs(typeid(RHS));
