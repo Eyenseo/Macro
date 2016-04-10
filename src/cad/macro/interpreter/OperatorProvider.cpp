@@ -131,6 +131,20 @@ void OperatorProvider::add(const UnaryOperation operati, std::type_index rhs,
       // TODO throw
     }
     bool_.emplace_back(rhs, std::move(operato));
+    break;
+  case UnaryOperation::TYPEOF:
+    if(exists(type_of_, rhs)) {
+      throw Exc<E, E::TODO>(__FILE__, __LINE__);
+      // TODO throw
+    }
+    type_of_.emplace_back(rhs, std::move(operato));
+    break;
+  case UnaryOperation::PRINT:
+    if(exists(print_, rhs)) {
+      throw Exc<E, E::TODO>(__FILE__, __LINE__);
+      // TODO throw
+    }
+    print_.emplace_back(rhs, std::move(operato));
   }
 }
 
@@ -208,6 +222,10 @@ bool OperatorProvider::has(const UnaryOperation op,
     return exists(bool_, rhs);
   case UnaryOperation::BOOL:
     return exists(bool_, rhs);
+  case UnaryOperation::TYPEOF:
+    return exists(type_of_, rhs);
+  case UnaryOperation::PRINT:
+    return exists(print_, rhs);
   }
   assert(false && "Reached by access after free and similar");
 }
@@ -218,6 +236,10 @@ bool OperatorProvider::has(const UnaryOperation op,
     return exists(bool_, std::type_index(rhs.type()));
   case UnaryOperation::BOOL:
     return exists(bool_, std::type_index(rhs.type()));
+  case UnaryOperation::TYPEOF:
+    return exists(type_of_, std::type_index(rhs.type()));
+  case UnaryOperation::PRINT:
+    return exists(print_, std::type_index(rhs.type()));
   }
   assert(false && "Reached by access after free and similar");
 }
@@ -402,6 +424,20 @@ bool OperatorProvider::has(const UnaryOperation op,
   }
   throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
 }
+::core::any OperatorProvider::eval_type_of(const ::core::any& rhs) const {
+  auto it = find(type_of_, std::type_index(rhs.type()));
+  if(it != type_of_.end()) {
+    return it->second(rhs);
+  }
+  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+}
+::core::any OperatorProvider::eval_print(const ::core::any& rhs) const {
+  auto it = find(print_, std::type_index(rhs.type()));
+  if(it != print_.end()) {
+    return it->second(rhs);
+  }
+  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+}
 ::core::any OperatorProvider::eval(const UnaryOperation op,
                                    const ::core::any& rhs) const {
   switch(op) {
@@ -409,6 +445,10 @@ bool OperatorProvider::has(const UnaryOperation op,
     return eval_not(rhs);
   case UnaryOperation::BOOL:
     return eval_bool(rhs);
+  case UnaryOperation::TYPEOF:
+    return eval_type_of(rhs);
+  case UnaryOperation::PRINT:
+    return eval_print(rhs);
   }
   assert(false && "Reached by access after free and similar");
 }
@@ -418,6 +458,7 @@ OperatorProvider::OperatorProvider(const bool initialize) {
   using UnOp = UnaryOperation;
 
   if(initialize) {
+    // BINARY
     add<int, int, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::MODULO, BiOp::ADD,
         BiOp::SUBTRACT, BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER,
         BiOp::GREATER_EQUAL, BiOp::EQUAL, BiOp::NOT_EQUAL>();
@@ -445,6 +486,31 @@ OperatorProvider::OperatorProvider(const bool initialize) {
     add<std::string, std::string, BiOp::ADD, BiOp::SMALLER, BiOp::SMALLER_EQUAL,
         BiOp::GREATER, BiOp::GREATER_EQUAL, BiOp::EQUAL, BiOp::NOT_EQUAL>();
 
+    add(BiOp::ADD, std::type_index(typeid(std::string)),
+        std::type_index(typeid(bool)),
+        [](const ::core::any& a, const ::core::any& b) {
+          std::stringstream ss;
+          ss << ::core::any_cast<std::string>(a) << std::boolalpha
+             << ::core::any_cast<bool>(b);
+          return ss.str();
+        });
+    add(BiOp::ADD, std::type_index(typeid(std::string)),
+        std::type_index(typeid(int)),
+        [](const ::core::any& a, const ::core::any& b) {
+          std::stringstream ss;
+          ss << ::core::any_cast<std::string>(a) << ::core::any_cast<int>(b);
+          return ss.str();
+        });
+    add(BiOp::ADD, std::type_index(typeid(std::string)),
+        std::type_index(typeid(double)),
+        [](const ::core::any& a, const ::core::any& b) {
+          std::stringstream ss;
+          ss << ::core::any_cast<std::string>(a) << ::core::any_cast<double>(b);
+          return ss.str();
+        });
+
+    // UNARY
+    // BOOL
     add<bool, UnOp::BOOL>();
     add<int, UnOp::BOOL>();
     add<double, UnOp::BOOL>();
@@ -454,6 +520,26 @@ OperatorProvider::OperatorProvider(const bool initialize) {
         });
     add(UnOp::BOOL, std::type_index(typeid(void)),
         [](const ::core::any&) { return false; });
+
+    // TYPEOF
+    add(UnOp::TYPEOF, std::type_index(typeid(bool)),
+        [](const ::core::any&) { return std::string("bool"); });
+    add(UnOp::TYPEOF, std::type_index(typeid(int)),
+        [](const ::core::any&) { return std::string("int"); });
+    add(UnOp::TYPEOF, std::type_index(typeid(double)),
+        [](const ::core::any&) { return std::string("double"); });
+    add(UnOp::TYPEOF, std::type_index(typeid(std::string)),
+        [](const ::core::any&) { return std::string("string"); });
+
+    // PRINT
+    add(UnOp::PRINT, std::type_index(typeid(bool)),
+        [this](const ::core::any& a) { return eval_add(std::string(), a); });
+    add(UnOp::PRINT, std::type_index(typeid(int)),
+        [this](const ::core::any& a) { return eval_add(std::string(), a); });
+    add(UnOp::PRINT, std::type_index(typeid(double)),
+        [this](const ::core::any& a) { return eval_add(std::string(), a); });
+    add(UnOp::PRINT, std::type_index(typeid(std::string)),
+        [](const ::core::any& a) { return a; });
   }
 }
 }

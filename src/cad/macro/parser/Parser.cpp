@@ -201,6 +201,10 @@ void assamble_operators(const std::string& file,
                         const ast::BinaryOperation operaton);
 void assamble_operator(const std::string& file,
                        std::vector<ast::Scope::Node>& nodes);
+core::optional<ast::UnaryOperator> parse_unary_operator(const Tokens& tokens,
+                                                        size_t& token);
+core::optional<ast::BinaryOperator> parse_binary_operator(const Tokens& tokens,
+                                                          size_t& token);
 core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>>
 parse_operator_internals(const Tokens& tokens, size_t& token);
 core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>>
@@ -743,14 +747,6 @@ parse_scope_internals(const Tokens& tokens, size_t& token,
     last_statement = Statement::NON_TERMINATED;
     op->match([&node](ast::UnaryOperator& op) { node = std::move(op); },
               [&node](ast::BinaryOperator& op) { node = std::move(op); });
-  } else if(auto var = parse_variable(tokens, token)) {
-    auto tmp = token;
-    if(read_token(tokens, tmp, "=")) {
-      last_statement = Statement::TERMINATED;
-    } else {
-      last_statement = Statement::NON_TERMINATED;
-    }
-    node = std::move(*var);
   } else if(auto scope = parse_scope(tokens, token)) {
     last_statement = Statement::TERMINATED;
     node = std::move(*scope);
@@ -764,6 +760,14 @@ parse_scope_internals(const Tokens& tokens, size_t& token,
                          [&] { e << "Expected an expression."; });
       throw e;
     }
+  } else if(auto var = parse_variable(tokens, token)) {
+    auto tmp = token;
+    if(read_token(tokens, tmp, "=")) {
+      last_statement = Statement::TERMINATED;
+    } else {
+      last_statement = Statement::NON_TERMINATED;
+    }
+    node = std::move(*var);
   } else {
     return {};
   }
@@ -1047,8 +1051,6 @@ void parse_operants(const Tokens& tokens, size_t& token,
       workspace.push_back(std::move(*lit_double));
     } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
       workspace.push_back(std::move(*lit_string));
-    } else if(auto var = parse_variable(tokens, tmp)) {
-      workspace.push_back(std::move(*var));
     } else if(auto op = parse_operator_internals(tokens, tmp)) {
       op->match(
           [&workspace](ast::UnaryOperator& op) {
@@ -1067,6 +1069,8 @@ void parse_operants(const Tokens& tokens, size_t& token,
                            [&] { e << "Expected an expression."; });
         throw e;
       }
+    } else if(auto var = parse_variable(tokens, tmp)) {
+      workspace.push_back(std::move(*var));
     } else {
       break;  // We are done
     }
@@ -1074,7 +1078,6 @@ void parse_operants(const Tokens& tokens, size_t& token,
 
   token = tmp;
 }
-
 
 void expect_operatees(const Token& token, const std::string& file,
                       const std::vector<ast::Scope::Node>::iterator& previous,
@@ -1238,6 +1241,7 @@ void assamble_operators(const std::string& file,
 void assamble_operator(const std::string& file,
                        std::vector<ast::Scope::Node>& nodes) {
   assamble_operators(file, nodes, ast::UnaryOperation::NOT);
+  assamble_operators(file, nodes, ast::UnaryOperation::TYPEOF);
 
   assamble_operators(file, nodes, ast::BinaryOperation::DIVIDE);
   assamble_operators(file, nodes, ast::BinaryOperation::MULTIPLY);
@@ -1255,10 +1259,76 @@ void assamble_operator(const std::string& file,
   assamble_operators(file, nodes, ast::BinaryOperation::OR);
 
   assamble_operators(file, nodes, ast::BinaryOperation::ASSIGNMENT);
+  assamble_operators(file, nodes, ast::UnaryOperation::PRINT);
 
   if(nodes.size() > 1) {
     throw_unexprected_token(node_to_token(nodes.at(1)), file);
   }
+}
+
+core::optional<ast::UnaryOperator> parse_unary_operator(const Tokens& tokens,
+                                                        size_t& token) {
+  auto op = ast::UnaryOperation::NONE;
+  auto tmp = token;
+
+  if(read_token(tokens, tmp, "!")) {
+    op = ast::UnaryOperation::NOT;
+  } else if(read_token(tokens, tmp, "typeof")) {
+    op = ast::UnaryOperation::TYPEOF;
+  } else if(read_token(tokens, tmp, "print")) {
+    op = ast::UnaryOperation::PRINT;
+  }
+
+  if(op != ast::UnaryOperation::NONE) {
+    ast::UnaryOperator un(tokens.at(token));
+    un.operation = op;
+    token = tmp;
+    return un;
+  }
+  return {};
+}
+core::optional<ast::BinaryOperator> parse_binary_operator(const Tokens& tokens,
+                                                          size_t& token) {
+  auto op = ast::BinaryOperation::NONE;
+  auto tmp = token;
+
+  if(read_token(tokens, tmp, "/")) {
+    op = ast::BinaryOperation::DIVIDE;
+  } else if(read_token(tokens, tmp, "*")) {
+    op = ast::BinaryOperation::MULTIPLY;
+  } else if(read_token(tokens, tmp, "%")) {
+    op = ast::BinaryOperation::MODULO;
+  } else if(read_token(tokens, tmp, "+")) {
+    op = ast::BinaryOperation::ADD;
+  } else if(read_token(tokens, tmp, "-")) {
+    op = ast::BinaryOperation::SUBTRACT;
+  } else if(read_token(tokens, tmp, "<")) {
+    op = ast::BinaryOperation::SMALLER;
+  } else if(read_token(tokens, tmp, "<=")) {
+    op = ast::BinaryOperation::SMALLER_EQUAL;
+  } else if(read_token(tokens, tmp, ">")) {
+    op = ast::BinaryOperation::GREATER;
+  } else if(read_token(tokens, tmp, ">=")) {
+    op = ast::BinaryOperation::GREATER_EQUAL;
+  } else if(read_token(tokens, tmp, "==")) {
+    op = ast::BinaryOperation::EQUAL;
+  } else if(read_token(tokens, tmp, "!=")) {
+    op = ast::BinaryOperation::NOT_EQUAL;
+  } else if(read_token(tokens, tmp, "&&")) {
+    op = ast::BinaryOperation::AND;
+  } else if(read_token(tokens, tmp, "||")) {
+    op = ast::BinaryOperation::OR;
+  } else if(read_token(tokens, tmp, "=")) {
+    op = ast::BinaryOperation::ASSIGNMENT;
+  }
+
+  if(op != ast::BinaryOperation::NONE) {
+    ast::BinaryOperator bi(tokens.at(token));
+    bi.operation = op;
+    token = tmp;
+    return bi;
+  }
+  return {};
 }
 
 core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>>
@@ -1266,47 +1336,11 @@ parse_operator_internals(const Tokens& tokens, size_t& token) {
   auto tmp = token;
   ::core::optional<core::variant<ast::UnaryOperator, ast::BinaryOperator>> ret;
 
-  if(read_token(tokens, tmp, "!")) {
-    ast::UnaryOperator op(tokens.at(token));
-    op.operation = ast::UnaryOperation::NOT;
-    ret.emplace(std::move(op));
-  } else {
-    ast::BinaryOperator op(tokens.at(token));
-
-    if(read_token(tokens, tmp, "/")) {
-      op.operation = ast::BinaryOperation::DIVIDE;
-    } else if(read_token(tokens, tmp, "*")) {
-      op.operation = ast::BinaryOperation::MULTIPLY;
-    } else if(read_token(tokens, tmp, "%")) {
-      op.operation = ast::BinaryOperation::MODULO;
-    } else if(read_token(tokens, tmp, "+")) {
-      op.operation = ast::BinaryOperation::ADD;
-    } else if(read_token(tokens, tmp, "-")) {
-      op.operation = ast::BinaryOperation::SUBTRACT;
-    } else if(read_token(tokens, tmp, "<")) {
-      op.operation = ast::BinaryOperation::SMALLER;
-    } else if(read_token(tokens, tmp, "<=")) {
-      op.operation = ast::BinaryOperation::SMALLER_EQUAL;
-    } else if(read_token(tokens, tmp, ">")) {
-      op.operation = ast::BinaryOperation::GREATER;
-    } else if(read_token(tokens, tmp, ">=")) {
-      op.operation = ast::BinaryOperation::GREATER_EQUAL;
-    } else if(read_token(tokens, tmp, "==")) {
-      op.operation = ast::BinaryOperation::EQUAL;
-    } else if(read_token(tokens, tmp, "!=")) {
-      op.operation = ast::BinaryOperation::NOT_EQUAL;
-    } else if(read_token(tokens, tmp, "&&")) {
-      op.operation = ast::BinaryOperation::AND;
-    } else if(read_token(tokens, tmp, "||")) {
-      op.operation = ast::BinaryOperation::OR;
-    } else if(read_token(tokens, tmp, "=")) {
-      op.operation = ast::BinaryOperation::ASSIGNMENT;
-    }
-    if(op.operation != ast::BinaryOperation::NONE) {
-      ret.emplace(std::move(op));
-    }
-  }
-  if(ret) {
+  if(auto un = parse_unary_operator(tokens, tmp)) {
+    ret.emplace(std::move(*un));
+    token = tmp;
+  } else if(auto bi = parse_binary_operator(tokens, tmp)) {
+    ret.emplace(std::move(*bi));
     token = tmp;
   }
   return ret;
@@ -1350,6 +1384,7 @@ ast::ValueProducer
 assamble_conditions(const std::string& file,
                     std::vector<ast::Scope::Node> conditions) {
   assamble_operators(file, conditions, ast::UnaryOperation::NOT);
+  assamble_operators(file, conditions, ast::UnaryOperation::TYPEOF);
 
   assamble_operators(file, conditions, ast::BinaryOperation::DIVIDE);
   assamble_operators(file, conditions, ast::BinaryOperation::MULTIPLY);
@@ -1388,8 +1423,6 @@ core::optional<ast::ValueProducer> parse_condition(const Tokens& tokens,
       conditions.push_back(std::move(*lit_double));
     } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
       conditions.push_back(std::move(*lit_string));
-    } else if(auto var = parse_variable(tokens, tmp)) {
-      conditions.push_back(std::move(*var));
     } else if(auto op = parse_operator(tokens, tmp, conditions)) {
       op->match(
           [&conditions](ast::UnaryOperator& op) {
@@ -1408,6 +1441,8 @@ core::optional<ast::ValueProducer> parse_condition(const Tokens& tokens,
                            [&] { e << "Expected an expression."; });
         throw e;
       }
+    } else if(auto var = parse_variable(tokens, tmp)) {
+      conditions.push_back(std::move(*var));
     } else {
       break;  // We are done
     }

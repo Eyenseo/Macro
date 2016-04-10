@@ -201,6 +201,49 @@ TEST_CASE("While") {
   REQUIRE(core::any_cast<int>(ret) == 42);
 }
 
+TEST_CASE("Print") {
+  std::stringstream ss;
+  auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
+  auto op = std::make_shared<OperatorProvider>();
+  Interpreter in(cp, op, ss);
+
+  SECTION("Single Integer") {
+    auto ret = in.interpret("def main(){print 1;}", Arguments());
+    REQUIRE(ret.empty());
+    REQUIRE(ss.str() == "1");
+  }
+  SECTION("String, Integer, Double, Bool via Operator") {
+    auto ret = in.interpret("def main(){print \"Herbert\" + 1 + 0.42 + true;}",
+                            Arguments());
+    REQUIRE(ret.empty());
+    REQUIRE(ss.str() == "Herbert10.42true");
+  }
+}
+
+TEST_CASE("Typeof") {
+  std::stringstream ss;
+  auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
+  auto op = std::make_shared<OperatorProvider>();
+  Interpreter in(cp, op, ss);
+
+  SECTION("Integer") {
+    auto ret =
+        in.interpret("def main(){return typeof 1 == \"int\";}", Arguments());
+    REQUIRE(core::any_cast<bool>(ret));
+  }
+  SECTION("String") {
+    auto ret = in.interpret("def main(){return typeof \"\" == \"string\";}",
+                            Arguments());
+    REQUIRE(core::any_cast<bool>(ret));
+  }
+  SECTION("Var") {
+    auto ret =
+        in.interpret("def main(){var a = true; return typeof a != \"string\";}",
+                     Arguments());
+    REQUIRE(core::any_cast<bool>(ret));
+  }
+}
+
 // TODO implement
 // TEST_CASE("DoWhile") {
 //   auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);

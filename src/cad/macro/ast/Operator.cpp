@@ -39,6 +39,10 @@ std::string UnaryOperator::operation_to_string() const {
     return "NONE";
   case UnaryOperation::NOT:
     return "not";
+  case UnaryOperation::PRINT:
+    return "print";
+  case UnaryOperation::TYPEOF:
+    return "typeof";
   }
 
   return "This 'can not' happen - you accessed uninitialized memory or "

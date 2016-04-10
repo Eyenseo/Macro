@@ -59,9 +59,11 @@ struct Interpreter::SmartRef {
 
 
 Interpreter::Interpreter(std::shared_ptr<CommandProvider> command_provider,
-                         std::shared_ptr<OperatorProvider> operator_provider)
+                         std::shared_ptr<OperatorProvider> operator_provider,
+                         std::ostream& out)
     : command_provider_(std::move(command_provider))
-    , operator_provider_(std::move(operator_provider)) {
+    , operator_provider_(std::move(operator_provider))
+    , out_(out) {
 }
 
 ::core::any Interpreter::interpret(std::string macro, Arguments args,
@@ -338,6 +340,22 @@ Interpreter::interpret_greater_equal(State& state,
   using UnOp = OperatorProvider::UnaryOperation;
   return operator_provider_->eval(UnOp::NOT, rhs);
 }
+::core::any Interpreter::interpret_typeof(State& state,
+                                       const UnaryOperator& op) const {
+  auto rhs = interpret(state, *op.operand);
+
+  using UnOp = OperatorProvider::UnaryOperation;
+  return operator_provider_->eval(UnOp::TYPEOF, rhs);
+}
+::core::any Interpreter::interpret_print(State& state,
+                                       const UnaryOperator& op) const {
+  auto rhs = interpret(state, *op.operand);
+
+  using UnOp = OperatorProvider::UnaryOperation;
+  out_.get() << ::core::any_cast<std::string>(
+      operator_provider_->eval(UnOp::PRINT, rhs));
+  return {};
+}
 
 ::core::any Interpreter::interpret(State& state,
                                    const UnaryOperator& op) const {
@@ -346,6 +364,10 @@ Interpreter::interpret_greater_equal(State& state,
     interpret_none();
   case UnaryOperation::NOT:
     return interpret_not(state, op);
+  case UnaryOperation::TYPEOF:
+    return interpret_typeof(state, op);
+  case UnaryOperation::PRINT:
+    return interpret_print(state, op);
   }
 }
 

@@ -9,7 +9,7 @@ namespace cad {
 namespace macro {
 namespace ast {
 enum class OperationType { Unary, Binary };
-enum class UnaryOperation { NONE, NOT };
+enum class UnaryOperation { NONE, NOT, PRINT, TYPEOF };
 enum class BinaryOperation {
   NONE,
   DIVIDE,

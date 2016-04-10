@@ -3,6 +3,7 @@
 
 #include <core/any.hpp>
 
+#include <iostream>
 #include <memory>
 
 namespace cad {
@@ -60,6 +61,7 @@ protected:
 
   std::shared_ptr<CommandProvider> command_provider_;
   std::shared_ptr<OperatorProvider> operator_provider_;
+  std::reference_wrapper<std::ostream> out_;
 
   //////////////////////////////////////////
   /// Helper
@@ -77,6 +79,7 @@ protected:
   /// Interpret operator
   //////////////////////////////////////////
   [[noreturn]] void interpret_none() const;
+  // Binary helper
   ::core::any interpret_divide(State& state,
                                const ast::BinaryOperator& op) const;
   ::core::any interpret_multiply(State& state,
@@ -102,7 +105,11 @@ protected:
   ::core::any interpret_or(State& state, const ast::BinaryOperator& op) const;
   ::core::any interpret_assignment(State& state,
                                    const ast::BinaryOperator& op) const;
+  // Unary helper
   ::core::any interpret_not(State& state, const ast::UnaryOperator& op) const;
+  ::core::any interpret_typeof(State& state,
+                               const ast::UnaryOperator& op) const;
+  ::core::any interpret_print(State& state, const ast::UnaryOperator& op) const;
 
   ::core::any interpret(State& state, const ast::BinaryOperator& op) const;
   ::core::any interpret(State& state, const ast::UnaryOperator& op) const;
@@ -145,9 +152,11 @@ public:
   enum class E { TODO };
 
   Interpreter(std::shared_ptr<CommandProvider> command_provider,
-              std::shared_ptr<OperatorProvider> operator_provider);
+              std::shared_ptr<OperatorProvider> operator_provider,
+              std::ostream& out = std::cout);
 
-  ::core::any interpret(std::string macro, Arguments args, std::string scope = "",
+  ::core::any interpret(std::string macro, Arguments args,
+                        std::string scope = "",
                         std::string file_name = "Anonymous") const;
 };
 }

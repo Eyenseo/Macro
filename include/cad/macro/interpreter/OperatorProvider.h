@@ -10,7 +10,7 @@ namespace macro {
 namespace interpreter {
 class OperatorProvider {
 public:
-  enum class UnaryOperation { NOT, BOOL };
+  enum class UnaryOperation { NOT, BOOL, PRINT, TYPEOF };
   enum class BinaryOperation {
     DIVIDE,
     MULTIPLY,
@@ -67,6 +67,8 @@ protected:
   BiMap equal_;
   BiMap not_equal_;
   UnMap bool_;
+  UnMap print_;
+  UnMap type_of_;
 
   //////////////////////////////////////////
   /// Binary
@@ -97,6 +99,8 @@ protected:
   //////////////////////////////////////////
   ::core::any eval_not(const ::core::any& rhs) const;
   ::core::any eval_bool(const ::core::any& rhs) const;
+  ::core::any eval_type_of(const ::core::any& rhs) const;
+  ::core::any eval_print(const ::core::any& rhs) const;
 
 public:
   OperatorProvider(const bool initialize = true);
