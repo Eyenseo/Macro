@@ -530,6 +530,8 @@ OperatorProvider::OperatorProvider(const bool initialize) {
         [](const ::core::any&) { return std::string("double"); });
     add(UnOp::TYPEOF, std::type_index(typeid(std::string)),
         [](const ::core::any&) { return std::string("string"); });
+    add(UnOp::TYPEOF, std::type_index(typeid(void)),
+        [](const ::core::any&) { return std::string("none"); });
 
     // PRINT
     add(UnOp::PRINT, std::type_index(typeid(bool)),
@@ -540,6 +542,8 @@ OperatorProvider::OperatorProvider(const bool initialize) {
         [this](const ::core::any& a) { return eval_add(std::string(), a); });
     add(UnOp::PRINT, std::type_index(typeid(std::string)),
         [](const ::core::any& a) { return a; });
+    add(UnOp::PRINT, std::type_index(typeid(void)),
+        [this](const ::core::any&) { return std::string("none"); });
   }
 }
 }
