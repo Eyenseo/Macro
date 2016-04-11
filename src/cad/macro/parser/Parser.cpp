@@ -48,9 +48,9 @@ struct Tokens {
 
 enum class Statement { TERMINATED, NON_TERMINATED };
 
-static std::vector<std::string> keywords{"if",    "else",   "do",   "while",
-                                         "for",   "var",    "def",  "main",
-                                         "break", "return", "true", "false"};
+static std::vector<std::string> keywords{
+    "if",   "else",  "do",     "while", "for",   "var",    "def",
+    "main", "break", "return", "true",  "false", "typeof", "print"};
 
 //////////////////////////////////////////
 /// Exception
@@ -1603,17 +1603,6 @@ ast::Scope parse(std::string macro, std::string file_name) {
   for(size_t i = 0; i < tokens.size(); ++i) {
     parse_scope_internals(tokens, i, root);
   }
-
-  // TODO check that no break is in a scope that is not contained by a
-  // loop (functions reset the counter)
-  // TODO check that no ast elements follow a break
-  // TODO check that no ast elements follow a return
-  // TODO check that a main function is given
-  // TODO validate root scope - only definitions
-  // TODO check unique parameter
-  // TODO check unique pointer are set
-  // TODO check left assignment operator is variable
-
   return root;
 }
 }
