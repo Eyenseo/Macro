@@ -1,6 +1,8 @@
 target_sources(
   ${PROJECT_NAME}
     PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/Analyser.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/Message.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Parser.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Token.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Tokenizer.cpp

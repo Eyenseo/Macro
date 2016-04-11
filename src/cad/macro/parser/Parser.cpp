@@ -4,6 +4,8 @@
 #include "cad/macro/ast/Literal.h"
 #include "cad/macro/ast/ValueProducer.h"
 #include "cad/macro/parser/Tokenizer.h"
+#include "cad/macro/parser/Analyser.h"
+#include "cad/macro/parser/Message.h"
 
 #include <exception.h>
 #include <core/optional.hpp>
@@ -1597,12 +1599,24 @@ core::optional<ast::loop::While> parse_while(const Tokens& tokens,
 }
 
 ast::Scope parse(std::string macro, std::string file_name) {
-  Tokens tokens = {tokenizer::tokenize(macro), std::move(file_name)};
+  Tokens tokens = {tokenizer::tokenize(macro), file_name};
   auto root = ast::Scope(Token(0, 0, ""));
 
   for(size_t i = 0; i < tokens.size(); ++i) {
     parse_scope_internals(tokens, i, root);
   }
+  auto messages = analyse(root, file_name);
+
+  if(messages->size() > 0) {
+    UserTailExc exc;
+    for(const auto& s : *messages) {
+      for(const auto& m : s) {
+        exc << m.message();
+      }
+    }
+    throw exc;
+  }
+
   return root;
 }
 }
