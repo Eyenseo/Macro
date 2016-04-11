@@ -341,20 +341,21 @@ Interpreter::interpret_greater_equal(State& state,
   return operator_provider_->eval(UnOp::NOT, rhs);
 }
 ::core::any Interpreter::interpret_typeof(State& state,
-                                       const UnaryOperator& op) const {
+                                          const UnaryOperator& op) const {
   auto rhs = interpret(state, *op.operand);
 
   using UnOp = OperatorProvider::UnaryOperation;
   return operator_provider_->eval(UnOp::TYPEOF, rhs);
 }
 ::core::any Interpreter::interpret_print(State& state,
-                                       const UnaryOperator& op) const {
+                                         const UnaryOperator& op) const {
   auto rhs = interpret(state, *op.operand);
 
   using UnOp = OperatorProvider::UnaryOperation;
-  out_.get() << ::core::any_cast<std::string>(
-      operator_provider_->eval(UnOp::PRINT, rhs));
-  return {};
+  auto res =
+      ::core::any_cast<std::string>(operator_provider_->eval(UnOp::PRINT, rhs));
+  out_.get() << res;
+  return res;
 }
 
 ::core::any Interpreter::interpret(State& state,
