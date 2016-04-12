@@ -240,6 +240,8 @@ void parse_while_scope(const Tokens& tokens, size_t& token,
                        ast::loop::While& whi);
 core::optional<ast::loop::While> parse_while(const Tokens& tokens,
                                              size_t& token);
+core::optional<ast::loop::DoWhile> parse_do_while(const Tokens& tokens,
+                                                size_t& token);
 
 //////////////////////////////////////////
 /// Implementation
@@ -727,6 +729,9 @@ parse_scope_internals(const Tokens& tokens, size_t& token,
   } else if(auto whi = parse_while(tokens, token)) {
     last_statement = Statement::TERMINATED;
     node = std::move(*whi);
+  } else if(auto dwhi = parse_do_while(tokens, token)) {
+    last_statement = Statement::NON_TERMINATED;
+    node = std::move(*dwhi);
   } else if(auto ret = parse_return(tokens, token)) {
     last_statement = Statement::NON_TERMINATED;
     node = std::move(*ret);
@@ -763,8 +768,7 @@ parse_scope_internals(const Tokens& tokens, size_t& token,
       last_statement = Statement::NON_TERMINATED;
     }
     node = std::move(*var);
-  }
-  else {
+  } else {
     return {};
   }
   return node;
@@ -1586,6 +1590,28 @@ core::optional<ast::loop::While> parse_while(const Tokens& tokens,
     UserTailExc e;
     add_exception_info(tokens, token, e,
                        [&e] { e << "In the while defined here:"; });
+    std::throw_with_nested(e);
+  }
+  return {};
+}
+core::optional<ast::loop::DoWhile> parse_do_while(const Tokens& tokens,
+                                             size_t& token) {
+  auto tmp = token;
+
+  try {
+    if(read_token(tokens, tmp, "do")) {
+      ast::loop::DoWhile w(tokens.at(token));
+
+      parse_while_scope(tokens, tmp, w);
+      expect_token(tokens, tmp, "while");
+      parse_while_condition(tokens, tmp, w);
+      token = tmp;
+      return w;
+    }
+  } catch(UserExc&) {
+    UserTailExc e;
+    add_exception_info(tokens, token, e,
+                       [&e] { e << "In the do-while defined here:"; });
     std::throw_with_nested(e);
   }
   return {};

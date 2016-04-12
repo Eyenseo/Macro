@@ -778,6 +778,26 @@ TEST_CASE("While") {  // Basically an if
     REQUIRE(ast == expected);
   }
 }
+TEST_CASE("DoWhile") {
+  SECTION("default") {
+    auto ast = parse("var a; do{}while(a);");
+    auto line1 = std::make_shared<std::string>("var a; do{}while(a);");
+
+    Scope expected({0, 0, ""});
+    {
+      Define def({1, 1, "var", line1});
+      def.definition = Variable({1, 5, "a", line1});
+      DoWhile w({1, 8, "do", line1});
+      w.condition =
+          std::make_unique<ValueProducer>(Variable({1, 18, "a", line1}));
+      w.scope = std::make_unique<Scope>(Token(1, 10, "{", line1));
+      expected.nodes.push_back(std::move(def));
+      expected.nodes.push_back(std::move(w));
+    }
+
+    REQUIRE(ast == expected);
+  }
+}
 
 TEST_CASE("Variable define and assign") {
   SECTION("define and assign") {
