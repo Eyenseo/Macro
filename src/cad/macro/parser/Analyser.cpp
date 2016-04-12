@@ -129,6 +129,7 @@ struct State {
   std::string file;
   size_t current_element;
   bool loop;
+  bool root_scope;
 
   State(const ast::Scope& s, std::string f)
       : stack()
@@ -138,7 +139,8 @@ struct State {
       , scope(s)
       , file(std::move(f))
       , current_element(0)
-      , loop(false) {
+      , loop(false)
+      , root_scope(false) {
   }
   State(State& parent, const ast::Scope& s, bool l = false)
       : stack()
@@ -148,7 +150,8 @@ struct State {
       , scope(s)
       , file(parent.file)
       , current_element(0)
-      , loop(l ? l : parent.loop) {
+      , loop(l ? l : parent.loop)
+      , root_scope(parent.root_scope) {
     stack.parent = &parent.stack;
   }
 };
@@ -205,15 +208,11 @@ void analyse(State& state, const ast::callable::Callable& e) {
   state.signal->call.emit(SignalType::END, state, e);
 }
 void analyse(State& state, const ast::callable::EntryFunction& e) {
-  {
-    Message m(e.token, state.file);
-    m << "In the function call '" << e.token.token << "' defined here:";
-    state.current_message->push_back(std::move(m));
-  }
   state.signal->enfun.emit(SignalType::START, state, e);
   if(e.scope) {
     State inner(state, *e.scope);
-    inner.loop = false;  // we mark a new start
+    inner.loop = false;        // we mark a new start
+    inner.root_scope = false;  // we are not part of the root - we can return
     for(const auto& p : e.parameter) {
       inner.stack.variables.push_back(p);
     }
@@ -221,16 +220,13 @@ void analyse(State& state, const ast::callable::EntryFunction& e) {
     analyse(inner, *e.scope);
   }
   state.signal->enfun.emit(SignalType::END, state, e);
-  if(state.current_message->size() > 0) {
-    state.current_message->pop_back();
-  }
 }
 void analyse(State& state, const ast::callable::Function& e) {
-
   state.signal->fun.emit(SignalType::START, state, e);
   if(e.scope) {
     State inner(state, *e.scope);
-    inner.loop = false;  // we mark a new start
+    inner.loop = false;        // we mark a new start
+    inner.root_scope = false;  // we are not part of the root - we can return
     for(const auto& p : e.parameter) {
       inner.stack.variables.push_back(p);
     }
@@ -482,7 +478,7 @@ void no_break_in_non_loop(Signals& sigs) {
 void no_return_in_root(Signals& sigs) {
   sigs.ret.connect([](SignalType t, const State& s, const auto& ret) {
     if(t == SignalType::START) {
-      if(!s.stack.parent) {
+      if(s.root_scope) {
         auto stack = *s.current_message;
         Message m(ret.token, s.file);
         m << "Return statement in root scope";
@@ -574,11 +570,11 @@ void unique_main(Signals& sigs) {
     }
   });
 }
-void unique_main_in_root(Signals& sigs) {
+void main_in_root(Signals& sigs) {
   sigs.enfun.connect([](SignalType t, const State& s, const auto& enfun) {
     if(t == SignalType::START) {
       // We get the extra parent through the analyse scope method
-      if(s.stack.parent && s.stack.parent->parent != nullptr) {
+      if(!s.root_scope) {
         auto stack = *s.current_message;
         Message m(enfun.token, s.file);
         m << "The main function has to be in the root scope";
@@ -849,23 +845,23 @@ void register_checks(Signals& sigs) {
   unique_function_parameter(sigs);
   unique_main_parameter(sigs);
   unique_main(sigs);
-  unique_main_in_root(sigs);
+  main_in_root(sigs);
   variable_available(sigs);
   no_double_def_variable(sigs);
   no_double_def_function(sigs);
-  bi_op_operands(sigs);
-  un_op_operands(sigs);
-  bi_op_operator(sigs);
-  un_op_operator(sigs);
+  bi_op_operands(sigs);  // Should not be needed - better safe than sorry
+  un_op_operands(sigs);  // Should not be needed - better safe than sorry
+  bi_op_operator(sigs);  // Should not be needed - better safe than sorry
+  un_op_operator(sigs);  // Should not be needed - better safe than sorry
   bi_op_assign_var(sigs);
-  function_scope(sigs);
-  main_scope(sigs);
-  if_scope(sigs);
-  do_while_scope(sigs);
-  while_scope(sigs);
-  if_con(sigs);
-  do_while_con(sigs);
-  while_con(sigs);
+  function_scope(sigs);  // Should not be needed - better safe than sorry
+  main_scope(sigs);      // Should not be needed - better safe than sorry
+  if_scope(sigs);        // Should not be needed - better safe than sorry
+  do_while_scope(sigs);  // Should not be needed - better safe than sorry
+  while_scope(sigs);     // Should not be needed - better safe than sorry
+  if_con(sigs);          // Should not be needed - better safe than sorry
+  do_while_con(sigs);    // Should not be needed - better safe than sorry
+  while_con(sigs);       // Should not be needed - better safe than sorry
 }
 }
 }
@@ -873,6 +869,7 @@ void register_checks(Signals& sigs) {
 std::shared_ptr<std::vector<std::vector<Message>>>
 analyse(const ast::Scope& scope, std::string file) {
   State state(scope, file);
+  state.root_scope = true;
 
   visitor::register_checks(*state.signal);
   analyse::analyse(state, scope);
