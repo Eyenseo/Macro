@@ -79,8 +79,8 @@ TEST_CASE("Unary Operations") {
     REQUIRE((op.has<int, UnOp::BOOL>()));
     REQUIRE((op.has<UnOp::BOOL>(rhs)));
 
-    // REQUIRE_FALSE((op.has<int, UnOp::BOOL>())); TODO NONE_TYPE or what ever
-    // REQUIRE_FALSE((op.has<UnOp::BOOL>(rhs))); TODO NONE_TYPE or what ever
+    REQUIRE_FALSE((op.has<int, UnOp::TYPEOF>()));
+    REQUIRE_FALSE((op.has<UnOp::TYPEOF>(rhs)));
   }
 
   SECTION("Manuel") {
@@ -101,7 +101,7 @@ TEST_CASE("Unary Operations") {
     REQUIRE((op.has(UnOp::BOOL, rhs)));
     REQUIRE((op.has(UnOp::BOOL, int_index)));
 
-    // REQUIRE_FALSE((op.has(UnOp::BOOL, rhs)));  TODO NONE_TYPE or what ever
-    // REQUIRE_FALSE((op.has(UnOp::BOOL, int_index)));  TODO NONE_TYPE or what
+    REQUIRE_FALSE((op.has(UnOp::TYPEOF, rhs)));
+    REQUIRE_FALSE((op.has(UnOp::TYPEOF, int_index)));
   }
 }

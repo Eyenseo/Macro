@@ -221,10 +221,9 @@ TEST_CASE("Print") {
 }
 
 TEST_CASE("Typeof") {
-  std::stringstream ss;
   auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
   auto op = std::make_shared<OperatorProvider>();
-  Interpreter in(cp, op, ss);
+  Interpreter in(cp, op);
 
   SECTION("Integer") {
     auto ret =
@@ -255,3 +254,22 @@ TEST_CASE("Typeof") {
 //       Arguments());
 //   REQUIRE(core::any_cast<int>(ret) == 3);
 // }
+
+TEST_CASE("Missing Function") {
+  auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
+  auto op = std::make_shared<OperatorProvider>();
+  Interpreter in(cp, op);
+
+  using EXC_TAIL = Exc<Interpreter::E, Interpreter::E::TAIL>;  // Catch issue
+  REQUIRE_THROWS_AS(in.interpret("def main(){fun();}", Arguments()), EXC_TAIL);
+}
+
+TEST_CASE("Missing Operator") {
+  auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
+  auto op = std::make_shared<OperatorProvider>();
+  Interpreter in(cp, op);
+
+  using EXC_TAIL = Exc<Interpreter::E, Interpreter::E::TAIL>;  // Catch issue
+  REQUIRE_THROWS_AS(in.interpret("def main(){\"foo\" - \"bar\";}", Arguments()),
+                    EXC_TAIL);
+}

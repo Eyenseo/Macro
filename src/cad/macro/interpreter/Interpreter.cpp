@@ -19,18 +19,31 @@ using namespace ast;
 using namespace ast::callable;
 using namespace ast::loop;
 using namespace ast::logic;
+
+template <typename FUN>
+void add_exception_info(const parser::Token& token, const std::string& file,
+                        Exc<Interpreter::E, Interpreter::E::TAIL>& e, FUN fun) {
+  e << file << ':' << token.line << ':' << token.column << ": ";
+  fun();
+  if(token.source_line) {
+    e << '\n' << *token.source_line << '\n'
+      << std::string(token.column - 1, ' ') << "^";
+  }
+}
 }
 
 struct Interpreter::State {
   std::shared_ptr<Stack> stack;
   std::string scope;
+  std::string file;
   bool breaking;
   bool loopscope;
   bool returning;
 
-  State(std::string scop)
+  State(std::string s, std::string f)
       : stack(std::make_shared<Stack>())
-      , scope(std::move(scop))
+      , scope(std::move(s))
+      , file(std::move(f))
       , breaking(false)
       , loopscope(false)
       , returning(false) {
@@ -38,6 +51,7 @@ struct Interpreter::State {
   State(const State& other, std::shared_ptr<Stack> s)
       : stack(std::move(s))
       , scope(other.scope)
+      , file(other.file)
       , breaking(other.breaking)
       , loopscope(other.loopscope)
       , returning(other.returning) {
@@ -57,7 +71,6 @@ struct Interpreter::SmartRef {
   }
 };
 
-
 Interpreter::Interpreter(std::shared_ptr<CommandProvider> command_provider,
                          std::shared_ptr<OperatorProvider> operator_provider,
                          std::ostream& out)
@@ -70,7 +83,7 @@ Interpreter::Interpreter(std::shared_ptr<CommandProvider> command_provider,
                                    std::string command_scope,
                                    std::string file_name) const {
   auto scope = parser::parse(macro, file_name);
-  State state(std::move(command_scope));
+  State state(std::move(command_scope), file_name);
 
   interpret(state, scope);
   return interpret_main(state, std::move(args));
@@ -89,8 +102,10 @@ bool Interpreter::any_to_bool(const ::core::any& any) const {
     if(b.type() == typeid(bool)) {
       return ::core::any_cast<bool>(b);
     } else {  // not a bool type ...
-      // TODO throw
-      throw Exc<E, E::TODO>(__FILE__, __LINE__);
+      Exc<E, E::BAD_BOOL_CAST> e(__FILE__, __LINE__, "Bad bool cast");
+      e << "Tried cast '" << any.type().name()
+        << "' to bool but the operator returned '" << b.type().name() << "'.";
+      throw e;
     }
   }
 }
@@ -136,8 +151,7 @@ void Interpreter::define_variable(State& state, const Define& def) const {
 /// Interpret operator
 //////////////////////////////////////////
 void Interpreter::interpret_none() const {
-  assert(false);
-  // TODO throw
+  assert(false); /* analyser checked */
 }
 
 //////////////////////////////////////////
@@ -258,12 +272,10 @@ Interpreter::interpret_greater_equal(State& state,
     if(s.stack->has_variable(v.token.token)) {
       s.stack->variable(v.token.token, [&](::core::any& var) { rh = var; });
     } else {
-      assert(false);
-      // TODO throw
+      assert(false); /* analyser checked */
     }
   };
 
-  // TODO refactor
   op.right_operand->value.match(
       [&](const callable::Callable& o) { ret_par(state, o); },
       [&](const UnaryOperator& o) { ret_par(state, o); },
@@ -275,9 +287,15 @@ Interpreter::interpret_greater_equal(State& state,
       [&](const Literal<Literals::STRING>& c) { lit_par(c); });
 
   op.left_operand->value.match(
-      [&](const callable::Callable&) { /* TODO throw */ },
-      [&](const UnaryOperator&) { /* TODO throw */ },
-      [&](const BinaryOperator&) { /* TODO throw */ },
+      [&](const callable::Callable&) {
+        assert(false); /* analyser checked */
+      },
+      [&](const UnaryOperator&) {
+        assert(false); /* analyser checked */
+      },
+      [&](const BinaryOperator&) {
+        assert(false); /* analyser checked */
+      },
       [&](const Variable& o) {
         if(!state.stack->owns_variable(o.token.token)) {
           state.stack->remove_alias(o.token.token);
@@ -286,46 +304,62 @@ Interpreter::interpret_greater_equal(State& state,
         state.stack->variable(o.token.token,
                               [&](::core::any& var) { var = rh; });
       },
-      [&](const Literal<Literals::BOOL>&) { /* TODO throw */ },
-      [&](const Literal<Literals::INT>&) { /* TODO throw */ },
-      [&](const Literal<Literals::DOUBLE>&) { /* TODO throw */ },
-      [&](const Literal<Literals::STRING>&) { /* TODO throw */ });
+      [&](const Literal<Literals::BOOL>&) {
+        assert(false); /* analyser checked */
+      },
+      [&](const Literal<Literals::INT>&) {
+        assert(false); /* analyser checked */
+      },
+      [&](const Literal<Literals::DOUBLE>&) {
+        assert(false); /* analyser checked */
+      },
+      [&](const Literal<Literals::STRING>&) {
+        assert(false); /* analyser checked */
+      });
   return rh;
 }
 
 ::core::any Interpreter::interpret(State& state,
                                    const BinaryOperator& op) const {
-  switch(op.operation) {
-  case BinaryOperation::NONE:
-    interpret_none();  // throws
-  case BinaryOperation::DIVIDE:
-    return interpret_divide(state, op);
-  case BinaryOperation::MULTIPLY:
-    return interpret_multiply(state, op);
-  case BinaryOperation::MODULO:
-    return interpret_modulo(state, op);
-  case BinaryOperation::ADD:
-    return interpret_add(state, op);
-  case BinaryOperation::SUBTRACT:
-    return interpret_subtract(state, op);
-  case BinaryOperation::SMALLER:
-    return interpret_smaller(state, op);
-  case BinaryOperation::SMALLER_EQUAL:
-    return interpret_smaller_equal(state, op);
-  case BinaryOperation::GREATER:
-    return interpret_greater(state, op);
-  case BinaryOperation::GREATER_EQUAL:
-    return interpret_greater_equal(state, op);
-  case BinaryOperation::EQUAL:
-    return interpret_equal(state, op);
-  case BinaryOperation::NOT_EQUAL:
-    return interpret_not_equal(state, op);
-  case BinaryOperation::AND:
-    return interpret_and(state, op);
-  case BinaryOperation::OR:
-    return interpret_or(state, op);
-  case BinaryOperation::ASSIGNMENT:
-    return interpret_assignment(state, op);
+  try {
+    switch(op.operation) {
+    case BinaryOperation::NONE:
+      interpret_none();  // assert
+    case BinaryOperation::DIVIDE:
+      return interpret_divide(state, op);
+    case BinaryOperation::MULTIPLY:
+      return interpret_multiply(state, op);
+    case BinaryOperation::MODULO:
+      return interpret_modulo(state, op);
+    case BinaryOperation::ADD:
+      return interpret_add(state, op);
+    case BinaryOperation::SUBTRACT:
+      return interpret_subtract(state, op);
+    case BinaryOperation::SMALLER:
+      return interpret_smaller(state, op);
+    case BinaryOperation::SMALLER_EQUAL:
+      return interpret_smaller_equal(state, op);
+    case BinaryOperation::GREATER:
+      return interpret_greater(state, op);
+    case BinaryOperation::GREATER_EQUAL:
+      return interpret_greater_equal(state, op);
+    case BinaryOperation::EQUAL:
+      return interpret_equal(state, op);
+    case BinaryOperation::NOT_EQUAL:
+      return interpret_not_equal(state, op);
+    case BinaryOperation::AND:
+      return interpret_and(state, op);
+    case BinaryOperation::OR:
+      return interpret_or(state, op);
+    case BinaryOperation::ASSIGNMENT:
+      return interpret_assignment(state, op);
+    }
+  } catch(std::exception&) {
+    Exc<E, E::TAIL> e;
+    add_exception_info(op.token, state.file, e, [&e, &op]() {
+      e << "At the operator '" << op.token.token << "' defined here:";
+    });
+    std::throw_with_nested(e);
   }
   assert(false && "Reached by access after free and similar");
 }
@@ -360,16 +394,25 @@ Interpreter::interpret_greater_equal(State& state,
 
 ::core::any Interpreter::interpret(State& state,
                                    const UnaryOperator& op) const {
-  switch(op.operation) {
-  case UnaryOperation::NONE:
-    interpret_none();
-  case UnaryOperation::NOT:
-    return interpret_not(state, op);
-  case UnaryOperation::TYPEOF:
-    return interpret_typeof(state, op);
-  case UnaryOperation::PRINT:
-    return interpret_print(state, op);
+  try {
+    switch(op.operation) {
+    case UnaryOperation::NONE:
+      interpret_none();
+    case UnaryOperation::NOT:
+      return interpret_not(state, op);
+    case UnaryOperation::TYPEOF:
+      return interpret_typeof(state, op);
+    case UnaryOperation::PRINT:
+      return interpret_print(state, op);
+    }
+  } catch(std::exception&) {
+    Exc<E, E::TAIL> e;
+    add_exception_info(op.token, state.file, e, [&e, &op]() {
+      e << "At the operator '" << op.token.token << "' defined here:";
+    });
+    std::throw_with_nested(e);
   }
+  assert(false && "Reached by access after free and similar");
 }
 
 //////////////////////////////////////////
@@ -388,8 +431,7 @@ Interpreter::interpret(State& state, const ValueProducer& vp) const {
           return state.stack->variable(o.token.token,
                                        [&](::core::any& var) { f.ref = var; });
         } else {
-          assert(false);
-          // TODO throw
+          assert(false); /* analyser checked */
         }
       },
       [&](const Literal<Literals::BOOL>& o) { f.value = ::core::any(o.data); },
@@ -410,20 +452,34 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
   if(state.loopscope) {
     state.breaking = true;
   } else {
-    assert(false);
-    // TODO throw
+    assert(false); /* analyser checked */
   }
 }
 ::core::any Interpreter::interpret(State& state,
                                    const ast::logic::If& iff) const {
   assert(iff.condition);
-  auto con = interpret(state, *iff.condition);
+  assert(iff.true_scope);
 
-  if(any_to_bool(con)) {
-    assert(iff.true_scope);
-    return interpret(state, *iff.true_scope);
-  } else if(iff.false_scope) {
-    return interpret(state, *iff.false_scope);
+  try {
+    auto con = interpret(state, *iff.condition);
+
+    if(any_to_bool(con)) {
+      return interpret(state, *iff.true_scope);
+    } else if(iff.false_scope) {
+      try {
+        return interpret(state, *iff.false_scope);
+      } catch(std::exception&) {
+        Exc<E, E::TAIL> e;
+        add_exception_info(iff.token, state.file, e,
+                           [&e]() { e << "In the else part defined here:"; });
+        std::throw_with_nested(e);
+      }
+    }
+  } catch(std::exception&) {
+    Exc<E, E::TAIL> e;
+    add_exception_info(iff.token, state.file, e,
+                       [&e]() { e << "In the if defined here:"; });
+    std::throw_with_nested(e);
   }
   return {};
 }
@@ -432,18 +488,25 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
   assert(whi.condition);
   assert(whi.scope);
 
-  State inner(state);
-  inner.loopscope = true;
-  auto ret = interpret_shared(inner, *whi.scope);
+  try {
+    State inner(state);
+    inner.loopscope = true;
+    auto ret = interpret_shared(inner, *whi.scope);
 
-  while(!inner.returning && !inner.breaking &&
-        any_to_bool(interpret(inner, *whi.condition))) {
-    ret = interpret_shared(inner, *whi.scope);
+    while(!inner.returning && !inner.breaking &&
+          any_to_bool(interpret(inner, *whi.condition))) {
+      ret = interpret_shared(inner, *whi.scope);
+    }
+    if(inner.returning) {
+      state.returning = true;
+    }
+    return ret;
+  } catch(std::exception&) {
+    Exc<E, E::TAIL> e;
+    add_exception_info(whi.token, state.file, e,
+                       [&e]() { e << "In the do/while defined here:"; });
+    std::throw_with_nested(e);
   }
-  if(inner.returning) {
-    state.returning = true;
-  }
-  return ret;
 }
 ::core::any Interpreter::interpret(State&, const ast::loop::For&) const {
   // TODO
@@ -454,42 +517,56 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
   assert(whi.condition);
   assert(whi.scope);
 
-  State inner(state);
-  inner.loopscope = true;
-  ::core::any ret;
-  while(!inner.returning && !inner.breaking &&
-        any_to_bool(interpret(inner, *whi.condition))) {
-    ret = interpret_shared(inner, *whi.scope);
+  try {
+    State inner(state);
+    inner.loopscope = true;
+    ::core::any ret;
+    while(!inner.returning && !inner.breaking &&
+          any_to_bool(interpret(inner, *whi.condition))) {
+      ret = interpret_shared(inner, *whi.scope);
+    }
+    if(inner.returning) {
+      state.returning = true;
+    }
+    return ret;
+  } catch(std::exception&) {
+    Exc<E, E::TAIL> e;
+    add_exception_info(whi.token, state.file, e,
+                       [&e]() { e << "In the while defined here:"; });
+    std::throw_with_nested(e);
   }
-  if(inner.returning) {
-    state.returning = true;
-  }
-  return ret;
 }
 ::core::any Interpreter::interpret(State& state, const ast::Return& ret) const {
   assert(ret.output);
 
-  ::core::any out;
-  ret.output->value.match(
-      [&](const callable::Callable& o) { out = interpret(state, o); },
-      [&](const UnaryOperator& o) { out = interpret(state, o); },
-      [&](const BinaryOperator& o) { out = interpret(state, o); },
-      [&](const Variable& o) {
-        if(state.stack->owns_variable(o.token.token)) {
-          state.stack->variable(
-              o.token.token, [&](::core::any& var) { out = std::move(var); });
-        } else {
-          state.stack->variable(o.token.token,
-                                [&](const ::core::any& var) { out = var; });
-        }
-      },
-      [&](const Literal<Literals::BOOL>& c) { out = c.data; },
-      [&](const Literal<Literals::INT>& c) { out = c.data; },
-      [&](const Literal<Literals::DOUBLE>& c) { out = c.data; },
-      [&](const Literal<Literals::STRING>& c) { out = c.data; });
-  state.returning = true;
+  try {
+    ::core::any out;
+    ret.output->value.match(
+        [&](const callable::Callable& o) { out = interpret(state, o); },
+        [&](const UnaryOperator& o) { out = interpret(state, o); },
+        [&](const BinaryOperator& o) { out = interpret(state, o); },
+        [&](const Variable& o) {
+          if(state.stack->owns_variable(o.token.token)) {
+            state.stack->variable(
+                o.token.token, [&](::core::any& var) { out = std::move(var); });
+          } else {
+            state.stack->variable(o.token.token,
+                                  [&](const ::core::any& var) { out = var; });
+          }
+        },
+        [&](const Literal<Literals::BOOL>& c) { out = c.data; },
+        [&](const Literal<Literals::INT>& c) { out = c.data; },
+        [&](const Literal<Literals::DOUBLE>& c) { out = c.data; },
+        [&](const Literal<Literals::STRING>& c) { out = c.data; });
+    state.returning = true;
 
-  return out;
+    return out;
+  } catch(std::exception&) {
+    Exc<E, E::TAIL> e;
+    add_exception_info(ret.token, state.file, e,
+                       [&e]() { e << "In the return defined here:"; });
+    std::throw_with_nested(e);
+  }
 }
 ::core::any Interpreter::interpret(State& state, const Scope& scope) const {
   State inner(state);
@@ -548,8 +625,7 @@ Interpreter::args_from_call(State& state, const Callable& call,
       auto val = interpret(state, p.second);
       args.add(p.first.token.token, "macro_call", val.ref.get());
     } else {
-      // TODO throw
-      assert(false && "Too many arguments!");
+      assert(false && "Too many arguments!");  // Should not happen
     }
   }
   return args;
@@ -573,8 +649,7 @@ void Interpreter::add_parameter(State& state, State& outer,
         s.stack->add_alias(p, var);
       });
     } else {
-      assert(false);
-      // TODO throw
+      assert(false); /* analyser checked */
     }
   };
   val.value.match(
@@ -592,8 +667,7 @@ void Interpreter::add_parameter(State& state, State& outer,
                                 const Callable& call,
                                 const Function& fun) const {
   if(call.parameter.size() != fun.parameter.size()) {
-    assert(false);
-    // TODO throw
+    assert(false);  // Should not happen
   }
   for(const auto& p : call.parameter) {
     auto& par = p.first.token.token;
@@ -604,9 +678,7 @@ void Interpreter::add_parameter(State& state, State& outer,
     if(fun.parameter.end() != it) {
       add_parameter(state, outer, p.second, par);
     } else {
-      // parameter that is not an parameter
-      assert(false);
-      // TODO throw
+      assert(false);  // Should not happen
     }
   }
 }
@@ -614,15 +686,13 @@ void Interpreter::add_parameter(State& state, State& outer,
 void Interpreter::add_arguments(State& state, Arguments& args,
                                 const Function& fun) const {
   if(args.size() != fun.parameter.size()) {
-    assert(false);
-    // TODO throw
+    assert(false); // Should not happen
   }
   for(const auto& p : fun.parameter) {
     if(args.has(p.token.token)) {
       state.stack->add_alias(p.token.token, args[p.token.token]);
     } else {
-      assert(false);
-      // TODO throw
+      assert(false); // Should not happen
     }
   }
 }
@@ -630,25 +700,44 @@ void Interpreter::add_arguments(State& state, Arguments& args,
 ::core::any Interpreter::interpret(State& state,
                                    const ast::callable::Callable& call) const {
   ::core::any ret;
-
   if(state.stack->has_function(call)) {
     state.stack->function(call, [&](const Function& fun, auto stack) {
-      State inner(state, std::make_shared<Stack>(std::move(stack)));
-      inner.loopscope = false;
+      try {
+        State inner(state, std::make_shared<Stack>(std::move(stack)));
+        inner.loopscope = false;
 
-      add_parameter(inner, state, call, fun);
+        add_parameter(inner, state, call, fun);
 
-      ret = interpret_shared(inner, *fun.scope);
+        ret = interpret_shared(inner, *fun.scope);
+      } catch(std::exception&) {
+        Exc<E, E::TAIL> e;
+        add_exception_info(fun.token, state.file, e, [&e, &fun]() {
+          e << "In the '" << fun.token.token << "' function defined here:";
+        });
+        std::throw_with_nested(e);
+      }
     });
   } else {
     try {
       auto com = command_provider_->get_command(state.scope, call.token.token);
       ret = com.execute(args_from_call(state, call, com.arguments()));
     } catch(...) {
-      assert(false);
-      // TODO throw
+      bool once = true;
+      Exc<E, E::MISSING_FUNCTION> e(__FILE__, __LINE__, "Missing function");
+      e << "There was no matching function '" << call.token.token << "(";
+      for(const auto& p : call.parameter) {
+        if(once) {
+          once = false;
+          e << p.first.token.token;
+        } else {
+          e << ", " << p.first.token.token;
+        }
+      }
+      e << ")'.";
+      throw e;
     }
   }
+
   return ret;
 }
 
@@ -661,10 +750,18 @@ void Interpreter::add_arguments(State& state, Arguments& args,
   }
 
   state.stack->function(call, [&](const Function& fun, auto stack) {
-    State inner(state, std::make_shared<Stack>(std::move(stack)));
+    try {
+      State inner(state, std::make_shared<Stack>(std::move(stack)));
 
-    add_arguments(inner, args, fun);
-    ret = interpret_shared(inner, *fun.scope);
+      add_arguments(inner, args, fun);
+      ret = interpret_shared(inner, *fun.scope);
+    } catch(std::exception&) {
+      Exc<E, E::TAIL> e;
+      add_exception_info(fun.token, state.file, e, [&e, &fun]() {
+        e << "In the 'main' function defined here:";
+      });
+      std::throw_with_nested(e);
+    }
   });
   return ret;
 }

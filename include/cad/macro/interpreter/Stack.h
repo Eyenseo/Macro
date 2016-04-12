@@ -132,14 +132,16 @@ public:
 
   std::shared_ptr<Stack> parent() const;
 
-  // TODO no retrun
-  template <typename FUN>
-  auto variable(const std::string& name, FUN fun)
-      -> decltype(std::result_of_t<FUN(::core::any&)>()) {
+
+  template <typename FUN,
+            typename std::enable_if<
+                std::is_same<std::result_of_t<FUN(::core::any&)>, void>::value,
+                bool>::type = false>
+  void variable(const std::string& name, FUN fun) {
     auto alias_it = find(aliases_, name);
 
     if(alias_it != aliases_.end()) {
-      return fun(alias_it->second);
+      fun(alias_it->second);
     } else {
       auto own_it = find(variables_, name);
 
@@ -153,20 +155,24 @@ public:
           throw e;
         }
       } else {
-        return fun(own_it->second);
+        fun(own_it->second);
       }
     }
   }
 
-  template <typename FUN>
-  auto function(const ast::callable::Callable& call, FUN fun)
-      -> decltype(std::result_of_t<FUN(const ast::callable::Function&,
-                                       std::shared_ptr<Stack>)>()) {
+  template <
+      typename FUN,
+      typename std::enable_if<
+          std::is_same<std::result_of_t<FUN(const ast::callable::Function&,
+                                            std::shared_ptr<Stack>)>,
+                       void>::value,
+          bool>::type = false>
+  void function(const ast::callable::Callable& call, FUN fun) {
     auto it = find_function(call);
 
     if(it == functions_.end()) {
       if(parent_) {
-        return parent_->function(call, std::move(fun));
+        parent_->function(call, std::move(fun));
       } else {
         bool first = true;
 
@@ -185,7 +191,7 @@ public:
         throw e;
       }
     } else {
-      return fun(*it, shared_from_this());
+      fun(*it, shared_from_this());
     }
   }
 };

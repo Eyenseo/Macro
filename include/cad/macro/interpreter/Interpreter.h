@@ -149,7 +149,7 @@ protected:
 
 
 public:
-  enum class E { TODO };
+  enum class E { BAD_BOOL_CAST, MISSING_FUNCTION, TAIL };
 
   Interpreter(std::shared_ptr<CommandProvider> command_provider,
               std::shared_ptr<OperatorProvider> operator_provider,

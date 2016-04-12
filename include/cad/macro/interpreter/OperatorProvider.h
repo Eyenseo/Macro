@@ -26,7 +26,7 @@ public:
     AND,
     OR
   };
-  enum class E { MISSING_OPERATOR, TODO };
+  enum class E { MISSING_OPERATOR, OPERATOR_EXISTS, BAD_BOOL_CAST };
 
 protected:
   template <typename LHS, typename RHS, BinaryOperation op>

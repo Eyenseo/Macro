@@ -39,78 +39,100 @@ void OperatorProvider::add(const BinaryOperation operati, std::type_index lhs,
   switch(operati) {
   case BinaryOperation::DIVIDE:
     if(exists(divide_, std::make_tuple(lhs, rhs))) {
-      throw Exc<E, E::TODO>(__FILE__, __LINE__);
-      // TODO throw
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator 'divide'(/) already exists for the types '"
+        << lhs.name() << "' and '" << rhs.name() << "'.";
+      throw e;
     }
     divide_.emplace_back(std::make_tuple(lhs, rhs), std::move(operato));
     break;
   case BinaryOperation::MULTIPLY:
     if(exists(multiply_, std::make_tuple(lhs, rhs))) {
-      throw Exc<E, E::TODO>(__FILE__, __LINE__);
-      // TODO throw
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator 'multiply'(*) already exists for the types '"
+        << lhs.name() << "' and '" << rhs.name() << "'.";
+      throw e;
     }
     multiply_.emplace_back(std::make_tuple(lhs, rhs), std::move(operato));
     break;
   case BinaryOperation::MODULO:
     if(exists(modulo_, std::make_tuple(lhs, rhs))) {
-      throw Exc<E, E::TODO>(__FILE__, __LINE__);
-      // TODO throw
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator 'modulo'(%) already exists for the types '"
+        << lhs.name() << "' and '" << rhs.name() << "'.";
+      throw e;
     }
     modulo_.emplace_back(std::make_tuple(lhs, rhs), std::move(operato));
     break;
   case BinaryOperation::ADD:
     if(exists(add_, std::make_tuple(lhs, rhs))) {
-      throw Exc<E, E::TODO>(__FILE__, __LINE__);
-      // TODO throw
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator 'add'(+) already exists for the types '" << lhs.name()
+        << "' and '" << rhs.name() << "'.";
+      throw e;
     }
     add_.emplace_back(std::make_tuple(lhs, rhs), std::move(operato));
     break;
   case BinaryOperation::SUBTRACT:
     if(exists(subtract_, std::make_tuple(lhs, rhs))) {
-      throw Exc<E, E::TODO>(__FILE__, __LINE__);
-      // TODO throw
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator 'subtract'(-) already exists for the types '"
+        << lhs.name() << "' and '" << rhs.name() << "'.";
+      throw e;
     }
     subtract_.emplace_back(std::make_tuple(lhs, rhs), std::move(operato));
     break;
   case BinaryOperation::SMALLER:
     if(exists(smaller_, std::make_tuple(lhs, rhs))) {
-      throw Exc<E, E::TODO>(__FILE__, __LINE__);
-      // TODO throw
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator 'smaller'(<) already exists for the types '"
+        << lhs.name() << "' and '" << rhs.name() << "'.";
+      throw e;
     }
     smaller_.emplace_back(std::make_tuple(lhs, rhs), std::move(operato));
     break;
   case BinaryOperation::SMALLER_EQUAL:
     if(exists(smaller_equal_, std::make_tuple(lhs, rhs))) {
-      throw Exc<E, E::TODO>(__FILE__, __LINE__);
-      // TODO throw
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator 'smaller_equal'(<=) already exists for the types '"
+        << lhs.name() << "' and '" << rhs.name() << "'.";
+      throw e;
     }
     smaller_equal_.emplace_back(std::make_tuple(lhs, rhs), std::move(operato));
     break;
   case BinaryOperation::GREATER:
     if(exists(greater_, std::make_tuple(lhs, rhs))) {
-      throw Exc<E, E::TODO>(__FILE__, __LINE__);
-      // TODO throw
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator 'greater'(>) already exists for the types '"
+        << lhs.name() << "' and '" << rhs.name() << "'.";
+      throw e;
     }
     greater_.emplace_back(std::make_tuple(lhs, rhs), std::move(operato));
     break;
   case BinaryOperation::GREATER_EQUAL:
     if(exists(greater_equal_, std::make_tuple(lhs, rhs))) {
-      throw Exc<E, E::TODO>(__FILE__, __LINE__);
-      // TODO throw
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator 'greater_equal'(>=) already exists for the types '"
+        << lhs.name() << "' and '" << rhs.name() << "'.";
+      throw e;
     }
     greater_equal_.emplace_back(std::make_tuple(lhs, rhs), std::move(operato));
     break;
   case BinaryOperation::EQUAL:
     if(exists(equal_, std::make_tuple(lhs, rhs))) {
-      throw Exc<E, E::TODO>(__FILE__, __LINE__);
-      // TODO throw
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator 'equal'(==) already exists for the types '"
+        << lhs.name() << "' and '" << rhs.name() << "'.";
+      throw e;
     }
     equal_.emplace_back(std::make_tuple(lhs, rhs), std::move(operato));
     break;
   case BinaryOperation::NOT_EQUAL:
     if(exists(not_equal_, std::make_tuple(lhs, rhs))) {
-      throw Exc<E, E::TODO>(__FILE__, __LINE__);
-      // TODO throw
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator 'not_equal'(!=) already exists for the types '"
+        << lhs.name() << "' and '" << rhs.name() << "'.";
+      throw e;
     }
     not_equal_.emplace_back(std::make_tuple(lhs, rhs), std::move(operato));
     break;
@@ -127,22 +149,28 @@ void OperatorProvider::add(const UnaryOperation operati, std::type_index rhs,
     assert(false && "NOT can not be added - it is free :)");
   case UnaryOperation::BOOL:
     if(exists(bool_, rhs)) {
-      throw Exc<E, E::TODO>(__FILE__, __LINE__);
-      // TODO throw
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator 'bool' already exists for the type '" << rhs.name()
+        << "'.";
+      throw e;
     }
     bool_.emplace_back(rhs, std::move(operato));
     break;
   case UnaryOperation::TYPEOF:
     if(exists(type_of_, rhs)) {
-      throw Exc<E, E::TODO>(__FILE__, __LINE__);
-      // TODO throw
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator 'typeof' already exists for the type '" << rhs.name()
+        << "'.";
+      throw e;
     }
     type_of_.emplace_back(rhs, std::move(operato));
     break;
   case UnaryOperation::PRINT:
     if(exists(print_, rhs)) {
-      throw Exc<E, E::TODO>(__FILE__, __LINE__);
-      // TODO throw
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator 'print' already exists for the type '" << rhs.name()
+        << "'.";
+      throw e;
     }
     print_.emplace_back(rhs, std::move(operato));
   }
@@ -253,7 +281,10 @@ bool OperatorProvider::has(const UnaryOperation op,
   if(it != divide_.end()) {
     return it->second(lhs, rhs);
   }
-  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator 'divide'(/) is missing for the types '"
+    << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
+  throw e;
 }
 ::core::any OperatorProvider::eval_multiply(const ::core::any& lhs,
                                             const ::core::any& rhs) const {
@@ -261,7 +292,10 @@ bool OperatorProvider::has(const UnaryOperation op,
   if(it != multiply_.end()) {
     return it->second(lhs, rhs);
   }
-  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator 'multiply'(*) is missing for the types '"
+    << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
+  throw e;
 }
 ::core::any OperatorProvider::eval_modulo(const ::core::any& lhs,
                                           const ::core::any& rhs) const {
@@ -269,7 +303,10 @@ bool OperatorProvider::has(const UnaryOperation op,
   if(it != modulo_.end()) {
     return it->second(lhs, rhs);
   }
-  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator 'modulo'(%) is missing for the types '"
+    << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
+  throw e;
 }
 ::core::any OperatorProvider::eval_add(const ::core::any& lhs,
                                        const ::core::any& rhs) const {
@@ -277,7 +314,10 @@ bool OperatorProvider::has(const UnaryOperation op,
   if(it != add_.end()) {
     return it->second(lhs, rhs);
   }
-  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator 'add'(+) is missing for the types '" << lhs.type().name()
+    << "' and '" << rhs.type().name() << "'.";
+  throw e;
 }
 ::core::any OperatorProvider::eval_subtract(const ::core::any& lhs,
                                             const ::core::any& rhs) const {
@@ -285,7 +325,10 @@ bool OperatorProvider::has(const UnaryOperation op,
   if(it != subtract_.end()) {
     return it->second(lhs, rhs);
   }
-  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator 'subtract'(-) is missing for the types '"
+    << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
+  throw e;
 }
 ::core::any OperatorProvider::eval_smaller(const ::core::any& lhs,
                                            const ::core::any& rhs) const {
@@ -293,7 +336,10 @@ bool OperatorProvider::has(const UnaryOperation op,
   if(it != smaller_.end()) {
     return it->second(lhs, rhs);
   }
-  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator 'smaller'(<) is missing for the types '"
+    << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
+  throw e;
 }
 ::core::any OperatorProvider::eval_smaller_equal(const ::core::any& lhs,
                                                  const ::core::any& rhs) const {
@@ -301,7 +347,10 @@ bool OperatorProvider::has(const UnaryOperation op,
   if(it != smaller_equal_.end()) {
     return it->second(lhs, rhs);
   }
-  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator 'smaller_equal'(<=) is missing for the types '"
+    << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
+  throw e;
 }
 ::core::any OperatorProvider::eval_greater(const ::core::any& lhs,
                                            const ::core::any& rhs) const {
@@ -309,7 +358,10 @@ bool OperatorProvider::has(const UnaryOperation op,
   if(it != greater_.end()) {
     return it->second(lhs, rhs);
   }
-  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator 'greater'(>) is missing for the types '"
+    << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
+  throw e;
 }
 ::core::any OperatorProvider::eval_greater_equal(const ::core::any& lhs,
                                                  const ::core::any& rhs) const {
@@ -317,7 +369,10 @@ bool OperatorProvider::has(const UnaryOperation op,
   if(it != greater_equal_.end()) {
     return it->second(lhs, rhs);
   }
-  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator 'greater_equal'(>=) is missing for the types '"
+    << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
+  throw e;
 }
 ::core::any OperatorProvider::eval_equal(const ::core::any& lhs,
                                          const ::core::any& rhs) const {
@@ -325,7 +380,10 @@ bool OperatorProvider::has(const UnaryOperation op,
   if(it != equal_.end()) {
     return it->second(lhs, rhs);
   }
-  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator 'equal'(==) is missing for the types '"
+    << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
+  throw e;
 }
 ::core::any OperatorProvider::eval_not_equal(const ::core::any& lhs,
                                              const ::core::any& rhs) const {
@@ -333,7 +391,10 @@ bool OperatorProvider::has(const UnaryOperation op,
   if(it != not_equal_.end()) {
     return it->second(lhs, rhs);
   }
-  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator 'not_equal'(!=) is missing for the types '"
+    << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
+  throw e;
 }
 ::core::any OperatorProvider::eval_and(const ::core::any& lhs,
                                        const ::core::any& rhs) const {
@@ -346,8 +407,10 @@ bool OperatorProvider::has(const UnaryOperation op,
       if(b.type() == typeid(bool)) {
         return ::core::any_cast<bool>(b);
       } else {  // not a bool type ...
-        // TODO throw
-        throw Exc<E, E::TODO>(__FILE__, __LINE__);
+        Exc<E, E::BAD_BOOL_CAST> e(__FILE__, __LINE__, "Bad bool cast");
+        e << "Tried cast '" << var.type().name()
+          << "' to bool but the operator returned '" << b.type().name() << "'.";
+        throw e;
       }
     }
   };
@@ -365,8 +428,10 @@ bool OperatorProvider::has(const UnaryOperation op,
       if(b.type() == typeid(bool)) {
         return ::core::any_cast<bool>(b);
       } else {  // not a bool type ...
-        // TODO throw
-        throw Exc<E, E::TODO>(__FILE__, __LINE__);
+        Exc<E, E::BAD_BOOL_CAST> e(__FILE__, __LINE__, "Bad bool cast");
+        e << "Tried cast '" << var.type().name()
+          << "' to bool but the operator returned '" << b.type().name() << "'.";
+        throw e;
       }
     }
   };
@@ -413,30 +478,42 @@ bool OperatorProvider::has(const UnaryOperation op,
 ::core::any OperatorProvider::eval_not(const ::core::any& rhs) const {
   auto b_rhs = eval(UnaryOperation::BOOL, rhs);
   if(b_rhs.type() == typeid(bool)) {
-    return ::core::any_cast<bool>(b_rhs);
+    return !::core::any_cast<bool>(b_rhs);
   }
-  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator 'bool' is missing for the type '" << rhs.type().name()
+    << "'.";
+  throw e;
 }
 ::core::any OperatorProvider::eval_bool(const ::core::any& rhs) const {
   auto it = find(bool_, std::type_index(rhs.type()));
   if(it != bool_.end()) {
     return it->second(rhs);
   }
-  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator 'bool' is missing for the type '" << rhs.type().name()
+    << "'.";
+  throw e;
 }
 ::core::any OperatorProvider::eval_type_of(const ::core::any& rhs) const {
   auto it = find(type_of_, std::type_index(rhs.type()));
   if(it != type_of_.end()) {
     return it->second(rhs);
   }
-  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator 'bool' is missing for the type '" << rhs.type().name()
+    << "'.";
+  throw e;
 }
 ::core::any OperatorProvider::eval_print(const ::core::any& rhs) const {
   auto it = find(print_, std::type_index(rhs.type()));
   if(it != print_.end()) {
     return it->second(rhs);
   }
-  throw Exc<E, E::TODO>(__FILE__, __LINE__);  // TODO throw
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator 'bool' is missing for the type '" << rhs.type().name()
+    << "'.";
+  throw e;
 }
 ::core::any OperatorProvider::eval(const UnaryOperation op,
                                    const ::core::any& rhs) const {

@@ -103,7 +103,6 @@ TEST_CASE("Function") {
       }
     }
   }
-  // TODO test variables with same function name
 }
 
 TEST_CASE("Parent") {
