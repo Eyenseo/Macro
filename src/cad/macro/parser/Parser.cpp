@@ -733,6 +733,13 @@ parse_scope_internals(const Tokens& tokens, size_t& token,
   } else if(auto call = parse_callable(tokens, token)) {
     last_statement = Statement::NON_TERMINATED;
     node = std::move(*call);
+  } else if(auto op = parse_operator(tokens, token, nodes)) {
+    last_statement = Statement::NON_TERMINATED;
+    op->match([&node](ast::UnaryOperator& op) { node = std::move(op); },
+              [&node](ast::BinaryOperator& op) { node = std::move(op); });
+  } else if(auto condition = parse_condition(tokens, token)) {
+    last_statement = Statement::NON_TERMINATED;
+    node = value_to_node(*condition);
   } else if(auto lit_bool = parse_literal_bool(tokens, token)) {
     last_statement = Statement::NON_TERMINATED;
     node = std::move(*lit_bool);
@@ -745,23 +752,9 @@ parse_scope_internals(const Tokens& tokens, size_t& token,
   } else if(auto lit_string = parse_literal_string(tokens, token)) {
     last_statement = Statement::NON_TERMINATED;
     node = std::move(*lit_string);
-  } else if(auto op = parse_operator(tokens, token, nodes)) {
-    last_statement = Statement::NON_TERMINATED;
-    op->match([&node](ast::UnaryOperator& op) { node = std::move(op); },
-              [&node](ast::BinaryOperator& op) { node = std::move(op); });
   } else if(auto scope = parse_scope(tokens, token)) {
     last_statement = Statement::TERMINATED;
     node = std::move(*scope);
-  } else if(read_token(tokens, token, "(")) {
-    if(auto condition = parse_condition(tokens, token)) {
-      node = value_to_node(*condition);
-      expect_token(tokens, token, ")");
-    } else {
-      UserSourceExc e;
-      add_exception_info(tokens, token, e,
-                         [&] { e << "Expected an expression."; });
-      throw e;
-    }
   } else if(auto var = parse_variable(tokens, token)) {
     auto tmp = token;
     if(read_token(tokens, tmp, "=")) {
@@ -770,7 +763,8 @@ parse_scope_internals(const Tokens& tokens, size_t& token,
       last_statement = Statement::NON_TERMINATED;
     }
     node = std::move(*var);
-  } else {
+  }
+  else {
     return {};
   }
   return node;
