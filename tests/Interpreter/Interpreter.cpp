@@ -243,17 +243,16 @@ TEST_CASE("Typeof") {
   }
 }
 
-// TODO implement
-// TEST_CASE("DoWhile") {
-//   auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
-//   auto op = std::make_shared<OperatorProvider>();
-//   Interpreter in(cp, op);
+TEST_CASE("DoWhile") {
+  auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
+  auto op = std::make_shared<OperatorProvider>();
+  Interpreter in(cp, op);
 
-//   auto ret = in.interpret(
-//       "def main(){var i = 0; do{ i = i +1;}while(i < 3) return i;}",
-//       Arguments());
-//   REQUIRE(core::any_cast<int>(ret) == 3);
-// }
+  auto ret = in.interpret(
+      "def main(){var i = 0; do{ i = i +1;}while(i < 3) return i;}",
+      Arguments());
+  REQUIRE(core::any_cast<int>(ret) == 3);
+}
 
 TEST_CASE("Missing Function") {
   auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
