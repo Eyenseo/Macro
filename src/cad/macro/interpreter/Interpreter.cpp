@@ -509,7 +509,7 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
   }
 }
 ::core::any Interpreter::interpret(State&, const ast::loop::For&) const {
-  // TODO
+  /* TODO */ assert(false && "Not implemented");
   return {};
 }
 ::core::any Interpreter::interpret(State& state,
@@ -686,13 +686,13 @@ void Interpreter::add_parameter(State& state, State& outer,
 void Interpreter::add_arguments(State& state, Arguments& args,
                                 const Function& fun) const {
   if(args.size() != fun.parameter.size()) {
-    assert(false); // Should not happen
+    assert(false);  // Should not happen
   }
   for(const auto& p : fun.parameter) {
     if(args.has(p.token.token)) {
       state.stack->add_alias(p.token.token, args[p.token.token]);
     } else {
-      assert(false); // Should not happen
+      assert(false);  // Should not happen
     }
   }
 }
