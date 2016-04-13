@@ -17,7 +17,7 @@ namespace parser {
 enum class UserE { SOURCE, TAIL };
 enum class InternalE { BAD_CONVERSION, MISSING_OPERATOR };
 
-ast::Scope parse(std::string macro, std::string file_name = "Line");
+ast::Scope parse(std::string macro, std::string file_name = "Anonymous");
 }
 }
 }
