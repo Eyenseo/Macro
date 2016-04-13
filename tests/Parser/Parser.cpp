@@ -967,6 +967,70 @@ TEST_CASE("break") {
   }
 }
 
+
+// TODO
+// TEST_CASE("For") {
+//   auto ast = parse("for(var a = 0; a < 10; a = a + 1){}");
+
+//   Scope expected({0, 0, "",line1});
+//   {
+//     For f({1, 1, "For",line1});
+//     f.condition = std::make_unique<ValueProducer>(Variable({1, 4,
+//     "a",line1}));
+
+
+//     f.true_scope = std::make_unique<Scope>(Token(1, 6, "{"));
+//     f.false_scope = std::make_unique<Scope>(Token(1, 12, "{"));
+//     expected.nodes.push_back(std::move(f));
+//   }
+
+//   REQUIRE(ast == expected);
+// }
+
+// TEST_CASE("Complete") {
+//   const std::string raw_macro = "\n"
+//                                 "var a = true;              \n"
+//                                 "var b = 2;                 \n"
+//                                 "var c = \" 3\";            \n"
+//                                 "                           \n"
+//                                 "                           \n"
+//                                 "def fun(foo) {             \n"
+//                                 "  var bar;                 \n"
+//                                 "                           \n"
+//                                 "  def gun() {              \n"
+//                                 "    var i = 0;             \n"
+//                                 "                           \n"
+//                                 "    while (i < 3) {        \n"
+//                                 "      i = i + 1;           \n"
+//                                 "    }                      \n"
+//                                 "    return i;              \n"
+//                                 "  }                        \n"
+//                                 "                           \n"
+//                                 "  {                        \n"
+//                                 "    var bar;               \n"
+//                                 "  }                        \n"
+//                                 "                           \n"
+//                                 "  if(foo == a) {           \n"
+//                                 "    bar = foo;             \n"
+//                                 "  } else {                 \n"
+//                                 "    bar = gun();           \n"
+//                                 "  }                        \n"
+//                                 "                           \n"
+//                                 "  return bar;              \n"
+//                                 "}                          \n"
+//                                 "                           \n"
+//                                 "                           \n"
+//                                 "def main(foo, bar) {       \n"
+//                                 "  var baz = foo;           \n"
+//                                 "                           \n"
+//                                 "  fun(foo:baz);            \n"
+//                                 "}                          \n";
+//   WARN(parse(raw_macro));
+// }
+
+/////////////////////////////////////////
+// Analyser tests
+/////////////////////////////////////////
 TEST_CASE("return in root") {
   REQUIRE_THROWS_AS(parse("return 1;"), ExceptionBase<UserE>);
   REQUIRE_THROWS_AS(parse("{return 1;}"), ExceptionBase<UserE>);
@@ -1040,76 +1104,13 @@ TEST_CASE("missing scope") {
   REQUIRE_THROWS_AS(parse("def main(){} def fun "), ExceptionBase<UserE>);
   REQUIRE_THROWS_AS(parse("def main(){if(true)}"), ExceptionBase<UserE>);
   REQUIRE_THROWS_AS(parse("def main(){if(true){}else}"), ExceptionBase<UserE>);
-  // REQUIRE_THROWS_AS(parse("def main(){do while(true);}"),
-  // ExceptionBase<UserE>); // FIXME
-  // REQUIRE_THROWS_AS(parse("def main(){do;}"), ExceptionBase<UserE>); // FIXME
+  REQUIRE_THROWS_AS(parse("def main(){do while(true);}"), ExceptionBase<UserE>);
+  REQUIRE_THROWS_AS(parse("def main(){do;}"), ExceptionBase<UserE>);
   REQUIRE_THROWS_AS(parse("def main(){while(true)}"), ExceptionBase<UserE>);
 }
 TEST_CASE("missing condition") {
   REQUIRE_THROWS_AS(parse("def main(){if(){}}"), ExceptionBase<UserE>);
   REQUIRE_THROWS_AS(parse("def main(){if(){}else{}}"), ExceptionBase<UserE>);
-  // REQUIRE_THROWS_AS(parse("def main(){do{}while();}"), ExceptionBase<UserE>);
-  // // FIXME
+  REQUIRE_THROWS_AS(parse("def main(){do{}while();}"), ExceptionBase<UserE>);
   REQUIRE_THROWS_AS(parse("def main(){while(){}}"), ExceptionBase<UserE>);
 }
-
-
-// TODO
-// TEST_CASE("For") {
-//   auto ast = parse("for(var a = 0; a < 10; a = a + 1){}");
-
-//   Scope expected({0, 0, "",line1});
-//   {
-//     For f({1, 1, "For",line1});
-//     f.condition = std::make_unique<ValueProducer>(Variable({1, 4,
-//     "a",line1}));
-
-
-//     f.true_scope = std::make_unique<Scope>(Token(1, 6, "{"));
-//     f.false_scope = std::make_unique<Scope>(Token(1, 12, "{"));
-//     expected.nodes.push_back(std::move(f));
-//   }
-
-//   REQUIRE(ast == expected);
-// }
-
-// TEST_CASE("Complete") {
-//   const std::string raw_macro = "\n"
-//                                 "var a = true;              \n"
-//                                 "var b = 2;                 \n"
-//                                 "var c = \" 3\";            \n"
-//                                 "                           \n"
-//                                 "                           \n"
-//                                 "def fun(foo) {             \n"
-//                                 "  var bar;                 \n"
-//                                 "                           \n"
-//                                 "  def gun() {              \n"
-//                                 "    var i = 0;             \n"
-//                                 "                           \n"
-//                                 "    while (i < 3) {        \n"
-//                                 "      i = i + 1;           \n"
-//                                 "    }                      \n"
-//                                 "    return i;              \n"
-//                                 "  }                        \n"
-//                                 "                           \n"
-//                                 "  {                        \n"
-//                                 "    var bar;               \n"
-//                                 "  }                        \n"
-//                                 "                           \n"
-//                                 "  if(foo == a) {           \n"
-//                                 "    bar = foo;             \n"
-//                                 "  } else {                 \n"
-//                                 "    bar = gun();           \n"
-//                                 "  }                        \n"
-//                                 "                           \n"
-//                                 "  return bar;              \n"
-//                                 "}                          \n"
-//                                 "                           \n"
-//                                 "                           \n"
-//                                 "def main(foo, bar) {       \n"
-//                                 "  var baz = foo;           \n"
-//                                 "                           \n"
-//                                 "  fun(foo:baz);            \n"
-//                                 "}                          \n";
-//   WARN(parse(raw_macro));
-// }
