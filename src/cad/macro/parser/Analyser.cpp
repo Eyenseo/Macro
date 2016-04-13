@@ -127,7 +127,6 @@ struct State {
   std::shared_ptr<Signals> signal;
   std::reference_wrapper<const ast::Scope> scope;
   std::string file;
-  size_t current_element;
   bool loop;
   bool root_scope;
 
@@ -138,7 +137,6 @@ struct State {
       , signal(std::make_shared<Signals>())
       , scope(s)
       , file(std::move(f))
-      , current_element(0)
       , loop(false)
       , root_scope(false) {
   }
@@ -149,7 +147,6 @@ struct State {
       , signal(parent.signal)
       , scope(s)
       , file(parent.file)
-      , current_element(0)
       , loop(l ? l : parent.loop)
       , root_scope(parent.root_scope) {
     stack.parent = &parent.stack;
@@ -192,9 +189,7 @@ void analyse(State& state, const ast::BinaryOperator& e) {
     analyse(state, *e.right_operand);
   }
   state.signal->biop.emit(SignalType::END, state, e);
-  if(state.current_message->size() > 0) {
-    state.current_message->pop_back();
-  }
+  state.current_message->pop_back();
 }
 void analyse(State& state, const ast::Break& e) {
   state.signal->br.emit(SignalType::START, state, e);
@@ -256,13 +251,16 @@ void analyse(State& state, const ast::Define& e) {
         state.stack.functions.push_back(e);
       },
       [&state](const ast::Variable& e) {
+        {
+          Message m(e.token, state.file);
+          m << "At the variable '" << e.token.token << "' defined here:";
+          state.current_message->push_back(std::move(m));
+        }
         state.stack.variables.push_back(e);
         // We are good - if a variable is declared twice can be checked on the
         // end signal
       });
-  if(state.current_message->size() > 0) {
-    state.current_message->pop_back();
-  }
+  state.current_message->pop_back();
   state.signal->def.emit(SignalType::END, state, e);
 }
 void analyse(State& state, const ast::Literal<ast::Literals::BOOL>& e) {
@@ -308,9 +306,7 @@ void analyse(State& state, const ast::logic::If& e) {
     }
   }
   state.signal->iff.emit(SignalType::END, state, e);
-  if(state.current_message->size() > 0) {
-    state.current_message->pop_back();
-  }
+  state.current_message->pop_back();
 }
 void analyse(State& state, const ast::loop::DoWhile& e) {
   {
@@ -327,9 +323,7 @@ void analyse(State& state, const ast::loop::DoWhile& e) {
     analyse(inner, *e.scope);
   }
   state.signal->dowhile.emit(SignalType::END, state, e);
-  if(state.current_message->size() > 0) {
-    state.current_message->pop_back();
-  }
+  state.current_message->pop_back();
 }
 void analyse(State& state, const ast::loop::For& e) {
   state.signal->forr.emit(SignalType::START, state, e);
@@ -351,9 +345,7 @@ void analyse(State& state, const ast::loop::While& e) {
     analyse(inner, *e.scope);
   }
   state.signal->whi.emit(SignalType::END, state, e);
-  if(state.current_message->size() > 0) {
-    state.current_message->pop_back();
-  }
+  state.current_message->pop_back();
 }
 void analyse(State& state, const ast::Return& e) {
   {
@@ -366,36 +358,32 @@ void analyse(State& state, const ast::Return& e) {
     analyse(state, *e.output);
   }
   state.signal->ret.emit(SignalType::END, state, e);
-  if(state.current_message->size() > 0) {
-    state.current_message->pop_back();
-  }
+  state.current_message->pop_back();
 }
 void analyse(State& state, const ast::Scope& e) {
   using namespace ast;
 
   state.signal->sco.emit(SignalType::START, state, e);
-  for(state.current_element = 0; state.current_element < e.nodes.size();
-      ++state.current_element) {
-    e.nodes[state.current_element].match(
-        [&state](const BinaryOperator& e) { analyse(state, e); },
-        [&state](const Break& e) { analyse(state, e); },
-        [&state](const callable::Callable& e) { analyse(state, e); },
-        [&state](const Define& e) { analyse(state, e); },
-        [&state](const Literal<Literals::BOOL>& e) { analyse(state, e); },
-        [&state](const Literal<Literals::DOUBLE>& e) { analyse(state, e); },
-        [&state](const Literal<Literals::INT>& e) { analyse(state, e); },
-        [&state](const Literal<Literals::STRING>& e) { analyse(state, e); },
-        [&state](const logic::If& e) { analyse(state, e); },
-        [&state](const loop::DoWhile& e) { analyse(state, e); },
-        [&state](const loop::For& e) { analyse(state, e); },
-        [&state](const loop::While& e) { analyse(state, e); },
-        [&state](const Return& e) { analyse(state, e); },
-        [&state](const Scope& e) {
-          State inner(state, e);
-          analyse(inner, e);
-        },
-        [&state](const UnaryOperator& e) { analyse(state, e); },
-        [&state](const Variable& e) { analyse(state, e); });
+  for(const auto& n : e.nodes) {
+    n.match([&state](const BinaryOperator& e) { analyse(state, e); },
+            [&state](const Break& e) { analyse(state, e); },
+            [&state](const callable::Callable& e) { analyse(state, e); },
+            [&state](const Define& e) { analyse(state, e); },
+            [&state](const Literal<Literals::BOOL>& e) { analyse(state, e); },
+            [&state](const Literal<Literals::DOUBLE>& e) { analyse(state, e); },
+            [&state](const Literal<Literals::INT>& e) { analyse(state, e); },
+            [&state](const Literal<Literals::STRING>& e) { analyse(state, e); },
+            [&state](const logic::If& e) { analyse(state, e); },
+            [&state](const loop::DoWhile& e) { analyse(state, e); },
+            [&state](const loop::For& e) { analyse(state, e); },
+            [&state](const loop::While& e) { analyse(state, e); },
+            [&state](const Return& e) { analyse(state, e); },
+            [&state](const Scope& e) {
+              State inner(state, e);
+              analyse(inner, e);
+            },
+            [&state](const UnaryOperator& e) { analyse(state, e); },
+            [&state](const Variable& e) { analyse(state, e); });
   }
   state.signal->sco.emit(SignalType::END, state, e);
 }
@@ -410,9 +398,7 @@ void analyse(State& state, const ast::UnaryOperator& e) {
     analyse(state, *e.operand);
   }
   state.signal->unop.emit(SignalType::END, state, e);
-  if(state.current_message->size() > 0) {
-    state.current_message->pop_back();
-  }
+  state.current_message->pop_back();
 }
 void analyse(State& state, const ast::Variable& e) {
   state.signal->var.emit(SignalType::START, state, e);
@@ -436,13 +422,43 @@ void analyse(State& state, const ast::ValueProducer& e) {
 ///////////////////////////////////////////
 ///////////////////////////////////////////
 namespace visitor {
+namespace {
+std::reference_wrapper<const Token> node_to_token(const ast::Scope::Node& n) {
+  using namespace ast;
+  using namespace loop;
+  using namespace logic;
+  using namespace callable;
+  Token t;
+  std::reference_wrapper<const Token> ret = t;
+
+  n.match([&ret](const BinaryOperator& n) { ret = n.token; },             //
+          [&ret](const Break& n) { ret = n.token; },                      //
+          [&ret](const Callable& n) { ret = n.token; },                   //
+          [&ret](const Define& n) { ret = n.token; },                     //
+          [&ret](const DoWhile& n) { ret = n.token; },                    //
+          [&ret](const For& n) { ret = n.token; },                        //
+          [&ret](const If& n) { ret = n.token; },                         //
+          [&ret](const Literal<Literals::BOOL>& n) { ret = n.token; },    //
+          [&ret](const Literal<Literals::DOUBLE>& n) { ret = n.token; },  //
+          [&ret](const Literal<Literals::INT>& n) { ret = n.token; },     //
+          [&ret](const Literal<Literals::STRING>& n) { ret = n.token; },  //
+          [&ret](const Return& n) { ret = n.token; },                     //
+          [&ret](const Scope& n) { ret = n.token; },                      //
+          [&ret](const UnaryOperator& n) { ret = n.token; },              //
+          [&ret](const While& n) { ret = n.token; },                      //
+          [&ret](const Variable& n) { ret = n.token; });
+
+  return ret;
+}
+}
+
 void break_and_return_last(Signals& sigs) {
   sigs.br.connect([](SignalType t, const State& s, const auto& br) {
     if(t == SignalType::START) {
       // TODO missing !=
       if(!(s.scope.get().nodes.back() == ast::Scope::Node(br))) {
         auto stack = *s.current_message;
-        Message m(br.token, s.file);
+        Message m(node_to_token(s.scope.get().nodes.back()), s.file);
         m << "Statement after break";
         stack.push_back(std::move(m));
         s.messages->push_back(std::move(stack));
@@ -454,7 +470,7 @@ void break_and_return_last(Signals& sigs) {
       // TODO missing !=
       if(!(s.scope.get().nodes.back() == ast::Scope::Node(ret))) {
         auto stack = *s.current_message;
-        Message m(ret.token, s.file);
+        Message m(node_to_token(s.scope.get().nodes.back()), s.file);
         m << "Statement after return";
         stack.push_back(std::move(m));
         s.messages->push_back(std::move(stack));
@@ -498,10 +514,10 @@ void unique_callable_parameter(Signals& sigs) {
             Message m1(i->first.token, s.file);
             m1 << "Parameter have to be uniquely named, but '"
                << i->first.token.token << "' was defined here:";
-            stack.push_back(std::move(m1));
             Message m2(j->first.token, s.file);
             m2 << "and here:";
             stack.push_back(std::move(m2));
+            stack.push_back(std::move(m1));
             s.messages->push_back(std::move(stack));
           }
         }
@@ -519,10 +535,10 @@ void unique_function_parameter(Signals& sigs) {
             Message m1(i->token, s.file);
             m1 << "Parameter have to be uniquely named, but '" << i->token.token
                << "' was defined here:";
-            stack.push_back(std::move(m1));
             Message m2(j->token, s.file);
             m2 << "and here:";
             stack.push_back(std::move(m2));
+            stack.push_back(std::move(m1));
             s.messages->push_back(std::move(stack));
           }
         }
@@ -540,10 +556,10 @@ void unique_main_parameter(Signals& sigs) {
             Message m1(i->token, s.file);
             m1 << "Parameter have to be uniquely named, but '" << i->token.token
                << "' was defined here:";
-            stack.push_back(std::move(m1));
             Message m2(j->token, s.file);
             m2 << "and here:";
             stack.push_back(std::move(m2));
+            stack.push_back(std::move(m1));
             s.messages->push_back(std::move(stack));
           }
         }
@@ -561,10 +577,10 @@ void unique_main(Signals& sigs) {
         auto stack = *s.current_message;
         Message m1(enfun.token, s.file);
         m1 << "Redefinition of the 'main' function here:";
-        stack.push_back(std::move(m1));
         Message m2(it->get().token, s.file);
         m2 << "and here:";
         stack.push_back(std::move(m2));
+        stack.push_back(std::move(m1));
         s.messages->push_back(std::move(stack));
       }
     }
@@ -605,10 +621,10 @@ void no_double_def_variable(Signals& sigs) {
         Message m1(var->second.get().token, s.file);
         m1 << "Redefinition of variable '" << var->second.get().token.token
            << "' here:";
-        stack.push_back(std::move(m1));
         Message m2(var->first.get().token, s.file);
         m2 << "and here:";
         stack.push_back(std::move(m2));
+        stack.push_back(std::move(m1));
         s.messages->push_back(std::move(stack));
       }
     }
@@ -622,10 +638,10 @@ void no_double_def_function(Signals& sigs) {
         Message m1(fun->second.get().token, s.file);
         m1 << "Redefinition of function '" << fun->second.get().token.token
            << "' here:";
-        stack.push_back(std::move(m1));
         Message m2(fun->first.get().token, s.file);
         m2 << "and here:";
         stack.push_back(std::move(m2));
+        stack.push_back(std::move(m1));
         s.messages->push_back(std::move(stack));
       }
     }
