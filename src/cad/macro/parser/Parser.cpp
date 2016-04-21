@@ -48,8 +48,6 @@ struct Tokens {
   }
 };
 
-enum class Statement { TERMINATED, NON_TERMINATED };
-
 static std::vector<std::string> keywords{
     "if",   "else",  "do",     "while", "for",   "var",    "def",
     "main", "break", "return", "true",  "false", "typeof", "print"};
@@ -140,10 +138,8 @@ core::optional<ast::callable::Callable> parse_callable(const Tokens& tokens,
 //////////////////////////////////////////
 /// Scope parsing
 //////////////////////////////////////////
-core::optional<ast::Scope::Node>
-parse_scope_internals(const Tokens& tokens, size_t& token,
-                      std::vector<ast::Scope::Node>& nodes,
-                      Statement& last_statement);
+bool parse_scope_internals(const Tokens& tokens, size_t& token,
+                           std::vector<ast::Scope::Node>& nodes);
 void parse_scope_internals(const Tokens& tokens, size_t& token,
                            ast::Scope& scope);
 core::optional<ast::Scope> parse_scope(const Tokens& tokens, size_t& token);
@@ -216,9 +212,6 @@ parse_operator(const Tokens& tokens, size_t& token,
 //////////////////////////////////////////
 /// Condition parsing
 //////////////////////////////////////////
-ast::ValueProducer
-assamble_conditions(const std::string& file,
-                    std::vector<ast::Scope::Node> conditions);
 core::optional<ast::ValueProducer> parse_condition(const Tokens& tokens,
                                                    size_t& token);
 
@@ -241,7 +234,7 @@ void parse_while_scope(const Tokens& tokens, size_t& token,
 core::optional<ast::loop::While> parse_while(const Tokens& tokens,
                                              size_t& token);
 core::optional<ast::loop::DoWhile> parse_do_while(const Tokens& tokens,
-                                                size_t& token);
+                                                  size_t& token);
 
 //////////////////////////////////////////
 /// Implementation
@@ -703,104 +696,88 @@ core::optional<ast::callable::Callable> parse_callable(const Tokens& tokens,
 //////////////////////////////////////////
 /// Scope parsing
 //////////////////////////////////////////
-core::optional<ast::Scope::Node>
-parse_scope_internals(const Tokens& tokens, size_t& token,
-                      std::vector<ast::Scope::Node>& nodes,
-                      Statement& last_statement) {
+bool parse_scope_internals(const Tokens& tokens, size_t& token,
+                           std::vector<ast::Scope::Node>& nodes) {
   ast::Scope::Node node;
 
+  auto ass_op = [&tokens, &nodes](auto& op) {
+    op->match(
+        [&tokens](ast::UnaryOperator& op) {
+          throw_unexprected_token(op.token, tokens.file);
+        },
+        [&tokens, &nodes](ast::BinaryOperator& op) {
+          if(op.operation != ast::BinaryOperation::ASSIGNMENT) {
+            throw_unexprected_token(op.token, tokens.file);
+          }
+          nodes.push_back(std::move(op));
+        });
+  };
+
   if(auto br = parse_break(tokens, token)) {
-    last_statement = Statement::NON_TERMINATED;
-    node = std::move(*br);
+    expect_token(tokens, token, ";");
+    nodes.push_back(std::move(*br));
   } else if(auto def = parse_function_definition(tokens, token)) {
-    last_statement = Statement::TERMINATED;
-    node = std::move(*def);
+    nodes.push_back(std::move(*def));
   } else if(auto var_def = parse_variable_definition(tokens, token)) {
-    auto tmp = token;
-    if(read_token(tokens, tmp, "=")) {
-      last_statement = Statement::TERMINATED;
-    } else {
-      last_statement = Statement::NON_TERMINATED;
+    nodes.push_back(std::move(*var_def));
+    if(auto op = parse_operator(tokens, token, nodes)) {
+      ass_op(op);
     }
-    node = std::move(*var_def);
+    expect_token(tokens, token, ";");
   } else if(auto iff = parse_if(tokens, token)) {
-    last_statement = Statement::TERMINATED;
-    node = std::move(*iff);
+    nodes.push_back(std::move(*iff));
   } else if(auto whi = parse_while(tokens, token)) {
-    last_statement = Statement::TERMINATED;
-    node = std::move(*whi);
+    nodes.push_back(std::move(*whi));
   } else if(auto dwhi = parse_do_while(tokens, token)) {
-    last_statement = Statement::NON_TERMINATED;
-    node = std::move(*dwhi);
+    nodes.push_back(std::move(*dwhi));
+    expect_token(tokens, token, ";");
   } else if(auto ret = parse_return(tokens, token)) {
-    last_statement = Statement::NON_TERMINATED;
-    node = std::move(*ret);
+    nodes.push_back(std::move(*ret));
+    expect_token(tokens, token, ";");
   } else if(auto call = parse_callable(tokens, token)) {
-    last_statement = Statement::NON_TERMINATED;
-    node = std::move(*call);
+    nodes.push_back(std::move(*call));
+    expect_token(tokens, token, ";");
   } else if(auto op = parse_operator(tokens, token, nodes)) {
-    last_statement = Statement::NON_TERMINATED;
-    op->match([&node](ast::UnaryOperator& op) { node = std::move(op); },
-              [&node](ast::BinaryOperator& op) { node = std::move(op); });
+    op->match(
+        [&nodes](ast::UnaryOperator& op) { nodes.push_back(std::move(op)); },
+        [&nodes](ast::BinaryOperator& op) { nodes.push_back(std::move(op)); });
+    expect_token(tokens, token, ";");
   } else if(auto condition = parse_condition(tokens, token)) {
-    last_statement = Statement::NON_TERMINATED;
-    node = value_to_node(*condition);
+    nodes.push_back(value_to_node(*condition));
+    expect_token(tokens, token, ";");
   } else if(auto lit_bool = parse_literal_bool(tokens, token)) {
-    last_statement = Statement::NON_TERMINATED;
-    node = std::move(*lit_bool);
+    nodes.push_back(std::move(*lit_bool));
+    expect_token(tokens, token, ";");
   } else if(auto lit_int = parse_literal_int(tokens, token)) {
-    last_statement = Statement::NON_TERMINATED;
-    node = std::move(*lit_int);
+    nodes.push_back(std::move(*lit_int));
+    expect_token(tokens, token, ";");
   } else if(auto lit_double = parse_literal_double(tokens, token)) {
-    last_statement = Statement::NON_TERMINATED;
-    node = std::move(*lit_double);
+    nodes.push_back(std::move(*lit_double));
+    expect_token(tokens, token, ";");
   } else if(auto lit_string = parse_literal_string(tokens, token)) {
-    last_statement = Statement::NON_TERMINATED;
-    node = std::move(*lit_string);
+    nodes.push_back(std::move(*lit_string));
+    expect_token(tokens, token, ";");
   } else if(auto scope = parse_scope(tokens, token)) {
-    last_statement = Statement::TERMINATED;
-    node = std::move(*scope);
+    nodes.push_back(std::move(*scope));
   } else if(auto var = parse_variable(tokens, token)) {
-    auto tmp = token;
-    if(read_token(tokens, tmp, "=")) {
-      last_statement = Statement::TERMINATED;
-    } else {
-      last_statement = Statement::NON_TERMINATED;
+    if(auto op = parse_operator(tokens, token, nodes)) {
+      ass_op(op);
     }
-    node = std::move(*var);
+    expect_token(tokens, token, ";");
+    nodes.push_back(std::move(*var));
   } else {
-    return {};
+    return false;
   }
-  return node;
+  return true;
 }
 
 void parse_scope_internals(const Tokens& tokens, size_t& token,
                            ast::Scope& scope) {
-  Statement last_statement = Statement::TERMINATED;
 
   while(token < tokens.size()) {
-    if(read_token(tokens, token, ";")) {
-      last_statement = Statement::TERMINATED;
-    } else if(last_statement == Statement::NON_TERMINATED) {
-      UserSourceExc e;
-      add_exception_info(tokens, token, e, [&] { e << "Expected a ';'"; });
-      throw e;
-    } else if(auto node = parse_scope_internals(tokens, token, scope.nodes,
-                                                last_statement)) {
-      scope.nodes.push_back(std::move(*node));
-    } else {
-      auto tmp = token;  // No advance - that is done by the scope
-      if(read_token(tokens, tmp, "}")) {
-        break;  // done with the scope
-      } else {
-        throw_unexprected_token(tokens, tmp);
-      }
+    if(!parse_scope_internals(tokens, token, scope.nodes)) {
+      break;  // done with the scope
     }
-  }
-  if(last_statement == Statement::NON_TERMINATED) {
-    UserSourceExc e;
-    add_exception_info(tokens, token, e, [&] { e << "Expected a ';'"; });
-    throw e;
   }
 }
 
@@ -1380,33 +1357,6 @@ parse_operator(const Tokens& tokens, size_t& token,
 //////////////////////////////////////////
 /// Condition parsing
 //////////////////////////////////////////
-ast::ValueProducer
-assamble_conditions(const std::string& file,
-                    std::vector<ast::Scope::Node> conditions) {
-  assamble_operators(file, conditions, ast::UnaryOperation::NOT);
-  assamble_operators(file, conditions, ast::UnaryOperation::TYPEOF);
-
-  assamble_operators(file, conditions, ast::BinaryOperation::DIVIDE);
-  assamble_operators(file, conditions, ast::BinaryOperation::MULTIPLY);
-  assamble_operators(file, conditions, ast::BinaryOperation::MODULO);
-  assamble_operators(file, conditions, ast::BinaryOperation::ADD);
-  assamble_operators(file, conditions, ast::BinaryOperation::SUBTRACT);
-
-  assamble_operators(file, conditions, ast::BinaryOperation::SMALLER);
-  assamble_operators(file, conditions, ast::BinaryOperation::SMALLER_EQUAL);
-  assamble_operators(file, conditions, ast::BinaryOperation::GREATER);
-  assamble_operators(file, conditions, ast::BinaryOperation::GREATER_EQUAL);
-  assamble_operators(file, conditions, ast::BinaryOperation::EQUAL);
-  assamble_operators(file, conditions, ast::BinaryOperation::NOT_EQUAL);
-  assamble_operators(file, conditions, ast::BinaryOperation::AND);
-  assamble_operators(file, conditions, ast::BinaryOperation::OR);
-
-  if(conditions.size() > 1) {
-    throw_unexprected_token(node_to_token(conditions.at(1)), file);
-  }
-  return node_to_value(conditions.front());
-}
-
 core::optional<ast::ValueProducer> parse_condition(const Tokens& tokens,
                                                    size_t& token) {
   std::vector<ast::Scope::Node> conditions;
@@ -1448,7 +1398,8 @@ core::optional<ast::ValueProducer> parse_condition(const Tokens& tokens,
     }
   }
   if(!conditions.empty()) {
-    auto condition = assamble_conditions(tokens.file, std::move(conditions));
+    assamble_operator(tokens.file, conditions);
+    auto condition = node_to_value(conditions.front());
     token = tmp;
     return condition;
   } else {
@@ -1595,7 +1546,7 @@ core::optional<ast::loop::While> parse_while(const Tokens& tokens,
   return {};
 }
 core::optional<ast::loop::DoWhile> parse_do_while(const Tokens& tokens,
-                                             size_t& token) {
+                                                  size_t& token) {
   auto tmp = token;
 
   try {
