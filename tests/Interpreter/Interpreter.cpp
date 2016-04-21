@@ -249,7 +249,7 @@ TEST_CASE("DoWhile") {
   Interpreter in(cp, op);
 
   auto ret = in.interpret(
-      "def main(){var i = 0; do{ i = i +1;}while(i < 3) return i;}",
+      "def main(){var i = 0; do{ i = i +1;}while(i < 3); return i;}",
       Arguments());
   REQUIRE(core::any_cast<int>(ret) == 3);
 }
@@ -272,3 +272,16 @@ TEST_CASE("Missing Operator") {
   REQUIRE_THROWS_AS(in.interpret("def main(){\"foo\" - \"bar\";}", Arguments()),
                     EXC_TAIL);
 }
+
+TEST_CASE("Assign in Condition") {
+  auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
+  auto op = std::make_shared<OperatorProvider>();
+  Interpreter in(cp, op);
+
+  auto ret = in.interpret(
+      "def main(){var i = 0; if(i = 1){ return 1;} else {return 0;}}",
+      Arguments());
+  REQUIRE(core::any_cast<int>(ret) == 1);
+}
+
+// FIXME test history stack  implementation
