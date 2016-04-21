@@ -20,7 +20,7 @@ protected:
 
 public:
   ::core::optional<Variable> variable;
-  ::core::optional<BinaryOperator> variable_init;
+  ::core::optional<Operator> variable_init;
   ::core::optional<ValueProducer> operation;
 
   For();

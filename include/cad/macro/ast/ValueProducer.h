@@ -15,7 +15,7 @@ class ValueProducer {
   using ValueVariant =
       ::core::variant<callable::Callable, Variable, Literal<Literals::BOOL>,
                       Literal<Literals::INT>, Literal<Literals::DOUBLE>,
-                      Literal<Literals::STRING>, UnaryOperator, BinaryOperator>;
+                      Literal<Literals::STRING>, Operator>;
 
 public:
   ValueVariant value;
@@ -29,8 +29,7 @@ public:
   ValueProducer(Literal<Literals::DOUBLE> op);
   ValueProducer(Literal<Literals::STRING> op);
   ValueProducer(Variable op);
-  ValueProducer(UnaryOperator op);
-  ValueProducer(BinaryOperator op);
+  ValueProducer(Operator op);
 
   bool operator==(const ValueProducer& other) const;
   bool operator!=(const ValueProducer& other) const;
@@ -38,8 +37,7 @@ public:
   friend std::ostream& operator<<(std::ostream& os, const ValueProducer& op) {
     op.value.match([&os](const callable::Callable& o) { os << o; },
                    [&os](const Variable& o) { os << o; },
-                   [&os](const UnaryOperator& o) { os << o; },
-                   [&os](const BinaryOperator& o) { os << o; },
+                   [&os](const Operator& o) { os << o; },
                    [&os](const Literal<Literals::BOOL>& c) { os << c; },
                    [&os](const Literal<Literals::INT>& c) { os << c; },
                    [&os](const Literal<Literals::DOUBLE>& c) { os << c; },

@@ -37,10 +37,10 @@ class Scope : public AST {
 
 public:
   using Node =
-      ::core::variant<BinaryOperator, Break, Callable, Define, DoWhile, For, If,
+      ::core::variant<Operator, Break, Callable, Define, DoWhile, For, If,
                       Literal<Literals::BOOL>, Literal<Literals::DOUBLE>,
                       Literal<Literals::INT>, Literal<Literals::STRING>, Return,
-                      Scope, UnaryOperator, Variable, While>;
+                      Scope, Variable, While>;
 
 private:
   void print_internals(std::ostream& os) const;

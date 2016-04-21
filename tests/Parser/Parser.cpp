@@ -331,7 +331,7 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if", line1});
-        BinaryOperator op({1, 9, "==", line1});
+        Operator op({1, 9, "==", line1});
         Literal<Literals::BOOL> lit1({1, 4, "true", line1});
         lit1.data = true;
         Literal<Literals::BOOL> lit2({1, 12, "true", line1});
@@ -339,7 +339,7 @@ TEST_CASE("If") {
 
         op.left_operand = std::make_unique<ValueProducer>(std::move(lit1));
         op.right_operand = std::make_unique<ValueProducer>(std::move(lit2));
-        op.operation = BinaryOperation::EQUAL;
+        op.operation = Operation::EQUAL;
 
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 17, "{", line1));
@@ -356,7 +356,7 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if", line1});
-        BinaryOperator op({1, 9, "!=", line1});
+        Operator op({1, 9, "!=", line1});
         Literal<Literals::BOOL> lit1({1, 4, "true", line1});
         lit1.data = true;
         Literal<Literals::BOOL> lit2({1, 12, "true", line1});
@@ -364,7 +364,7 @@ TEST_CASE("If") {
 
         op.left_operand = std::make_unique<ValueProducer>(std::move(lit1));
         op.right_operand = std::make_unique<ValueProducer>(std::move(lit2));
-        op.operation = BinaryOperation::NOT_EQUAL;
+        op.operation = Operation::NOT_EQUAL;
 
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 17, "{", line1));
@@ -381,7 +381,7 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if", line1});
-        BinaryOperator op({1, 9, ">", line1});
+        Operator op({1, 9, ">", line1});
         Literal<Literals::BOOL> lit1({1, 4, "true", line1});
         lit1.data = true;
         Literal<Literals::BOOL> lit2({1, 11, "true", line1});
@@ -389,7 +389,7 @@ TEST_CASE("If") {
 
         op.left_operand = std::make_unique<ValueProducer>(std::move(lit1));
         op.right_operand = std::make_unique<ValueProducer>(std::move(lit2));
-        op.operation = BinaryOperation::GREATER;
+        op.operation = Operation::GREATER;
 
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 16, "{", line1));
@@ -406,7 +406,7 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if", line1});
-        BinaryOperator op({1, 9, ">=", line1});
+        Operator op({1, 9, ">=", line1});
         Literal<Literals::BOOL> lit1({1, 4, "true", line1});
         lit1.data = true;
         Literal<Literals::BOOL> lit2({1, 12, "true", line1});
@@ -414,7 +414,7 @@ TEST_CASE("If") {
 
         op.left_operand = std::make_unique<ValueProducer>(std::move(lit1));
         op.right_operand = std::make_unique<ValueProducer>(std::move(lit2));
-        op.operation = BinaryOperation::GREATER_EQUAL;
+        op.operation = Operation::GREATER_EQUAL;
 
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 17, "{", line1));
@@ -431,7 +431,7 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if", line1});
-        BinaryOperator op({1, 9, "<", line1});
+        Operator op({1, 9, "<", line1});
         Literal<Literals::BOOL> lit1({1, 4, "true", line1});
         lit1.data = true;
         Literal<Literals::BOOL> lit2({1, 11, "true", line1});
@@ -439,7 +439,7 @@ TEST_CASE("If") {
 
         op.left_operand = std::make_unique<ValueProducer>(std::move(lit1));
         op.right_operand = std::make_unique<ValueProducer>(std::move(lit2));
-        op.operation = BinaryOperation::SMALLER;
+        op.operation = Operation::SMALLER;
 
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 16, "{", line1));
@@ -456,7 +456,7 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if", line1});
-        BinaryOperator op({1, 9, "<=", line1});
+        Operator op({1, 9, "<=", line1});
         Literal<Literals::BOOL> lit1({1, 4, "true", line1});
         lit1.data = true;
         Literal<Literals::BOOL> lit2({1, 12, "true", line1});
@@ -464,7 +464,7 @@ TEST_CASE("If") {
 
         op.left_operand = std::make_unique<ValueProducer>(std::move(lit1));
         op.right_operand = std::make_unique<ValueProducer>(std::move(lit2));
-        op.operation = BinaryOperation::SMALLER_EQUAL;
+        op.operation = Operation::SMALLER_EQUAL;
 
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 17, "{", line1));
@@ -481,11 +481,11 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if", line1});
-        UnaryOperator op({1, 4, "!", line1});
+        Operator op({1, 4, "!", line1});
         Literal<Literals::BOOL> lit({1, 5, "true", line1});
         lit.data = true;
-        op.operand = std::make_unique<ValueProducer>(std::move(lit));
-        op.operation = UnaryOperation::NOT;
+        op.right_operand = std::make_unique<ValueProducer>(std::move(lit));
+        op.operation = Operation::NOT;
 
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 10, "{", line1));
@@ -502,17 +502,17 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if", line1});
-        BinaryOperator op2({1, 11, "==", line1});
+        Operator op2({1, 11, "==", line1});
         Literal<Literals::BOOL> lit1({1, 6, "true", line1});
         lit1.data = true;
         Literal<Literals::BOOL> lit2({1, 14, "true", line1});
         lit2.data = true;
         op2.left_operand = std::make_unique<ValueProducer>(std::move(lit1));
         op2.right_operand = std::make_unique<ValueProducer>(std::move(lit2));
-        op2.operation = BinaryOperation::EQUAL;
-        UnaryOperator op({1, 4, "!", line1});
-        op.operand = std::make_unique<ValueProducer>(op2);
-        op.operation = UnaryOperation::NOT;
+        op2.operation = Operation::EQUAL;
+        Operator op({1, 4, "!", line1});
+        op.right_operand = std::make_unique<ValueProducer>(op2);
+        op.operation = Operation::NOT;
 
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 20, "{", line1));
@@ -535,14 +535,14 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if", line1});
-        BinaryOperator op({1, 9, "==", line1});
+        Operator op({1, 9, "==", line1});
         Literal<Literals::BOOL> left({1, 4, "true", line1});
         Literal<Literals::BOOL> right({1, 12, "false", line1});
         left.data = true;
         right.data = false;
         op.left_operand = std::make_unique<ValueProducer>(left);
         op.right_operand = std::make_unique<ValueProducer>(right);
-        op.operation = BinaryOperation::EQUAL;
+        op.operation = Operation::EQUAL;
 
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 18, "{", line1));
@@ -559,14 +559,14 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if", line1});
-        BinaryOperator op({1, 6, "==", line1});
+        Operator op({1, 6, "==", line1});
         Literal<Literals::INT> left({1, 4, "1", line1});
         Literal<Literals::INT> right({1, 9, "1", line1});
         left.data = 1;
         right.data = 1;
         op.left_operand = std::make_unique<ValueProducer>(left);
         op.right_operand = std::make_unique<ValueProducer>(right);
-        op.operation = BinaryOperation::EQUAL;
+        op.operation = Operation::EQUAL;
 
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 11, "{", line1));
@@ -583,14 +583,14 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if", line1});
-        BinaryOperator op({1, 7, "==", line1});
+        Operator op({1, 7, "==", line1});
         Literal<Literals::DOUBLE> left({1, 4, ".1", line1});
         Literal<Literals::DOUBLE> right({1, 10, ".1", line1});
         left.data = 0.1;
         right.data = 0.1;
         op.left_operand = std::make_unique<ValueProducer>(left);
         op.right_operand = std::make_unique<ValueProducer>(right);
-        op.operation = BinaryOperation::EQUAL;
+        op.operation = Operation::EQUAL;
 
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 13, "{", line1));
@@ -608,14 +608,14 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if", line1});
-        BinaryOperator op({1, 7, "==", line1});
+        Operator op({1, 7, "==", line1});
         Literal<Literals::STRING> left({1, 6, "\"a\"", line1});
         Literal<Literals::STRING> right({1, 12, "\"a\"", line1});
         left.data = "a";
         right.data = "a";
         op.left_operand = std::make_unique<ValueProducer>(left);
         op.right_operand = std::make_unique<ValueProducer>(right);
-        op.operation = BinaryOperation::EQUAL;
+        op.operation = Operation::EQUAL;
 
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 13, "{", line1));
@@ -642,34 +642,34 @@ TEST_CASE("If") {
         def3.definition = Variable({1, 17, "c", line1});
 
         If iff({1, 19, "if", line1});
-        BinaryOperator a_eq_c({1, 35, "==", line1});
+        Operator a_eq_c({1, 35, "==", line1});
         a_eq_c.left_operand =
             std::make_unique<ValueProducer>(Variable({1, 33, "a", line1}));
         a_eq_c.right_operand =
             std::make_unique<ValueProducer>(Variable({1, 38, "c", line1}));
-        a_eq_c.operation = BinaryOperation::EQUAL;
-        BinaryOperator c_eq_b({1, 45, "==", line1});
+        a_eq_c.operation = Operation::EQUAL;
+        Operator c_eq_b({1, 45, "==", line1});
         c_eq_b.left_operand =
             std::make_unique<ValueProducer>(Variable({1, 43, "c", line1}));
         c_eq_b.right_operand =
             std::make_unique<ValueProducer>(Variable({1, 48, "b", line1}));
-        c_eq_b.operation = BinaryOperation::EQUAL;
-        BinaryOperator op_or({1, 40, "||", line1});
+        c_eq_b.operation = Operation::EQUAL;
+        Operator op_or({1, 40, "||", line1});
         op_or.left_operand = std::make_unique<ValueProducer>(a_eq_c);
         op_or.right_operand = std::make_unique<ValueProducer>(c_eq_b);
-        op_or.operation = BinaryOperation::OR;
+        op_or.operation = Operation::OR;
 
-        BinaryOperator a_eq_b({1, 24, "==", line1});
+        Operator a_eq_b({1, 24, "==", line1});
         a_eq_b.left_operand =
             std::make_unique<ValueProducer>(Variable({1, 22, "a", line1}));
         a_eq_b.right_operand =
             std::make_unique<ValueProducer>(Variable({1, 27, "b", line1}));
-        a_eq_b.operation = BinaryOperation::EQUAL;
+        a_eq_b.operation = Operation::EQUAL;
 
-        BinaryOperator op_and({1, 29, "&&", line1});
+        Operator op_and({1, 29, "&&", line1});
         op_and.left_operand = std::make_unique<ValueProducer>(a_eq_b);
         op_and.right_operand = std::make_unique<ValueProducer>(op_or);
-        op_and.operation = BinaryOperation::AND;
+        op_and.operation = Operation::AND;
 
         iff.condition = std::make_unique<ValueProducer>(op_and);
         iff.true_scope = std::make_unique<Scope>(Token(1, 51, "{", line1));
@@ -697,33 +697,33 @@ TEST_CASE("If") {
         def3.definition = Variable({1, 17, "c", line1});
 
         If iff({1, 19, "if", line1});
-        BinaryOperator a_eq_b({1, 24, "==", line1});
+        Operator a_eq_b({1, 24, "==", line1});
         a_eq_b.left_operand =
             std::make_unique<ValueProducer>(Variable({1, 22, "a", line1}));
         a_eq_b.right_operand =
             std::make_unique<ValueProducer>(Variable({1, 27, "b", line1}));
-        a_eq_b.operation = BinaryOperation::EQUAL;
-        BinaryOperator a_eq_c({1, 34, "==", line1});
+        a_eq_b.operation = Operation::EQUAL;
+        Operator a_eq_c({1, 34, "==", line1});
         a_eq_c.left_operand =
             std::make_unique<ValueProducer>(Variable({1, 32, "a", line1}));
         a_eq_c.right_operand =
             std::make_unique<ValueProducer>(Variable({1, 37, "c", line1}));
-        a_eq_c.operation = BinaryOperation::EQUAL;
-        BinaryOperator op_and({1, 29, "&&", line1});
+        a_eq_c.operation = Operation::EQUAL;
+        Operator op_and({1, 29, "&&", line1});
         op_and.left_operand = std::make_unique<ValueProducer>(a_eq_b);
         op_and.right_operand = std::make_unique<ValueProducer>(a_eq_c);
-        op_and.operation = BinaryOperation::AND;
+        op_and.operation = Operation::AND;
 
-        BinaryOperator c_eq_b({1, 44, "==", line1});
+        Operator c_eq_b({1, 44, "==", line1});
         c_eq_b.left_operand =
             std::make_unique<ValueProducer>(Variable({1, 42, "c", line1}));
         c_eq_b.right_operand =
             std::make_unique<ValueProducer>(Variable({1, 47, "b", line1}));
-        c_eq_b.operation = BinaryOperation::EQUAL;
-        BinaryOperator op_or({1, 39, "||", line1});
+        c_eq_b.operation = Operation::EQUAL;
+        Operator op_or({1, 39, "||", line1});
         op_or.left_operand = std::make_unique<ValueProducer>(op_and);
         op_or.right_operand = std::make_unique<ValueProducer>(c_eq_b);
-        op_or.operation = BinaryOperation::OR;
+        op_or.operation = Operation::OR;
 
         iff.condition = std::make_unique<ValueProducer>(op_or);
         iff.true_scope = std::make_unique<Scope>(Token(1, 49, "{", line1));
@@ -810,20 +810,20 @@ TEST_CASE("Variable define and assign") {
       def.definition = Variable({1, 5, "foo", line1});
 
 
-      BinaryOperator op_as({1, 9, "=", line1});
-      BinaryOperator op_ad({1, 15, "+", line1});
+      Operator op_as({1, 9, "=", line1});
+      Operator op_ad({1, 15, "+", line1});
       Literal<Literals::INT> right({1, 17, "1", line1});
       right.data = 1;
 
       op_ad.left_operand =
           std::make_unique<ValueProducer>(Variable({1, 11, "foo", line1}));
       op_ad.right_operand = std::make_unique<ValueProducer>(right);
-      op_ad.operation = BinaryOperation::ADD;
+      op_ad.operation = Operation::ADD;
 
       op_as.left_operand =
           std::make_unique<ValueProducer>(Variable({1, 5, "foo", line1}));
       op_as.right_operand = std::make_unique<ValueProducer>(op_ad);
-      op_as.operation = BinaryOperation::ASSIGNMENT;
+      op_as.operation = Operation::ASSIGNMENT;
 
       expected.nodes.push_back(std::move(def));
       expected.nodes.push_back(std::move(op_as));
@@ -882,20 +882,20 @@ TEST_CASE("\"free\" operators") {
       {
         Define def({1, 1, "var", line1});
         def.definition = Variable({1, 5, "foo", line1});
-        BinaryOperator op_as({1, 14, "=", line1});
-        BinaryOperator op_ad({1, 20, "+", line1});
+        Operator op_as({1, 14, "=", line1});
+        Operator op_ad({1, 20, "+", line1});
         Literal<Literals::INT> right({1, 22, "1", line1});
         right.data = 1;
 
         op_ad.left_operand =
             std::make_unique<ValueProducer>(Variable({1, 16, "foo", line1}));
         op_ad.right_operand = std::make_unique<ValueProducer>(right);
-        op_ad.operation = BinaryOperation::ADD;
+        op_ad.operation = Operation::ADD;
 
         op_as.left_operand =
             std::make_unique<ValueProducer>(Variable({1, 10, "foo", line1}));
         op_as.right_operand = std::make_unique<ValueProducer>(op_ad);
-        op_as.operation = BinaryOperation::ASSIGNMENT;
+        op_as.operation = Operation::ASSIGNMENT;
 
         expected.nodes.push_back(std::move(def));
         expected.nodes.push_back(std::move(op_as));
@@ -967,6 +967,129 @@ TEST_CASE("break") {
   }
 }
 
+TEST_CASE("Number Literals") {
+  SECTION("Integer") {
+    SECTION("positive") {
+      auto ast = parse("def main() {return 1;}");
+      auto line1 = std::make_shared<std::string>("def main() {return 1;}");
+
+      Scope expected({0, 0, ""});
+      {
+        Define def({1, 1, "def", line1});
+        EntryFunction fun({1, 5, "main", line1});
+        fun.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        Return ret({1, 13, "return", line1});
+        Literal<Literals::INT> one({1, 20, "1", line1});
+        one.data = 1;
+        ret.output = std::make_unique<ValueProducer>(std::move(one));
+        fun.scope->nodes.push_back(std::move(ret));
+        def.definition = std::move(fun);
+        expected.nodes.push_back(std::move(def));
+      }
+
+      REQUIRE(ast == expected);
+    }
+    SECTION("negative") {
+      auto ast = parse("def main() {return -1;}");
+      auto line1 = std::make_shared<std::string>("def main() {return -1;}");
+
+      Scope expected({0, 0, ""});
+      {
+        Define def({1, 1, "def", line1});
+        EntryFunction fun({1, 5, "main", line1});
+        fun.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        Return ret({1, 13, "return", line1});
+        Operator op({1, 20, "-", line1});
+        Literal<Literals::INT> one({1, 21, "1", line1});
+        one.data = 1;
+        op.right_operand = std::make_unique<ValueProducer>(std::move(one));
+        op.operation = Operation::NEGATIVE;
+        ret.output = std::make_unique<ValueProducer>(std::move(op));
+        fun.scope->nodes.push_back(std::move(ret));
+        def.definition = std::move(fun);
+        expected.nodes.push_back(std::move(def));
+      }
+
+      REQUIRE(ast == expected);
+    }
+    SECTION("negative operator") {
+      auto ast = parse("def main() {return 1 - 1;}");
+      auto line1 = std::make_shared<std::string>("def main() {return 1 - 1;}");
+
+      Scope expected({0, 0, ""});
+      {
+        Define def({1, 1, "def", line1});
+        EntryFunction fun({1, 5, "main", line1});
+        fun.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        Return ret({1, 13, "return", line1});
+        Operator op({1, 22, "-", line1});
+        Literal<Literals::INT> one1({1, 20, "1", line1});
+        Literal<Literals::INT> one2({1, 24, "1", line1});
+        one1.data = 1;
+        one2.data = 1;
+        op.left_operand = std::make_unique<ValueProducer>(std::move(one1));
+        op.right_operand = std::make_unique<ValueProducer>(std::move(one2));
+        op.operation = Operation::SUBTRACT;
+        ret.output = std::make_unique<ValueProducer>(std::move(op));
+        fun.scope->nodes.push_back(std::move(ret));
+        def.definition = std::move(fun);
+        expected.nodes.push_back(std::move(def));
+      }
+
+      REQUIRE(ast == expected);
+    }
+    SECTION("negative operator nospace") {
+      auto ast = parse("def main() {return 1-1;}");
+      auto line1 = std::make_shared<std::string>("def main() {return 1-1;}");
+
+      Scope expected({0, 0, ""});
+      {
+        Define def({1, 1, "def", line1});
+        EntryFunction fun({1, 5, "main", line1});
+        fun.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        Return ret({1, 13, "return", line1});
+        Operator op({1, 21, "-", line1});
+        Literal<Literals::INT> one1({1, 20, "1", line1});
+        Literal<Literals::INT> one2({1, 22, "1", line1});
+        one1.data = 1;
+        one2.data = 1;
+        op.left_operand = std::make_unique<ValueProducer>(std::move(one1));
+        op.right_operand = std::make_unique<ValueProducer>(std::move(one2));
+        op.operation = Operation::SUBTRACT;
+        ret.output = std::make_unique<ValueProducer>(std::move(op));
+        fun.scope->nodes.push_back(std::move(ret));
+        def.definition = std::move(fun);
+        expected.nodes.push_back(std::move(def));
+      }
+
+      REQUIRE(ast == expected);
+    }
+    SECTION("negativ leading literal") {
+      auto ast = parse("def main() {1; -1;}");
+      auto line1 = std::make_shared<std::string>("def main() {1; -1;}");
+
+      Scope expected({0, 0, ""});
+      {
+        Define def({1, 1, "def", line1});
+        EntryFunction fun({1, 5, "main", line1});
+        fun.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        Literal<Literals::INT> one1({1, 13, "1", line1});
+        Literal<Literals::INT> one2({1, 17, "1", line1});
+        Operator op({1, 16, "-", line1});
+        one1.data = 1;
+        one2.data = 1;
+        op.right_operand = std::make_unique<ValueProducer>(std::move(one2));
+        op.operation = Operation::NEGATIVE;
+        fun.scope->nodes.push_back(std::move(one1));
+        fun.scope->nodes.push_back(std::move(op));
+        def.definition = std::move(fun);
+        expected.nodes.push_back(std::move(def));
+      }
+
+      REQUIRE(ast == expected);
+    }
+  }
+}
 
 // TODO
 // TEST_CASE("For") {

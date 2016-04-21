@@ -35,24 +35,61 @@ CATCH_TRANSLATE_EXCEPTION(std::exception& e) {
 
 TEST_CASE("Main literal return") {
   auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
-  Interpreter in(cp, nullptr);
+  auto op = std::make_shared<OperatorProvider>();
+  Interpreter in(cp, op);
 
   SECTION("int") {
-    auto ret = in.interpret("def main(){return 1;}", Arguments());
-    REQUIRE(core::any_cast<int>(ret) == 1);
+    SECTION("positive") {
+      auto ret = in.interpret("def main(){return 1;}", Arguments());
+      REQUIRE(core::any_cast<int>(ret) == 1);
+    }
+    SECTION("negative") {
+      auto ret = in.interpret("def main(){return -1;}", Arguments());
+      REQUIRE(core::any_cast<int>(ret) == -1);
+    }
   }
   SECTION("double") {
-    auto ret = in.interpret("def main(){return 1.1;}", Arguments());
-    REQUIRE(core::any_cast<double>(ret) == Approx(1.1).epsilon(0.01));
+    SECTION("long") {
+      SECTION("positive") {
+        auto ret = in.interpret("def main(){return 1.1;}", Arguments());
+        REQUIRE(core::any_cast<double>(ret) == Approx(1.1).epsilon(0.01));
+      }
+      SECTION("negative") {
+        auto ret = in.interpret("def main(){return -1.1;}", Arguments());
+        REQUIRE(core::any_cast<double>(ret) == Approx(-1.1).epsilon(0.01));
+      }
+    }
+    SECTION("short") {
+      SECTION("positive") {
+        auto ret = in.interpret("def main(){return .1;}", Arguments());
+        REQUIRE(core::any_cast<double>(ret) == Approx(0.1).epsilon(0.01));
+      }
+      SECTION("negative") {
+        auto ret = in.interpret("def main(){return -.1;}", Arguments());
+        REQUIRE(core::any_cast<double>(ret) == Approx(-0.1).epsilon(0.01));
+      }
+    }
   }
   SECTION("bool") {
     SECTION("true") {
-      auto ret = in.interpret("def main(){return true;}", Arguments());
-      REQUIRE(core::any_cast<bool>(ret));
+      SECTION("positive") {
+        auto ret = in.interpret("def main(){return true;}", Arguments());
+        REQUIRE(core::any_cast<bool>(ret));
+      }
+      SECTION("negative") {
+        auto ret = in.interpret("def main(){return -true;}", Arguments());
+        REQUIRE(core::any_cast<int>(ret) == -1);
+      }
     }
     SECTION("false") {
-      auto ret = in.interpret("def main(){return false;}", Arguments());
-      REQUIRE_FALSE(core::any_cast<bool>(ret));
+      SECTION("positive") {
+        auto ret = in.interpret("def main(){return false;}", Arguments());
+        REQUIRE_FALSE(core::any_cast<bool>(ret));
+      }
+      SECTION("negative") {
+        auto ret = in.interpret("def main(){return -false;}", Arguments());
+        REQUIRE(core::any_cast<int>(ret) == 0);
+      }
     }
   }
   SECTION("string") {

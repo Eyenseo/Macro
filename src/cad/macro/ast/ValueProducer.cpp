@@ -24,10 +24,7 @@ ValueProducer::ValueProducer(Literal<Literals::STRING> op)
 ValueProducer::ValueProducer(Variable op)
     : value(std::move(op)) {
 }
-ValueProducer::ValueProducer(UnaryOperator op)
-    : value(std::move(op)) {
-}
-ValueProducer::ValueProducer(BinaryOperator op)
+ValueProducer::ValueProducer(Operator op)
     : value(std::move(op)) {
 }
 

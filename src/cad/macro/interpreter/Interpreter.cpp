@@ -117,7 +117,6 @@ void Interpreter::define_functions(State& state, const Scope& scope) const {
   for(const auto& n : scope.nodes) {
     n.match(
         [this, &state](const Define& def) { define_function(state, def); },  //
-        [this](const BinaryOperator&) {},                                    //
         [this](const Break&) {},                                             //
         [this](const Callable&) {},                                          //
         [this](const DoWhile&) {},                                           //
@@ -129,7 +128,7 @@ void Interpreter::define_functions(State& state, const Scope& scope) const {
         [this](const Literal<Literals::STRING>&) {},                         //
         [this](const Return&) {},                                            //
         [this](const Scope&) {},                                             //
-        [this](const UnaryOperator&) {},                                     //
+        [this](const Operator&) {},                                          //
         [this](const While&) {},                                             //
         [this](const Variable&) {}                                           //
         );                                                                   //
@@ -158,7 +157,7 @@ void Interpreter::interpret_none() const {
 /// Binary
 //////////////////////////////////////////
 ::core::any Interpreter::interpret_divide(State& state,
-                                          const BinaryOperator& op) const {
+                                          const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
@@ -166,7 +165,7 @@ void Interpreter::interpret_none() const {
   return operator_provider_->eval(BiOp::DIVIDE, lhs, rhs);
 }
 ::core::any Interpreter::interpret_multiply(State& state,
-                                            const BinaryOperator& op) const {
+                                            const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
@@ -174,15 +173,14 @@ void Interpreter::interpret_none() const {
   return operator_provider_->eval(BiOp::MULTIPLY, lhs, rhs);
 }
 ::core::any Interpreter::interpret_modulo(State& state,
-                                          const BinaryOperator& op) const {
+                                          const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::MODULO, lhs, rhs);
 }
-::core::any Interpreter::interpret_add(State& state,
-                                       const BinaryOperator& op) const {
+::core::any Interpreter::interpret_add(State& state, const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
@@ -190,7 +188,7 @@ void Interpreter::interpret_none() const {
   return operator_provider_->eval(BiOp::ADD, lhs, rhs);
 }
 ::core::any Interpreter::interpret_subtract(State& state,
-                                            const BinaryOperator& op) const {
+                                            const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
@@ -198,16 +196,15 @@ void Interpreter::interpret_none() const {
   return operator_provider_->eval(BiOp::SUBTRACT, lhs, rhs);
 }
 ::core::any Interpreter::interpret_smaller(State& state,
-                                           const BinaryOperator& op) const {
+                                           const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::SMALLER, lhs, rhs);
 }
-::core::any
-Interpreter::interpret_smaller_equal(State& state,
-                                     const BinaryOperator& op) const {
+::core::any Interpreter::interpret_smaller_equal(State& state,
+                                                 const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
@@ -215,16 +212,15 @@ Interpreter::interpret_smaller_equal(State& state,
   return operator_provider_->eval(BiOp::SMALLER_EQUAL, lhs, rhs);
 }
 ::core::any Interpreter::interpret_greater(State& state,
-                                           const BinaryOperator& op) const {
+                                           const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::GREATER, lhs, rhs);
 }
-::core::any
-Interpreter::interpret_greater_equal(State& state,
-                                     const BinaryOperator& op) const {
+::core::any Interpreter::interpret_greater_equal(State& state,
+                                                 const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
@@ -232,7 +228,7 @@ Interpreter::interpret_greater_equal(State& state,
   return operator_provider_->eval(BiOp::GREATER_EQUAL, lhs, rhs);
 }
 ::core::any Interpreter::interpret_equal(State& state,
-                                         const BinaryOperator& op) const {
+                                         const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
@@ -240,23 +236,21 @@ Interpreter::interpret_greater_equal(State& state,
   return operator_provider_->eval(BiOp::EQUAL, lhs, rhs);
 }
 ::core::any Interpreter::interpret_not_equal(State& state,
-                                             const BinaryOperator& op) const {
+                                             const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::NOT_EQUAL, lhs, rhs);
 }
-::core::any Interpreter::interpret_and(State& state,
-                                       const BinaryOperator& op) const {
+::core::any Interpreter::interpret_and(State& state, const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::AND, lhs, rhs);
 }
-::core::any Interpreter::interpret_or(State& state,
-                                      const BinaryOperator& op) const {
+::core::any Interpreter::interpret_or(State& state, const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
@@ -264,7 +258,7 @@ Interpreter::interpret_greater_equal(State& state,
   return operator_provider_->eval(BiOp::OR, lhs, rhs);
 }
 ::core::any Interpreter::interpret_assignment(State& state,
-                                              const BinaryOperator& op) const {
+                                              const Operator& op) const {
   ::core::any rh;
   auto ret_par = [&](State& s, const auto& v) { rh = interpret(s, v); };
   auto lit_par = [&](const auto& v) { rh = v.data; };
@@ -278,8 +272,7 @@ Interpreter::interpret_greater_equal(State& state,
 
   op.right_operand->value.match(
       [&](const callable::Callable& o) { ret_par(state, o); },
-      [&](const UnaryOperator& o) { ret_par(state, o); },
-      [&](const BinaryOperator& o) { ret_par(state, o); },
+      [&](const Operator& o) { ret_par(state, o); },
       [&](const Variable& o) { var_par(state, o); },
       [&](const Literal<Literals::BOOL>& c) { lit_par(c); },
       [&](const Literal<Literals::INT>& c) { lit_par(c); },
@@ -290,10 +283,7 @@ Interpreter::interpret_greater_equal(State& state,
       [&](const callable::Callable&) {
         assert(false); /* analyser checked */
       },
-      [&](const UnaryOperator&) {
-        assert(false); /* analyser checked */
-      },
-      [&](const BinaryOperator&) {
+      [&](const Operator&) {
         assert(false); /* analyser checked */
       },
       [&](const Variable& o) {
@@ -319,40 +309,47 @@ Interpreter::interpret_greater_equal(State& state,
   return rh;
 }
 
-::core::any Interpreter::interpret(State& state,
-                                   const BinaryOperator& op) const {
+::core::any Interpreter::interpret(State& state, const Operator& op) const {
   try {
     switch(op.operation) {
-    case BinaryOperation::NONE:
+    case Operation::NONE:
       interpret_none();  // assert
-    case BinaryOperation::DIVIDE:
+    case Operation::DIVIDE:
       return interpret_divide(state, op);
-    case BinaryOperation::MULTIPLY:
+    case Operation::MULTIPLY:
       return interpret_multiply(state, op);
-    case BinaryOperation::MODULO:
+    case Operation::MODULO:
       return interpret_modulo(state, op);
-    case BinaryOperation::ADD:
+    case Operation::ADD:
       return interpret_add(state, op);
-    case BinaryOperation::SUBTRACT:
+    case Operation::SUBTRACT:
       return interpret_subtract(state, op);
-    case BinaryOperation::SMALLER:
+    case Operation::SMALLER:
       return interpret_smaller(state, op);
-    case BinaryOperation::SMALLER_EQUAL:
+    case Operation::SMALLER_EQUAL:
       return interpret_smaller_equal(state, op);
-    case BinaryOperation::GREATER:
+    case Operation::GREATER:
       return interpret_greater(state, op);
-    case BinaryOperation::GREATER_EQUAL:
+    case Operation::GREATER_EQUAL:
       return interpret_greater_equal(state, op);
-    case BinaryOperation::EQUAL:
+    case Operation::EQUAL:
       return interpret_equal(state, op);
-    case BinaryOperation::NOT_EQUAL:
+    case Operation::NOT_EQUAL:
       return interpret_not_equal(state, op);
-    case BinaryOperation::AND:
+    case Operation::AND:
       return interpret_and(state, op);
-    case BinaryOperation::OR:
+    case Operation::OR:
       return interpret_or(state, op);
-    case BinaryOperation::ASSIGNMENT:
+    case Operation::ASSIGNMENT:
       return interpret_assignment(state, op);
+    case Operation::NOT:
+      return interpret_not(state, op);
+    case Operation::TYPEOF:
+      return interpret_typeof(state, op);
+    case Operation::PRINT:
+      return interpret_print(state, op);
+    case Operation::NEGATIVE:
+      return interpret_negative(state, op);
     }
   } catch(std::exception&) {
     Exc<E, E::TAIL> e;
@@ -367,23 +364,22 @@ Interpreter::interpret_greater_equal(State& state,
 //////////////////////////////////////////
 /// Unary
 //////////////////////////////////////////
-::core::any Interpreter::interpret_not(State& state,
-                                       const UnaryOperator& op) const {
-  auto rhs = interpret(state, *op.operand);
+::core::any Interpreter::interpret_not(State& state, const Operator& op) const {
+  auto rhs = interpret(state, *op.right_operand);
 
   using UnOp = OperatorProvider::UnaryOperation;
   return operator_provider_->eval(UnOp::NOT, rhs);
 }
 ::core::any Interpreter::interpret_typeof(State& state,
-                                          const UnaryOperator& op) const {
-  auto rhs = interpret(state, *op.operand);
+                                          const Operator& op) const {
+  auto rhs = interpret(state, *op.right_operand);
 
   using UnOp = OperatorProvider::UnaryOperation;
   return operator_provider_->eval(UnOp::TYPEOF, rhs);
 }
 ::core::any Interpreter::interpret_print(State& state,
-                                         const UnaryOperator& op) const {
-  auto rhs = interpret(state, *op.operand);
+                                         const Operator& op) const {
+  auto rhs = interpret(state, *op.right_operand);
 
   using UnOp = OperatorProvider::UnaryOperation;
   auto res =
@@ -391,28 +387,12 @@ Interpreter::interpret_greater_equal(State& state,
   out_.get() << res;
   return res;
 }
+::core::any Interpreter::interpret_negative(State& state,
+                                          const Operator& op) const {
+  auto rhs = interpret(state, *op.right_operand);
 
-::core::any Interpreter::interpret(State& state,
-                                   const UnaryOperator& op) const {
-  try {
-    switch(op.operation) {
-    case UnaryOperation::NONE:
-      interpret_none();
-    case UnaryOperation::NOT:
-      return interpret_not(state, op);
-    case UnaryOperation::TYPEOF:
-      return interpret_typeof(state, op);
-    case UnaryOperation::PRINT:
-      return interpret_print(state, op);
-    }
-  } catch(std::exception&) {
-    Exc<E, E::TAIL> e;
-    add_exception_info(op.token, state.file, e, [&e, &op]() {
-      e << "At the operator '" << op.token.token << "' defined here:";
-    });
-    std::throw_with_nested(e);
-  }
-  assert(false && "Reached by access after free and similar");
+  using UnOp = OperatorProvider::UnaryOperation;
+  return operator_provider_->eval(UnOp::NEGATIVE, rhs);
 }
 
 //////////////////////////////////////////
@@ -424,8 +404,7 @@ Interpreter::interpret(State& state, const ValueProducer& vp) const {
 
   vp.value.match(
       [&](const callable::Callable& o) { f.value = interpret(state, o); },
-      [&](const UnaryOperator& o) { f.value = interpret(state, o); },
-      [&](const BinaryOperator& o) { f.value = interpret(state, o); },
+      [&](const Operator& o) { f.value = interpret(state, o); },
       [&](const Variable& o) {
         if(state.stack->has_variable(o.token.token)) {
           return state.stack->variable(o.token.token,
@@ -543,8 +522,7 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
     ::core::any out;
     ret.output->value.match(
         [&](const callable::Callable& o) { out = interpret(state, o); },
-        [&](const UnaryOperator& o) { out = interpret(state, o); },
-        [&](const BinaryOperator& o) { out = interpret(state, o); },
+        [&](const Operator& o) { out = interpret(state, o); },
         [&](const Variable& o) {
           if(state.stack->owns_variable(o.token.token)) {
             state.stack->variable(
@@ -587,7 +565,7 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
   for(const auto& n : scope.nodes) {
     n.match(
         [this, &state](const Define& e) { define_variable(state, e); },
-        [this, &state](const BinaryOperator& e) { interpret(state, e); },
+        [this, &state](const Operator& e) { interpret(state, e); },
         [this, &state](const Break& e) { interpret(state, e); },
         [this, &state](const Callable& e) { interpret(state, e); },
         [this, &state, &ret](const DoWhile& e) { ret = interpret(state, e); },
@@ -599,7 +577,6 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
         [this, &state](const Literal<Literals::STRING>&) { /* ignore */ },
         [this, &state, &ret](const Return& e) { ret = interpret(state, e); },
         [this, &state, &ret](const Scope& e) { ret = interpret(state, e); },
-        [this, &state](const UnaryOperator& e) { interpret(state, e); },
         [this, &state, &ret](const While& e) { ret = interpret(state, e); },
         [this, &state](const Variable&) { /* ignore */ });
 
@@ -654,8 +631,7 @@ void Interpreter::add_parameter(State& state, State& outer,
   };
   val.value.match(
       [&](const callable::Callable& o) { ret_par(state, outer, par, o); },
-      [&](const UnaryOperator& o) { ret_par(state, outer, par, o); },
-      [&](const BinaryOperator& o) { ret_par(state, outer, par, o); },
+      [&](const Operator& o) { ret_par(state, outer, par, o); },
       [&](const Variable& o) { var_par(state, outer, par, o); },
       [&](const Literal<Literals::BOOL>& c) { lit_par(state, par, c); },
       [&](const Literal<Literals::INT>& c) { lit_par(state, par, c); },

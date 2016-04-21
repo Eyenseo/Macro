@@ -5,89 +5,28 @@
 namespace cad {
 namespace macro {
 namespace ast {
-//////////////////////////////////////////
-// UnaryOperator
-//////////////////////////////////////////
-UnaryOperator::UnaryOperator(const UnaryOperator& other)
-    : Operator<OperationType::Unary>(other)
-    , operand((other.operand) ? std::make_unique<ValueProducer>(*other.operand)
-                              : nullptr) {
+Operator::Operator(parser::Token token)
+    : AST(std::move(token))
+    , operation(Operation::NONE) {
 }
-UnaryOperator::UnaryOperator(UnaryOperator&& other) {
-  swap(*this, other);
-}
-UnaryOperator::UnaryOperator(parser::Token token)
-    : Operator<OperationType::Unary>(std::move(token)) {
-}
-UnaryOperator& UnaryOperator::operator=(UnaryOperator other) {
-  swap(*this, other);
-  return *this;
-}
-
-void UnaryOperator::print_internals(IndentStream& os) const {
-  os << "Operation: " << operation_to_string() << "\n";
-  if(operand) {
-    os.indent() << "Operand:\n";
-    os << *operand;
-    os.dedent();
-  }
-}
-
-std::string UnaryOperator::operation_to_string() const {
-  switch(operation) {
-  case UnaryOperation::NONE:
-    return "NONE";
-  case UnaryOperation::NOT:
-    return "not";
-  case UnaryOperation::PRINT:
-    return "print";
-  case UnaryOperation::TYPEOF:
-    return "typeof";
-  }
-
-  return "This 'can not' happen - you accessed uninitialized memory or "
-         "something similar!";
-}
-
-bool UnaryOperator::operator==(const UnaryOperator& other) const {
-  if(this == &other) {
-    return true;
-  } else if(Operator::operator==(other)) {
-    if(operand && other.operand) {
-      return *operand == *other.operand;
-    } else if(!operand && !other.operand) {
-      return true;
-    }
-  }
-  return false;
-}
-bool UnaryOperator::operator!=(const UnaryOperator& other) const {
-  return !(*this == other);
-}
-
-//////////////////////////////////////////
-// BinaryOperator
-//////////////////////////////////////////
-BinaryOperator::BinaryOperator(const BinaryOperator& other)
-    : Operator<OperationType::Binary>(other)
+Operator::Operator(const Operator& other)
+    : AST(other)
     , left_operand((other.left_operand)
                        ? std::make_unique<ValueProducer>(*other.left_operand)
                        : nullptr)
     , right_operand((other.right_operand)
                         ? std::make_unique<ValueProducer>(*other.right_operand)
-                        : nullptr) {
+                        : nullptr)
+    , operation(other.operation) {
 }
-BinaryOperator::BinaryOperator(BinaryOperator&& other) {
+Operator::Operator(Operator&& other) {
   swap(*this, other);
 }
-BinaryOperator::BinaryOperator(parser::Token token)
-    : Operator<OperationType::Binary>(std::move(token)) {
-}
-BinaryOperator& BinaryOperator::operator=(BinaryOperator other) {
+Operator& Operator::operator=(Operator other) {
   swap(*this, other);
   return *this;
 }
-void BinaryOperator::print_internals(IndentStream& os) const {
+void Operator::print_internals(IndentStream& os) const {
   if(left_operand) {
     os << "Left operand:\n";
     os.indent() << *left_operand;
@@ -101,47 +40,55 @@ void BinaryOperator::print_internals(IndentStream& os) const {
   }
 }
 
-std::string BinaryOperator::operation_to_string() const {
+std::string Operator::operation_to_string() const {
   switch(operation) {
-  case BinaryOperation::NONE:
+  case Operation::NONE:
     return "NONE";
-  case BinaryOperation::DIVIDE:
+  case Operation::DIVIDE:
     return "divide";
-  case BinaryOperation::MULTIPLY:
+  case Operation::MULTIPLY:
     return "multiply";
-  case BinaryOperation::MODULO:
+  case Operation::MODULO:
     return "modulo";
-  case BinaryOperation::ADD:
+  case Operation::ADD:
     return "add";
-  case BinaryOperation::SUBTRACT:
+  case Operation::SUBTRACT:
     return "subtract";
-  case BinaryOperation::SMALLER:
+  case Operation::SMALLER:
     return "smaller";
-  case BinaryOperation::SMALLER_EQUAL:
+  case Operation::SMALLER_EQUAL:
     return "smaller equal";
-  case BinaryOperation::GREATER:
+  case Operation::GREATER:
     return "greater";
-  case BinaryOperation::GREATER_EQUAL:
+  case Operation::GREATER_EQUAL:
     return "greater equal";
-  case BinaryOperation::EQUAL:
+  case Operation::EQUAL:
     return "equal";
-  case BinaryOperation::NOT_EQUAL:
+  case Operation::NOT_EQUAL:
     return "not equal";
-  case BinaryOperation::AND:
+  case Operation::AND:
     return "and";
-  case BinaryOperation::OR:
+  case Operation::OR:
     return "or";
-  case BinaryOperation::ASSIGNMENT:
+  case Operation::ASSIGNMENT:
     return "assignment";
+  case Operation::NOT:
+    return "not";
+  case Operation::PRINT:
+    return "print";
+  case Operation::TYPEOF:
+    return "typeof";
+  case Operation::NEGATIVE:
+    return "negative";
   }
   return "This 'can not' happen - you accessed uninitialized memory or "
          "something similar!";
 }
 
-bool BinaryOperator::operator==(const BinaryOperator& other) const {
+bool Operator::operator==(const Operator& other) const {
   if(this == &other) {
     return true;
-  } else if(Operator::operator==(other)) {
+  } else if(AST::operator==(other) && operation == other.operation) {
     if((left_operand && other.left_operand) &&
        (right_operand && other.right_operand)) {
       return *left_operand == *other.left_operand &&
@@ -159,7 +106,7 @@ bool BinaryOperator::operator==(const BinaryOperator& other) const {
   }
   return false;
 }
-bool BinaryOperator::operator!=(const BinaryOperator& other) const {
+bool Operator::operator!=(const Operator& other) const {
   return !(*this == other);
 }
 }

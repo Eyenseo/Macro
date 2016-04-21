@@ -17,15 +17,14 @@ class Arguments;
 }
 namespace macro {
 namespace ast {
-class BinaryOperator;
 class Break;
 class Define;
 class Define;
+class Operator;
 class Return;
 class Scope;
 class Scope;
 class Scope;
-class UnaryOperator;
 class ValueProducer;
 namespace callable {
 class Callable;
@@ -80,39 +79,29 @@ protected:
   //////////////////////////////////////////
   [[noreturn]] void interpret_none() const;
   // Binary helper
-  ::core::any interpret_divide(State& state,
-                               const ast::BinaryOperator& op) const;
-  ::core::any interpret_multiply(State& state,
-                                 const ast::BinaryOperator& op) const;
-  ::core::any interpret_modulo(State& state,
-                               const ast::BinaryOperator& op) const;
-  ::core::any interpret_add(State& state, const ast::BinaryOperator& op) const;
-  ::core::any interpret_subtract(State& state,
-                                 const ast::BinaryOperator& op) const;
-  ::core::any interpret_smaller(State& state,
-                                const ast::BinaryOperator& op) const;
+  ::core::any interpret_divide(State& state, const ast::Operator& op) const;
+  ::core::any interpret_multiply(State& state, const ast::Operator& op) const;
+  ::core::any interpret_modulo(State& state, const ast::Operator& op) const;
+  ::core::any interpret_add(State& state, const ast::Operator& op) const;
+  ::core::any interpret_subtract(State& state, const ast::Operator& op) const;
+  ::core::any interpret_smaller(State& state, const ast::Operator& op) const;
   ::core::any interpret_smaller_equal(State& state,
-                                      const ast::BinaryOperator& op) const;
-  ::core::any interpret_greater(State& state,
-                                const ast::BinaryOperator& op) const;
+                                      const ast::Operator& op) const;
+  ::core::any interpret_greater(State& state, const ast::Operator& op) const;
   ::core::any interpret_greater_equal(State& state,
-                                      const ast::BinaryOperator& op) const;
-  ::core::any interpret_equal(State& state,
-                              const ast::BinaryOperator& op) const;
-  ::core::any interpret_not_equal(State& state,
-                                  const ast::BinaryOperator& op) const;
-  ::core::any interpret_and(State& state, const ast::BinaryOperator& op) const;
-  ::core::any interpret_or(State& state, const ast::BinaryOperator& op) const;
-  ::core::any interpret_assignment(State& state,
-                                   const ast::BinaryOperator& op) const;
+                                      const ast::Operator& op) const;
+  ::core::any interpret_equal(State& state, const ast::Operator& op) const;
+  ::core::any interpret_not_equal(State& state, const ast::Operator& op) const;
+  ::core::any interpret_and(State& state, const ast::Operator& op) const;
+  ::core::any interpret_or(State& state, const ast::Operator& op) const;
+  ::core::any interpret_assignment(State& state, const ast::Operator& op) const;
   // Unary helper
-  ::core::any interpret_not(State& state, const ast::UnaryOperator& op) const;
-  ::core::any interpret_typeof(State& state,
-                               const ast::UnaryOperator& op) const;
-  ::core::any interpret_print(State& state, const ast::UnaryOperator& op) const;
+  ::core::any interpret_not(State& state, const ast::Operator& op) const;
+  ::core::any interpret_typeof(State& state, const ast::Operator& op) const;
+  ::core::any interpret_print(State& state, const ast::Operator& op) const;
+  ::core::any interpret_negative(State& state, const ast::Operator& op) const;
 
-  ::core::any interpret(State& state, const ast::BinaryOperator& op) const;
-  ::core::any interpret(State& state, const ast::UnaryOperator& op) const;
+  ::core::any interpret(State& state, const ast::Operator& op) const;
 
   //////////////////////////////////////////
   /// interpret fundamentals

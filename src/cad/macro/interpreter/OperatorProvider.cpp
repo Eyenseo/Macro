@@ -173,6 +173,15 @@ void OperatorProvider::add(const UnaryOperation operati, std::type_index rhs,
       throw e;
     }
     print_.emplace_back(rhs, std::move(operato));
+    break;
+  case UnaryOperation::NEGATIVE:
+    if(exists(negative_, rhs)) {
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator '-' (negative) already exists for the type '"
+        << rhs.name() << "'.";
+      throw e;
+    }
+    negative_.emplace_back(rhs, std::move(operato));
   }
 }
 
@@ -254,6 +263,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     return exists(type_of_, rhs);
   case UnaryOperation::PRINT:
     return exists(print_, rhs);
+  case UnaryOperation::NEGATIVE:
+    return exists(negative_, rhs);
   }
   assert(false && "Reached by access after free and similar");
 }
@@ -268,6 +279,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     return exists(type_of_, std::type_index(rhs.type()));
   case UnaryOperation::PRINT:
     return exists(print_, std::type_index(rhs.type()));
+  case UnaryOperation::NEGATIVE:
+    return exists(negative_, std::type_index(rhs.type()));
   }
   assert(false && "Reached by access after free and similar");
 }
@@ -481,7 +494,7 @@ bool OperatorProvider::has(const UnaryOperation op,
     return !::core::any_cast<bool>(b_rhs);
   }
   Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
-  e << "The operator 'bool' is missing for the type '" << rhs.type().name()
+  e << "The operator '!'(not) is missing for the type '" << rhs.type().name()
     << "'.";
   throw e;
 }
@@ -491,7 +504,7 @@ bool OperatorProvider::has(const UnaryOperation op,
     return it->second(rhs);
   }
   Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
-  e << "The operator 'bool' is missing for the type '" << rhs.type().name()
+  e << "The operator ' bool' is missing for the type '" << rhs.type().name()
     << "'.";
   throw e;
 }
@@ -501,7 +514,7 @@ bool OperatorProvider::has(const UnaryOperation op,
     return it->second(rhs);
   }
   Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
-  e << "The operator 'bool' is missing for the type '" << rhs.type().name()
+  e << "The operator 'typeof' is missing for the type '" << rhs.type().name()
     << "'.";
   throw e;
 }
@@ -511,8 +524,18 @@ bool OperatorProvider::has(const UnaryOperation op,
     return it->second(rhs);
   }
   Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
-  e << "The operator 'bool' is missing for the type '" << rhs.type().name()
+  e << "The operator 'print' is missing for the type '" << rhs.type().name()
     << "'.";
+  throw e;
+}
+::core::any OperatorProvider::eval_negative(const ::core::any& rhs) const {
+  auto it = find(negative_, std::type_index(rhs.type()));
+  if(it != negative_.end()) {
+    return it->second(rhs);
+  }
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator '-' (negative) is missing for the type '"
+    << rhs.type().name() << "'.";
   throw e;
 }
 ::core::any OperatorProvider::eval(const UnaryOperation op,
@@ -526,6 +549,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     return eval_type_of(rhs);
   case UnaryOperation::PRINT:
     return eval_print(rhs);
+  case UnaryOperation::NEGATIVE:
+    return eval_negative(rhs);
   }
   assert(false && "Reached by access after free and similar");
 }
@@ -587,10 +612,10 @@ OperatorProvider::OperatorProvider(const bool initialize) {
         });
 
     // UNARY
-    // BOOL
-    add<bool, UnOp::BOOL>();
-    add<int, UnOp::BOOL>();
-    add<double, UnOp::BOOL>();
+    // BOOL & NEGATIVE
+    add<bool, UnOp::BOOL, UnOp::NEGATIVE>();
+    add<int, UnOp::BOOL, UnOp::NEGATIVE>();
+    add<double, UnOp::BOOL, UnOp::NEGATIVE>();
     add(UnOp::BOOL, std::type_index(typeid(std::string)),
         [](const ::core::any& a) {
           return ::core::any_cast<std::string>(a).size() > 0;

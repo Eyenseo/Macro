@@ -93,7 +93,7 @@ struct Stack {
 
 struct State;
 struct Signals {
-  Signal<void(SignalType, const State&, const ast::BinaryOperator&)> biop;
+  Signal<void(SignalType, const State&, const ast::Operator&)> biop;
   Signal<void(SignalType, const State&, const ast::Break&)> br;
   Signal<void(SignalType, const State&, const ast::callable::Callable&)> call;
   Signal<void(SignalType, const State&, const ast::callable::EntryFunction&)>
@@ -114,7 +114,6 @@ struct Signals {
   Signal<void(SignalType, const State&, const ast::loop::While&)> whi;
   Signal<void(SignalType, const State&, const ast::Return&)> ret;
   Signal<void(SignalType, const State&, const ast::Scope&)> sco;
-  Signal<void(SignalType, const State&, const ast::UnaryOperator&)> unop;
   Signal<void(SignalType, const State&, const ast::Variable&)> var;
 };
 
@@ -154,7 +153,7 @@ struct State {
 };
 
 namespace analyse {
-void analyse(State& state, const ast::BinaryOperator& e);
+void analyse(State& state, const ast::Operator& e);
 void analyse(State& state, const ast::Break& e);
 void analyse(State& state, const ast::callable::Callable& e);
 void analyse(State& state, const ast::callable::EntryFunction& e);
@@ -170,11 +169,10 @@ void analyse(State& state, const ast::loop::For& e);
 void analyse(State& state, const ast::loop::While& e);
 void analyse(State& state, const ast::Return& e);
 void analyse(State& state, const ast::Scope& e);
-void analyse(State& state, const ast::UnaryOperator& e);
 void analyse(State& state, const ast::Variable& e);
 void analyse(State& state, const ast::ValueProducer& e);
 
-void analyse(State& state, const ast::BinaryOperator& e) {
+void analyse(State& state, const ast::Operator& e) {
   {
     Message m(e.token, state.file);
     m << "At the operator '" << e.token.token << "' defined here:";
@@ -365,7 +363,7 @@ void analyse(State& state, const ast::Scope& e) {
 
   state.signal->sco.emit(SignalType::START, state, e);
   for(const auto& n : e.nodes) {
-    n.match([&state](const BinaryOperator& e) { analyse(state, e); },
+    n.match([&state](const Operator& e) { analyse(state, e); },
             [&state](const Break& e) { analyse(state, e); },
             [&state](const callable::Callable& e) { analyse(state, e); },
             [&state](const Define& e) { analyse(state, e); },
@@ -382,23 +380,9 @@ void analyse(State& state, const ast::Scope& e) {
               State inner(state, e);
               analyse(inner, e);
             },
-            [&state](const UnaryOperator& e) { analyse(state, e); },
             [&state](const Variable& e) { analyse(state, e); });
   }
   state.signal->sco.emit(SignalType::END, state, e);
-}
-void analyse(State& state, const ast::UnaryOperator& e) {
-  {
-    Message m(e.token, state.file);
-    m << "At the operator '" << e.token.token << "' defined here:";
-    state.current_message->push_back(std::move(m));
-  }
-  state.signal->unop.emit(SignalType::START, state, e);
-  if(e.operand) {
-    analyse(state, *e.operand);
-  }
-  state.signal->unop.emit(SignalType::END, state, e);
-  state.current_message->pop_back();
 }
 void analyse(State& state, const ast::Variable& e) {
   state.signal->var.emit(SignalType::START, state, e);
@@ -408,13 +392,12 @@ void analyse(State& state, const ast::ValueProducer& e) {
   using namespace ast;
 
   e.value.match(
-      [&state](const BinaryOperator& e) { analyse(state, e); },
+      [&state](const Operator& e) { analyse(state, e); },
       [&state](const callable::Callable& e) { analyse(state, e); },
       [&state](const Literal<Literals::BOOL>& e) { analyse(state, e); },
       [&state](const Literal<Literals::DOUBLE>& e) { analyse(state, e); },
       [&state](const Literal<Literals::INT>& e) { analyse(state, e); },
       [&state](const Literal<Literals::STRING>& e) { analyse(state, e); },
-      [&state](const UnaryOperator& e) { analyse(state, e); },
       [&state](const Variable& e) { analyse(state, e); });
 }
 }
@@ -431,7 +414,7 @@ std::reference_wrapper<const Token> node_to_token(const ast::Scope::Node& n) {
   Token t;
   std::reference_wrapper<const Token> ret = t;
 
-  n.match([&ret](const BinaryOperator& n) { ret = n.token; },             //
+  n.match([&ret](const Operator& n) { ret = n.token; },                   //
           [&ret](const Break& n) { ret = n.token; },                      //
           [&ret](const Callable& n) { ret = n.token; },                   //
           [&ret](const Define& n) { ret = n.token; },                     //
@@ -444,7 +427,6 @@ std::reference_wrapper<const Token> node_to_token(const ast::Scope::Node& n) {
           [&ret](const Literal<Literals::STRING>& n) { ret = n.token; },  //
           [&ret](const Return& n) { ret = n.token; },                     //
           [&ret](const Scope& n) { ret = n.token; },                      //
-          [&ret](const UnaryOperator& n) { ret = n.token; },              //
           [&ret](const While& n) { ret = n.token; },                      //
           [&ret](const Variable& n) { ret = n.token; });
 
@@ -647,10 +629,13 @@ void no_double_def_function(Signals& sigs) {
     }
   });
 }
-void bi_op_operands(Signals& sigs) {
+void op_operands(Signals& sigs) {
   sigs.biop.connect([](SignalType t, const State& s, const auto& biop) {
     if(t == SignalType::END) {
-      if(!biop.left_operand) {
+      if(biop.operation != ast::Operation::NOT &&
+         biop.operation != ast::Operation::PRINT &&
+         biop.operation != ast::Operation::TYPEOF &&
+         biop.operation != ast::Operation::NEGATIVE && !biop.left_operand) {
         auto stack = *s.current_message;
         Message m(biop.token, s.file);
         m << "Missing left operand '" << biop.token.token << "'";
@@ -667,23 +652,10 @@ void bi_op_operands(Signals& sigs) {
     }
   });
 }
-void un_op_operands(Signals& sigs) {
-  sigs.unop.connect([](SignalType t, const State& s, const auto& unop) {
-    if(t == SignalType::END) {
-      if(!unop.operand) {
-        auto stack = *s.current_message;
-        Message m(unop.token, s.file);
-        m << "Missing operand '" << unop.token.token << "'";
-        stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
-      }
-    }
-  });
-}
-void bi_op_operator(Signals& sigs) {
+void op_operator(Signals& sigs) {
   sigs.biop.connect([](SignalType t, const State& s, const auto& biop) {
     if(t == SignalType::END) {
-      if(biop.operation == ast::BinaryOperation::NONE) {
+      if(biop.operation == ast::Operation::NONE) {
         auto stack = *s.current_message;
         Message m(biop.token, s.file);
         m << "Missing operator '" << biop.token.token << "'";
@@ -693,20 +665,7 @@ void bi_op_operator(Signals& sigs) {
     }
   });
 }
-void un_op_operator(Signals& sigs) {
-  sigs.unop.connect([](SignalType t, const State& s, const auto& unop) {
-    if(t == SignalType::END) {
-      if(unop.operation == ast::UnaryOperation::NONE) {
-        auto stack = *s.current_message;
-        Message m(unop.token, s.file);
-        m << "Missing operator '" << unop.token.token << "'";
-        stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
-      }
-    }
-  });
-}
-void bi_op_assign_var(Signals& sigs) {
+void op_assign_var(Signals& sigs) {
   auto mesage = [&](const State& s, const Token& t, const char* const type) {
     auto stack = *s.current_message;
     Message m(t, s.file);
@@ -718,9 +677,9 @@ void bi_op_assign_var(Signals& sigs) {
 
   sigs.biop.connect([&mesage](SignalType t, const State& s, const auto& biop) {
     if(t == SignalType::END) {
-      if(biop.operation == ast::BinaryOperation::ASSIGNMENT) {
+      if(biop.operation == ast::Operation::ASSIGNMENT) {
         biop.left_operand->value.match(
-            [&s, &mesage](const ast::BinaryOperator& e) {
+            [&s, &mesage](const ast::Operator& e) {
               mesage(s, e.token, "operator");
             },
             [&s, &mesage](const ast::callable::Callable& e) {
@@ -737,9 +696,6 @@ void bi_op_assign_var(Signals& sigs) {
             },
             [&s, &mesage](const ast::Literal<ast::Literals::STRING>& e) {
               mesage(s, e.token, "literal");
-            },
-            [&s, &mesage](const ast::UnaryOperator& e) {
-              mesage(s, e.token, "operator");
             },
             [&s](const ast::Variable&) {
               /* good */
@@ -865,11 +821,9 @@ void register_checks(Signals& sigs) {
   variable_available(sigs);
   no_double_def_variable(sigs);
   no_double_def_function(sigs);
-  bi_op_operands(sigs);  // Should not be needed - better safe than sorry
-  un_op_operands(sigs);  // Should not be needed - better safe than sorry
-  bi_op_operator(sigs);  // Should not be needed - better safe than sorry
-  un_op_operator(sigs);  // Should not be needed - better safe than sorry
-  bi_op_assign_var(sigs);
+  op_operands(sigs);  // Should not be needed - better safe than sorry
+  op_operator(sigs);  // Should not be needed - better safe than sorry
+  op_assign_var(sigs);
   function_scope(sigs);  // Should not be needed - better safe than sorry
   main_scope(sigs);      // Should not be needed - better safe than sorry
   if_scope(sigs);        // Should not be needed - better safe than sorry

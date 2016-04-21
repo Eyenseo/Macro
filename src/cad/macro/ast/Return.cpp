@@ -29,8 +29,7 @@ void Return::print_internals(IndentStream& os) const {
   if(output) {
     output->value.match([&os](const callable::Callable& o) { os << o; },
                         [&os](const Variable& o) { os << o; },
-                        [&os](const UnaryOperator& o) { os << o; },
-                        [&os](const BinaryOperator& o) { os << o; },
+                        [&os](const Operator& o) { os << o; },
                         [&os](const Literal<Literals::BOOL>& c) { os << c; },
                         [&os](const Literal<Literals::INT>& c) { os << c; },
                         [&os](const Literal<Literals::DOUBLE>& c) { os << c; },
