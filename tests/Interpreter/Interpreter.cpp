@@ -214,6 +214,11 @@ TEST_CASE("Operator") {
   // TODO if increment is implemented this ought to throw an error
   ret = in.interpret("def main(){return 1 + + + 1;}", Arguments());
   REQUIRE(core::any_cast<int>(ret) == 2);
+
+  ret = in.interpret("def main(){return 1 + - + 1;}", Arguments());
+  REQUIRE(core::any_cast<int>(ret) == 0);
+  ret = in.interpret("def main(){return 1 + + - 1;}", Arguments());
+  REQUIRE(core::any_cast<int>(ret) == 0);
 }
 
 TEST_CASE("If") {
@@ -270,8 +275,8 @@ TEST_CASE("Print") {
     REQUIRE(ss.str() == "1");
   }
   SECTION("String, Integer, Double, Bool via Operator") {
-    auto ret = in.interpret("def main(){print (\"Herbert\" + 1 + 0.42 + true);}",
-                            Arguments());
+    auto ret = in.interpret(
+        "def main(){print (\"Herbert\" + 1 + 0.42 + true);}", Arguments());
     REQUIRE(ret.empty());
     REQUIRE(ss.str() == "Herbert10.42true");
   }

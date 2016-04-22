@@ -190,12 +190,14 @@ void assamble_binary(const std::string& file,
 void assamble_operator(const std::string& file,
                        std::vector<ast::Scope::Node>& nodes, size_t& index,
                        ast::Operator& op);
+template <typename FUN>
 void assamble_operators_left_to_right(const std::string& file,
                                       std::vector<ast::Scope::Node>& nodes,
-                                      const ast::Operation operaton);
+                                      FUN fun);
+template <typename FUN>
 void assamble_operators_right_to_left(const std::string& file,
                                       std::vector<ast::Scope::Node>& nodes,
-                                      const ast::Operation operaton);
+                                      FUN fun);
 void assamble_operator(const std::string& file,
                        std::vector<ast::Scope::Node>& nodes);
 core::optional<ast::Operator> parse_unary_operator(const Tokens& tokens,
@@ -1140,16 +1142,16 @@ void assamble_operator(const std::string& file,
   }
 }
 
+template <typename FUN>
 void assamble_operators_left_to_right(const std::string& file,
                                       std::vector<ast::Scope::Node>& nodes,
-                                      const ast::Operation operaton) {
+                                      FUN fun) {
   for(size_t i = 0; i < nodes.size(); ++i) {
     nodes.at(i).match(
-        [&file, &nodes, &i, operaton](ast::Operator& op) {
+        [&file, &nodes, &i, &fun](ast::Operator& op) {
           expect_operator_type(__FILE__, __LINE__, op);
 
-          if(op.operation == operaton && !op.left_operand &&
-             !op.right_operand) {
+          if(fun(op) && !op.left_operand && !op.right_operand) {
             assamble_operator(file, nodes, i, op);
           }
         },
@@ -1170,19 +1172,19 @@ void assamble_operators_left_to_right(const std::string& file,
   }
 }
 
+template <typename FUN>
 void assamble_operators_right_to_left(const std::string& file,
                                       std::vector<ast::Scope::Node>& nodes,
-                                      const ast::Operation operaton) {
+                                      FUN fun) {
   auto i = nodes.size();
   if(i > 0)
     do {
       --i;
       nodes.at(i).match(
-          [&file, &nodes, &i, operaton](ast::Operator& op) {
+          [&file, &nodes, &i, &fun](ast::Operator& op) {
             expect_operator_type(__FILE__, __LINE__, op);
 
-            if(op.operation == operaton && !op.left_operand &&
-               !op.right_operand) {
+            if(fun(op) && !op.left_operand && !op.right_operand) {
               assamble_operator(file, nodes, i, op);
             }
           },
@@ -1205,28 +1207,50 @@ void assamble_operators_right_to_left(const std::string& file,
 
 void assamble_operator(const std::string& file,
                        std::vector<ast::Scope::Node>& nodes) {
-  assamble_operators_right_to_left(file, nodes, ast::Operation::POSITIVE);
-  assamble_operators_right_to_left(file, nodes, ast::Operation::NEGATIVE);
-  assamble_operators_right_to_left(file, nodes, ast::Operation::NOT);
-  assamble_operators_right_to_left(file, nodes, ast::Operation::TYPEOF);
+  assamble_operators_right_to_left(file, nodes, [](const ast::Operator& op) {
+    return op.operation == ast::Operation::NEGATIVE ||
+           op.operation == ast::Operation::POSITIVE;
+  });
+  assamble_operators_right_to_left(file, nodes, [](const ast::Operator& op) {
+    return op.operation == ast::Operation::NOT;
+  });
+  assamble_operators_right_to_left(file, nodes, [](const ast::Operator& op) {
+    return op.operation == ast::Operation::TYPEOF;
+  });
 
-  assamble_operators_left_to_right(file, nodes, ast::Operation::DIVIDE);
-  assamble_operators_left_to_right(file, nodes, ast::Operation::MULTIPLY);
-  assamble_operators_left_to_right(file, nodes, ast::Operation::MODULO);
-  assamble_operators_left_to_right(file, nodes, ast::Operation::ADD);
-  assamble_operators_left_to_right(file, nodes, ast::Operation::SUBTRACT);
+  assamble_operators_left_to_right(file, nodes, [](const ast::Operator& op) {
+    return op.operation == ast::Operation::DIVIDE ||
+           op.operation == ast::Operation::MULTIPLY ||
+           op.operation == ast::Operation::MODULO;
+  });
+  assamble_operators_left_to_right(file, nodes, [](const ast::Operator& op) {
+    return op.operation == ast::Operation::ADD ||
+           op.operation == ast::Operation::SUBTRACT;
+  });
 
-  assamble_operators_left_to_right(file, nodes, ast::Operation::SMALLER);
-  assamble_operators_left_to_right(file, nodes, ast::Operation::SMALLER_EQUAL);
-  assamble_operators_left_to_right(file, nodes, ast::Operation::GREATER);
-  assamble_operators_left_to_right(file, nodes, ast::Operation::GREATER_EQUAL);
-  assamble_operators_left_to_right(file, nodes, ast::Operation::EQUAL);
-  assamble_operators_left_to_right(file, nodes, ast::Operation::NOT_EQUAL);
-  assamble_operators_left_to_right(file, nodes, ast::Operation::AND);
-  assamble_operators_left_to_right(file, nodes, ast::Operation::OR);
+  assamble_operators_left_to_right(file, nodes, [](const ast::Operator& op) {
+    return op.operation == ast::Operation::SMALLER ||
+           op.operation == ast::Operation::SMALLER_EQUAL ||
+           op.operation == ast::Operation::GREATER ||
+           op.operation == ast::Operation::GREATER_EQUAL;
+  });
+  assamble_operators_left_to_right(file, nodes, [](const ast::Operator& op) {
+    return op.operation == ast::Operation::EQUAL ||
+           op.operation == ast::Operation::NOT_EQUAL;
+  });
+  assamble_operators_left_to_right(file, nodes, [](const ast::Operator& op) {
+    return op.operation == ast::Operation::AND;
+  });
+  assamble_operators_left_to_right(file, nodes, [](const ast::Operator& op) {
+    return op.operation == ast::Operation::OR;
+  });
 
-  assamble_operators_right_to_left(file, nodes, ast::Operation::PRINT);
-  assamble_operators_right_to_left(file, nodes, ast::Operation::ASSIGNMENT);
+  assamble_operators_right_to_left(file, nodes, [](const ast::Operator& op) {
+    return op.operation == ast::Operation::PRINT;
+  });
+  assamble_operators_right_to_left(file, nodes, [](const ast::Operator& op) {
+    return op.operation == ast::Operation::ASSIGNMENT;
+  });
 
   if(nodes.size() > 1) {
     throw_unexprected_token(node_to_token(nodes.at(1)), file);
