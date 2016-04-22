@@ -190,9 +190,12 @@ void assamble_binary(const std::string& file,
 void assamble_operator(const std::string& file,
                        std::vector<ast::Scope::Node>& nodes, size_t& index,
                        ast::Operator& op);
-void assamble_operators(const std::string& file,
-                        std::vector<ast::Scope::Node>& nodes,
-                        const ast::Operation operaton);
+void assamble_operators_left_to_right(const std::string& file,
+                                      std::vector<ast::Scope::Node>& nodes,
+                                      const ast::Operation operaton);
+void assamble_operators_right_to_left(const std::string& file,
+                                      std::vector<ast::Scope::Node>& nodes,
+                                      const ast::Operation operaton);
 void assamble_operator(const std::string& file,
                        std::vector<ast::Scope::Node>& nodes);
 core::optional<ast::Operator> parse_unary_operator(const Tokens& tokens,
@@ -623,7 +626,9 @@ parse_callable_parameter(const Tokens& tokens, size_t& token) {
     expect_named_parameter(tokens, tmp);
     std::pair<ast::Variable, ast::ValueProducer> ret;
 
-    if(auto exe = parse_callable(tokens, tmp)) {
+    if(auto con = parse_condition(tokens, tmp)) {
+      ret = std::make_pair(std::move(*fun_var), std::move(*con));
+    } else if(auto exe = parse_callable(tokens, tmp)) {
       ret = std::make_pair(std::move(*fun_var), std::move(*exe));
     } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
       ret = std::make_pair(std::move(*fun_var), std::move(*lit_bool));
@@ -635,8 +640,6 @@ parse_callable_parameter(const Tokens& tokens, size_t& token) {
       ret = std::make_pair(std::move(*fun_var), std::move(*lit_string));
     } else if(auto var = parse_variable(tokens, tmp)) {
       ret = std::make_pair(std::move(*fun_var), std::move(*var));
-    } else if(auto con = parse_condition(tokens, tmp)) {
-      ret = std::make_pair(std::move(*fun_var), std::move(*con));
     } else {
       UserSourceExc e;
       add_exception_info(tokens, tmp, e, [&] {
@@ -719,11 +722,11 @@ bool parse_scope_internals(const Tokens& tokens, size_t& token,
   } else if(auto ret = parse_return(tokens, token)) {
     nodes.push_back(std::move(*ret));
     expect_token(tokens, token, ";");
-  } else if(auto call = parse_callable(tokens, token)) {
-    nodes.push_back(std::move(*call));
-    expect_token(tokens, token, ";");
   } else if(auto condition = parse_condition(tokens, token)) {
     nodes.push_back(value_to_node(*condition));
+    expect_token(tokens, token, ";");
+  } else if(auto call = parse_callable(tokens, token)) {
+    nodes.push_back(std::move(*call));
     expect_token(tokens, token, ";");
   } else if(auto lit_bool = parse_literal_bool(tokens, token)) {
     nodes.push_back(std::move(*lit_bool));
@@ -803,10 +806,10 @@ core::optional<ast::Return> parse_return(const Tokens& tokens, size_t& token) {
     if(read_token(tokens, tmp, "return")) {
       ast::Return ret(tokens.at(token));
 
-      if(auto exe = parse_callable(tokens, tmp)) {
-        ret.output = std::make_unique<ast::ValueProducer>(std::move(*exe));
-      } else if(auto con = parse_condition(tokens, tmp)) {
+      if(auto con = parse_condition(tokens, tmp)) {
         ret.output = std::make_unique<ast::ValueProducer>(std::move(*con));
+      } else if(auto exe = parse_callable(tokens, tmp)) {
+        ret.output = std::make_unique<ast::ValueProducer>(std::move(*exe));
       } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
         ret.output = std::make_unique<ast::ValueProducer>(std::move(*lit_bool));
       } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
@@ -979,19 +982,7 @@ void parse_operants(const Tokens& tokens, size_t& token,
   auto tmp = token;
 
   while(tmp < tokens.size()) {
-    if(auto exe = parse_callable(tokens, tmp)) {
-      workspace.push_back(std::move(*exe));
-    } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
-      workspace.push_back(std::move(*lit_bool));
-    } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
-      workspace.push_back(std::move(*lit_int));
-    } else if(auto lit_double = parse_literal_double(tokens, tmp)) {
-      workspace.push_back(std::move(*lit_double));
-    } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
-      workspace.push_back(std::move(*lit_string));
-    } else if(auto op = parse_operator_internals(tokens, tmp)) {
-      workspace.push_back(std::move(*op));
-    } else if(read_token(tokens, tmp, "(")) {
+    if(read_token(tokens, tmp, "(")) {
       if(auto con = parse_condition(tokens, tmp)) {
         workspace.push_back(value_to_node(*con));
         expect_token(tokens, tmp, ")");
@@ -1001,6 +992,18 @@ void parse_operants(const Tokens& tokens, size_t& token,
                            [&] { e << "Expected an expression."; });
         throw e;
       }
+    } else if(auto op = parse_operator_internals(tokens, tmp)) {
+      workspace.push_back(std::move(*op));
+    } else if(auto exe = parse_callable(tokens, tmp)) {
+      workspace.push_back(std::move(*exe));
+    } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
+      workspace.push_back(std::move(*lit_bool));
+    } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
+      workspace.push_back(std::move(*lit_int));
+    } else if(auto lit_double = parse_literal_double(tokens, tmp)) {
+      workspace.push_back(std::move(*lit_double));
+    } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
+      workspace.push_back(std::move(*lit_string));
     } else if(auto var = parse_variable(tokens, tmp)) {
       workspace.push_back(std::move(*var));
     } else {
@@ -1046,28 +1049,21 @@ bool is_value(const ast::Scope::Node& node) {
 
   bool ret = false;
 
-  node.match(
-      [&ret](const Operator& op) {
-        if(op.right_operand || op.left_operand) {
-          ret = true;
-        } else {
-          ret = false;
-        }
-      },
-      [&ret](const Break&) { ret = false; },
-      [&ret](const Variable&) { ret = true; },
-      [&ret](const Define&) { ret = false; },
-      [&ret](const callable::Callable&) { ret = true; },
-      [&ret](const Return&) { ret = false; },
-      [&ret](const Scope&) { ret = false; },
-      [&ret](const logic::If&) { ret = false; },
-      [&ret](const loop::While&) { ret = false; },
-      [&ret](const loop::DoWhile&) { ret = false; },
-      [&ret](const loop::For&) { ret = false; },
-      [&ret](const Literal<Literals::BOOL>&) { ret = true; },
-      [&ret](const Literal<Literals::INT>&) { ret = true; },
-      [&ret](const Literal<Literals::DOUBLE>&) { ret = true; },
-      [&ret](const Literal<Literals::STRING>&) { ret = true; });
+  node.match([&ret](const Operator&) { ret = false; },
+             [&ret](const Break&) { ret = false; },
+             [&ret](const Variable&) { ret = true; },
+             [&ret](const Define&) { ret = false; },
+             [&ret](const callable::Callable&) { ret = true; },
+             [&ret](const Return&) { ret = false; },
+             [&ret](const Scope&) { ret = false; },
+             [&ret](const logic::If&) { ret = false; },
+             [&ret](const loop::While&) { ret = false; },
+             [&ret](const loop::DoWhile&) { ret = false; },
+             [&ret](const loop::For&) { ret = false; },
+             [&ret](const Literal<Literals::BOOL>&) { ret = true; },
+             [&ret](const Literal<Literals::INT>&) { ret = true; },
+             [&ret](const Literal<Literals::DOUBLE>&) { ret = true; },
+             [&ret](const Literal<Literals::STRING>&) { ret = true; });
 
   return ret;
 }
@@ -1085,15 +1081,21 @@ bool assamble_unary(const std::string& file,
     throw e;
   }
 
+  if(op.operation == ast::Operation::NEGATIVE && previous != nodes.end() &&
+     is_value(*previous)) {
+    op.operation = ast::Operation::SUBTRACT;
+    return true;
+  } else if(op.operation == ast::Operation::POSITIVE &&
+            previous != nodes.end() && is_value(*previous)) {
+    op.operation = ast::Operation::ADD;
+    return true;
+  }
+
   if(op.operation == ast::Operation::NOT ||
      op.operation == ast::Operation::PRINT ||
      op.operation == ast::Operation::TYPEOF ||
-     op.operation == ast::Operation::NEGATIVE) {
-    if(op.operation == ast::Operation::NEGATIVE && previous != nodes.end() &&
-       is_value(*previous)) {
-      op.operation = ast::Operation::SUBTRACT;
-      return true;
-    }
+     op.operation == ast::Operation::NEGATIVE ||
+     op.operation == ast::Operation::POSITIVE) {
     op.right_operand =
         std::make_unique<ast::ValueProducer>(node_to_value(*next));
     nodes.erase(next);
@@ -1138,9 +1140,9 @@ void assamble_operator(const std::string& file,
   }
 }
 
-void assamble_operators(const std::string& file,
-                        std::vector<ast::Scope::Node>& nodes,
-                        const ast::Operation operaton) {
+void assamble_operators_left_to_right(const std::string& file,
+                                      std::vector<ast::Scope::Node>& nodes,
+                                      const ast::Operation operaton) {
   for(size_t i = 0; i < nodes.size(); ++i) {
     nodes.at(i).match(
         [&file, &nodes, &i, operaton](ast::Operator& op) {
@@ -1168,29 +1170,63 @@ void assamble_operators(const std::string& file,
   }
 }
 
+void assamble_operators_right_to_left(const std::string& file,
+                                      std::vector<ast::Scope::Node>& nodes,
+                                      const ast::Operation operaton) {
+  auto i = nodes.size();
+  if(i > 0)
+    do {
+      --i;
+      nodes.at(i).match(
+          [&file, &nodes, &i, operaton](ast::Operator& op) {
+            expect_operator_type(__FILE__, __LINE__, op);
+
+            if(op.operation == operaton && !op.left_operand &&
+               !op.right_operand) {
+              assamble_operator(file, nodes, i, op);
+            }
+          },
+          [](ast::Break&) {},                            //
+          [](ast::Variable&) {},                         //
+          [](ast::Define&) {},                           //
+          [](ast::callable::Callable&) {},               //
+          [](ast::Return&) {},                           //
+          [](ast::Scope&) {},                            //
+          [](ast::logic::If&) {},                        //
+          [](ast::loop::While&) {},                      //
+          [](ast::loop::DoWhile&) {},                    //
+          [](ast::loop::For&) {},                        //
+          [](ast::Literal<ast::Literals::BOOL>&) {},     //
+          [](ast::Literal<ast::Literals::INT>&) {},      //
+          [](ast::Literal<ast::Literals::DOUBLE>&) {},   //
+          [](ast::Literal<ast::Literals::STRING>&) {});  //
+    } while(i != 0);
+}
+
 void assamble_operator(const std::string& file,
                        std::vector<ast::Scope::Node>& nodes) {
-  assamble_operators(file, nodes, ast::Operation::NEGATIVE);
-  assamble_operators(file, nodes, ast::Operation::NOT);
-  assamble_operators(file, nodes, ast::Operation::TYPEOF);
+  assamble_operators_right_to_left(file, nodes, ast::Operation::POSITIVE);
+  assamble_operators_right_to_left(file, nodes, ast::Operation::NEGATIVE);
+  assamble_operators_right_to_left(file, nodes, ast::Operation::NOT);
+  assamble_operators_right_to_left(file, nodes, ast::Operation::TYPEOF);
 
-  assamble_operators(file, nodes, ast::Operation::DIVIDE);
-  assamble_operators(file, nodes, ast::Operation::MULTIPLY);
-  assamble_operators(file, nodes, ast::Operation::MODULO);
-  assamble_operators(file, nodes, ast::Operation::ADD);
-  assamble_operators(file, nodes, ast::Operation::SUBTRACT);
+  assamble_operators_left_to_right(file, nodes, ast::Operation::DIVIDE);
+  assamble_operators_left_to_right(file, nodes, ast::Operation::MULTIPLY);
+  assamble_operators_left_to_right(file, nodes, ast::Operation::MODULO);
+  assamble_operators_left_to_right(file, nodes, ast::Operation::ADD);
+  assamble_operators_left_to_right(file, nodes, ast::Operation::SUBTRACT);
 
-  assamble_operators(file, nodes, ast::Operation::SMALLER);
-  assamble_operators(file, nodes, ast::Operation::SMALLER_EQUAL);
-  assamble_operators(file, nodes, ast::Operation::GREATER);
-  assamble_operators(file, nodes, ast::Operation::GREATER_EQUAL);
-  assamble_operators(file, nodes, ast::Operation::EQUAL);
-  assamble_operators(file, nodes, ast::Operation::NOT_EQUAL);
-  assamble_operators(file, nodes, ast::Operation::AND);
-  assamble_operators(file, nodes, ast::Operation::OR);
+  assamble_operators_left_to_right(file, nodes, ast::Operation::SMALLER);
+  assamble_operators_left_to_right(file, nodes, ast::Operation::SMALLER_EQUAL);
+  assamble_operators_left_to_right(file, nodes, ast::Operation::GREATER);
+  assamble_operators_left_to_right(file, nodes, ast::Operation::GREATER_EQUAL);
+  assamble_operators_left_to_right(file, nodes, ast::Operation::EQUAL);
+  assamble_operators_left_to_right(file, nodes, ast::Operation::NOT_EQUAL);
+  assamble_operators_left_to_right(file, nodes, ast::Operation::AND);
+  assamble_operators_left_to_right(file, nodes, ast::Operation::OR);
 
-  assamble_operators(file, nodes, ast::Operation::ASSIGNMENT);
-  assamble_operators(file, nodes, ast::Operation::PRINT);
+  assamble_operators_right_to_left(file, nodes, ast::Operation::PRINT);
+  assamble_operators_right_to_left(file, nodes, ast::Operation::ASSIGNMENT);
 
   if(nodes.size() > 1) {
     throw_unexprected_token(node_to_token(nodes.at(1)), file);
@@ -1210,6 +1246,8 @@ core::optional<ast::Operator> parse_unary_operator(const Tokens& tokens,
     op = ast::Operation::PRINT;
   } else if(read_token(tokens, tmp, "-")) {
     op = ast::Operation::NEGATIVE;
+  } else if(read_token(tokens, tmp, "+")) {
+    op = ast::Operation::POSITIVE;
   }
 
   if(op != ast::Operation::NONE) {
@@ -1232,7 +1270,7 @@ core::optional<ast::Operator> parse_binary_operator(const Tokens& tokens,
   } else if(read_token(tokens, tmp, "%")) {
     op = ast::Operation::MODULO;
   } else if(read_token(tokens, tmp, "+")) {
-    op = ast::Operation::ADD;
+    op = ast::Operation::ADD;  // This is not reachable - see unary
   } else if(read_token(tokens, tmp, "-")) {
     op = ast::Operation::SUBTRACT;  // This is not reachable - see unary
   } else if(read_token(tokens, tmp, "<")) {
@@ -1319,19 +1357,7 @@ core::optional<ast::ValueProducer> parse_condition(const Tokens& tokens,
   auto tmp = token;
 
   while(tmp < tokens.size()) {
-    if(auto exe = parse_callable(tokens, tmp)) {
-      conditions.push_back(std::move(*exe));
-    } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
-      conditions.push_back(std::move(*lit_bool));
-    } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
-      conditions.push_back(std::move(*lit_int));
-    } else if(auto lit_double = parse_literal_double(tokens, tmp)) {
-      conditions.push_back(std::move(*lit_double));
-    } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
-      conditions.push_back(std::move(*lit_string));
-    } else if(auto op = parse_operator(tokens, tmp, conditions)) {
-      conditions.push_back(std::move(*op));
-    } else if(read_token(tokens, tmp, "(")) {
+    if(read_token(tokens, tmp, "(")) {
       if(auto condition = parse_condition(tokens, tmp)) {
         conditions.push_back(value_to_node(*condition));
         expect_token(tokens, tmp, ")");
@@ -1341,6 +1367,18 @@ core::optional<ast::ValueProducer> parse_condition(const Tokens& tokens,
                            [&] { e << "Expected an expression."; });
         throw e;
       }
+    } else if(auto op = parse_operator(tokens, tmp, conditions)) {
+      conditions.push_back(std::move(*op));
+    } else if(auto exe = parse_callable(tokens, tmp)) {
+      conditions.push_back(std::move(*exe));
+    } else if(auto lit_bool = parse_literal_bool(tokens, tmp)) {
+      conditions.push_back(std::move(*lit_bool));
+    } else if(auto lit_int = parse_literal_int(tokens, tmp)) {
+      conditions.push_back(std::move(*lit_int));
+    } else if(auto lit_double = parse_literal_double(tokens, tmp)) {
+      conditions.push_back(std::move(*lit_double));
+    } else if(auto lit_string = parse_literal_string(tokens, tmp)) {
+      conditions.push_back(std::move(*lit_string));
     } else if(auto var = parse_variable(tokens, tmp)) {
       conditions.push_back(std::move(*var));
     } else {

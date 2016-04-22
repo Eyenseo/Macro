@@ -100,6 +100,7 @@ protected:
   ::core::any interpret_typeof(State& state, const ast::Operator& op) const;
   ::core::any interpret_print(State& state, const ast::Operator& op) const;
   ::core::any interpret_negative(State& state, const ast::Operator& op) const;
+  ::core::any interpret_positive(State& state, const ast::Operator& op) const;
 
   ::core::any interpret(State& state, const ast::Operator& op) const;
 

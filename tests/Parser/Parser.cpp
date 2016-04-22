@@ -839,7 +839,7 @@ TEST_CASE("Variable define and assign") {
     REQUIRE_THROWS_AS(parse("var foo = foo  1;"), ExceptionBase<UserE>);
   }
   SECTION("Missing left operand") {
-    REQUIRE_THROWS_AS(parse("var foo =  + 1;"), ExceptionBase<UserE>);
+    REQUIRE_NOTHROW(parse("var foo =  + 1;"));  // This is valid!
   }
   SECTION("Missing both operands") {
     REQUIRE_THROWS_AS(parse("var foo =  + ;"), ExceptionBase<UserE>);
@@ -911,7 +911,7 @@ TEST_CASE("\"free\" operators") {
       REQUIRE_THROWS_AS(parse("var foo; foo = foo  1;"), ExceptionBase<UserE>);
     }
     SECTION("Missing left operand") {
-      REQUIRE_THROWS_AS(parse("var foo; foo =  + 1;"), ExceptionBase<UserE>);
+      REQUIRE_NOTHROW(parse("var foo; foo =  + 1;"));  // This is valid!
     }
     SECTION("Missing both operands") {
       REQUIRE_THROWS_AS(parse("var foo; foo =  + ;"), ExceptionBase<UserE>);
@@ -1088,6 +1088,190 @@ TEST_CASE("Number Literals") {
 
       REQUIRE(ast == expected);
     }
+  }
+  SECTION("Double") {
+    SECTION("positive") {
+      auto ast = parse("def main() {return .1;}");
+      auto line1 = std::make_shared<std::string>("def main() {return .1;}");
+
+      Scope expected({0, 0, ""});
+      {
+        Define def({1, 1, "def", line1});
+        EntryFunction fun({1, 5, "main", line1});
+        fun.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        Return ret({1, 13, "return", line1});
+        Literal<Literals::DOUBLE> one({1, 20, ".1", line1});
+        one.data = .1;
+        ret.output = std::make_unique<ValueProducer>(std::move(one));
+        fun.scope->nodes.push_back(std::move(ret));
+        def.definition = std::move(fun);
+        expected.nodes.push_back(std::move(def));
+      }
+
+      REQUIRE(ast == expected);
+    }
+    SECTION("negative") {
+      auto ast = parse("def main() {return -.1;}");
+      auto line1 = std::make_shared<std::string>("def main() {return -.1;}");
+
+      Scope expected({0, 0, ""});
+      {
+        Define def({1, 1, "def", line1});
+        EntryFunction fun({1, 5, "main", line1});
+        fun.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        Return ret({1, 13, "return", line1});
+        Operator op({1, 20, "-", line1});
+        Literal<Literals::DOUBLE> one({1, 21, ".1", line1});
+        one.data = .1;
+        op.right_operand = std::make_unique<ValueProducer>(std::move(one));
+        op.operation = Operation::NEGATIVE;
+        ret.output = std::make_unique<ValueProducer>(std::move(op));
+        fun.scope->nodes.push_back(std::move(ret));
+        def.definition = std::move(fun);
+        expected.nodes.push_back(std::move(def));
+      }
+
+      REQUIRE(ast == expected);
+    }
+    SECTION("negative operator") {
+      auto ast = parse("def main() {return .1 - .1;}");
+      auto line1 =
+          std::make_shared<std::string>("def main() {return .1 - .1;}");
+
+      Scope expected({0, 0, ""});
+      {
+        Define def({1, 1, "def", line1});
+        EntryFunction fun({1, 5, "main", line1});
+        fun.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        Return ret({1, 13, "return", line1});
+        Operator op({1, 23, "-", line1});
+        Literal<Literals::DOUBLE> one1({1, 20, ".1", line1});
+        Literal<Literals::DOUBLE> one2({1, 25, ".1", line1});
+        one1.data = .1;
+        one2.data = .1;
+        op.left_operand = std::make_unique<ValueProducer>(std::move(one1));
+        op.right_operand = std::make_unique<ValueProducer>(std::move(one2));
+        op.operation = Operation::SUBTRACT;
+        ret.output = std::make_unique<ValueProducer>(std::move(op));
+        fun.scope->nodes.push_back(std::move(ret));
+        def.definition = std::move(fun);
+        expected.nodes.push_back(std::move(def));
+      }
+
+      REQUIRE(ast == expected);
+    }
+    SECTION("negative operator nospace") {
+      auto ast = parse("def main() {return .1-.1;}");
+      auto line1 = std::make_shared<std::string>("def main() {return .1-.1;}");
+
+      Scope expected({0, 0, ""});
+      {
+        Define def({1, 1, "def", line1});
+        EntryFunction fun({1, 5, "main", line1});
+        fun.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        Return ret({1, 13, "return", line1});
+        Operator op({1, 22, "-", line1});
+        Literal<Literals::DOUBLE> one1({1, 20, ".1", line1});
+        Literal<Literals::DOUBLE> one2({1, 23, ".1", line1});
+        one1.data = .1;
+        one2.data = .1;
+        op.left_operand = std::make_unique<ValueProducer>(std::move(one1));
+        op.right_operand = std::make_unique<ValueProducer>(std::move(one2));
+        op.operation = Operation::SUBTRACT;
+        ret.output = std::make_unique<ValueProducer>(std::move(op));
+        fun.scope->nodes.push_back(std::move(ret));
+        def.definition = std::move(fun);
+        expected.nodes.push_back(std::move(def));
+      }
+
+      REQUIRE(ast == expected);
+    }
+    SECTION("negativ leading literal") {
+      auto ast = parse("def main() {.1; -.1;}");
+      auto line1 = std::make_shared<std::string>("def main() {.1; -.1;}");
+
+      Scope expected({0, 0, ""});
+      {
+        Define def({1, 1, "def", line1});
+        EntryFunction fun({1, 5, "main", line1});
+        fun.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        Literal<Literals::DOUBLE> one1({1, 13, ".1", line1});
+        Literal<Literals::DOUBLE> one2({1, 18, ".1", line1});
+        Operator op({1, 17, "-", line1});
+        one1.data = .1;
+        one2.data = .1;
+        op.right_operand = std::make_unique<ValueProducer>(std::move(one2));
+        op.operation = Operation::NEGATIVE;
+        fun.scope->nodes.push_back(std::move(one1));
+        fun.scope->nodes.push_back(std::move(op));
+        def.definition = std::move(fun);
+        expected.nodes.push_back(std::move(def));
+      }
+
+      REQUIRE(ast == expected);
+    }
+  }
+  // TODO this section should be in a test case for operators
+  SECTION("Operator substracht one negative") {
+    auto ast = parse("def main() {return 1--1;}");
+    auto line1 = std::make_shared<std::string>("def main() {return 1--1;}");
+
+    Scope expected({0, 0, ""});
+    {
+      Define def({1, 1, "def", line1});
+      EntryFunction fun({1, 5, "main", line1});
+      fun.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+      Return ret({1, 13, "return", line1});
+      Operator op1({1, 21, "-", line1});
+      Operator op2({1, 22, "-", line1});
+      Literal<Literals::INT> one1({1, 20, "1", line1});
+      Literal<Literals::INT> one2({1, 23, "1", line1});
+      one1.data = 1;
+      one2.data = 1;
+      op2.right_operand = std::make_unique<ValueProducer>(std::move(one2));
+      op2.operation = Operation::NEGATIVE;
+      op1.left_operand = std::make_unique<ValueProducer>(std::move(one1));
+      op1.right_operand = std::make_unique<ValueProducer>(std::move(op2));
+      op1.operation = Operation::SUBTRACT;
+      ret.output = std::make_unique<ValueProducer>(std::move(op1));
+      fun.scope->nodes.push_back(std::move(ret));
+      def.definition = std::move(fun);
+      expected.nodes.push_back(std::move(def));
+    }
+
+    REQUIRE(ast == expected);
+  }
+  SECTION("Operator substracht two negative") {
+    auto ast = parse("def main() {return 1---1;}");
+    auto line1 = std::make_shared<std::string>("def main() {return 1---1;}");
+
+    Scope expected({0, 0, ""});
+    {
+      Define def({1, 1, "def", line1});
+      EntryFunction fun({1, 5, "main", line1});
+      fun.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+      Return ret({1, 13, "return", line1});
+      Operator op1({1, 21, "-", line1});
+      Operator op2({1, 22, "-", line1});
+      Operator op3({1, 23, "-", line1});
+      Literal<Literals::INT> one1({1, 20, "1", line1});
+      Literal<Literals::INT> one2({1, 24, "1", line1});
+      one1.data = 1;
+      one2.data = 1;
+      op3.right_operand = std::make_unique<ValueProducer>(std::move(one2));
+      op3.operation = Operation::NEGATIVE;
+      op2.right_operand = std::make_unique<ValueProducer>(std::move(op3));
+      op2.operation = Operation::NEGATIVE;
+      op1.left_operand = std::make_unique<ValueProducer>(std::move(one1));
+      op1.right_operand = std::make_unique<ValueProducer>(std::move(op2));
+      op1.operation = Operation::SUBTRACT;
+      ret.output = std::make_unique<ValueProducer>(std::move(op1));
+      fun.scope->nodes.push_back(std::move(ret));
+      def.definition = std::move(fun);
+      expected.nodes.push_back(std::move(def));
+    }
+
+    REQUIRE(ast == expected);
   }
 }
 

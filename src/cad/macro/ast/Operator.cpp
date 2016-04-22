@@ -80,6 +80,8 @@ std::string Operator::operation_to_string() const {
     return "typeof";
   case Operation::NEGATIVE:
     return "negative";
+  case Operation::POSITIVE:
+    return "positive";
   }
   return "This 'can not' happen - you accessed uninitialized memory or "
          "something similar!";

@@ -27,7 +27,8 @@ enum class Operation {
   NOT,
   PRINT,
   TYPEOF,
-  NEGATIVE
+  NEGATIVE,
+  POSITIVE
 };
 class ValueProducer;
 

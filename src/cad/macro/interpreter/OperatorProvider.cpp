@@ -182,6 +182,15 @@ void OperatorProvider::add(const UnaryOperation operati, std::type_index rhs,
       throw e;
     }
     negative_.emplace_back(rhs, std::move(operato));
+    break;
+  case UnaryOperation::POSITIVE:
+    if(exists(positive_, rhs)) {
+      Exc<E, E::OPERATOR_EXISTS> e(__FILE__, __LINE__, "Operator exists");
+      e << "The operator '+' (positive) already exists for the type '"
+        << rhs.name() << "'.";
+      throw e;
+    }
+    positive_.emplace_back(rhs, std::move(operato));
   }
 }
 
@@ -265,6 +274,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     return exists(print_, rhs);
   case UnaryOperation::NEGATIVE:
     return exists(negative_, rhs);
+  case UnaryOperation::POSITIVE:
+    return exists(positive_, rhs);
   }
   assert(false && "Reached by access after free and similar");
 }
@@ -281,6 +292,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     return exists(print_, std::type_index(rhs.type()));
   case UnaryOperation::NEGATIVE:
     return exists(negative_, std::type_index(rhs.type()));
+  case UnaryOperation::POSITIVE:
+    return exists(positive_, std::type_index(rhs.type()));
   }
   assert(false && "Reached by access after free and similar");
 }
@@ -538,6 +551,16 @@ bool OperatorProvider::has(const UnaryOperation op,
     << rhs.type().name() << "'.";
   throw e;
 }
+::core::any OperatorProvider::eval_positive(const ::core::any& rhs) const {
+  auto it = find(positive_, std::type_index(rhs.type()));
+  if(it != positive_.end()) {
+    return it->second(rhs);
+  }
+  Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
+  e << "The operator '+' (positive) is missing for the type '"
+    << rhs.type().name() << "'.";
+  throw e;
+}
 ::core::any OperatorProvider::eval(const UnaryOperation op,
                                    const ::core::any& rhs) const {
   switch(op) {
@@ -551,6 +574,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     return eval_print(rhs);
   case UnaryOperation::NEGATIVE:
     return eval_negative(rhs);
+  case UnaryOperation::POSITIVE:
+    return eval_positive(rhs);
   }
   assert(false && "Reached by access after free and similar");
 }
@@ -588,6 +613,7 @@ OperatorProvider::OperatorProvider(const bool initialize) {
     add<std::string, std::string, BiOp::ADD, BiOp::SMALLER, BiOp::SMALLER_EQUAL,
         BiOp::GREATER, BiOp::GREATER_EQUAL, BiOp::EQUAL, BiOp::NOT_EQUAL>();
 
+    // ADD to string
     add(BiOp::ADD, std::type_index(typeid(std::string)),
         std::type_index(typeid(bool)),
         [](const ::core::any& a, const ::core::any& b) {
@@ -612,10 +638,10 @@ OperatorProvider::OperatorProvider(const bool initialize) {
         });
 
     // UNARY
-    // BOOL & NEGATIVE
-    add<bool, UnOp::BOOL, UnOp::NEGATIVE>();
-    add<int, UnOp::BOOL, UnOp::NEGATIVE>();
-    add<double, UnOp::BOOL, UnOp::NEGATIVE>();
+    add<bool, UnOp::BOOL, UnOp::NEGATIVE, UnOp::POSITIVE>();
+    add<int, UnOp::BOOL, UnOp::NEGATIVE, UnOp::POSITIVE>();
+    add<double, UnOp::BOOL, UnOp::NEGATIVE, UnOp::POSITIVE>();
+    // BOOL
     add(UnOp::BOOL, std::type_index(typeid(std::string)),
         [](const ::core::any& a) {
           return ::core::any_cast<std::string>(a).size() > 0;

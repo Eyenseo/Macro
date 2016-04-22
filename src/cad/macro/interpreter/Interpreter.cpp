@@ -350,6 +350,8 @@ void Interpreter::interpret_none() const {
       return interpret_print(state, op);
     case Operation::NEGATIVE:
       return interpret_negative(state, op);
+    case Operation::POSITIVE:
+      return interpret_positive(state, op);
     }
   } catch(std::exception&) {
     Exc<E, E::TAIL> e;
@@ -388,11 +390,19 @@ void Interpreter::interpret_none() const {
   return res;
 }
 ::core::any Interpreter::interpret_negative(State& state,
-                                          const Operator& op) const {
+                                            const Operator& op) const {
   auto rhs = interpret(state, *op.right_operand);
 
   using UnOp = OperatorProvider::UnaryOperation;
   return operator_provider_->eval(UnOp::NEGATIVE, rhs);
+}
+
+::core::any Interpreter::interpret_positive(State& state,
+                                            const Operator& op) const {
+  auto rhs = interpret(state, *op.right_operand);
+
+  using UnOp = OperatorProvider::UnaryOperation;
+  return operator_provider_->eval(UnOp::POSITIVE, rhs);
 }
 
 //////////////////////////////////////////

@@ -194,6 +194,26 @@ TEST_CASE("Operator") {
 
   ret = in.interpret("def main(){return 4 / 2;}", Arguments());
   REQUIRE(core::any_cast<int>(ret) == 2);
+
+  ret = in.interpret("def main(){return 1 + 4 * 2 - 1;}", Arguments());
+  REQUIRE(core::any_cast<int>(ret) == 8);
+
+  ret = in.interpret("def main(){return 1 + 4 * (2 - 1);}", Arguments());
+  REQUIRE(core::any_cast<int>(ret) == 5);
+
+  ret = in.interpret("def main(){return 1 + 1 + 1;}", Arguments());
+  REQUIRE(core::any_cast<int>(ret) == 3);
+
+  // TODO if increment is implemented this ought to throw an error
+  ret = in.interpret("def main(){return 1---1;}", Arguments());
+  REQUIRE(core::any_cast<int>(ret) == 0);
+  ret = in.interpret("def main(){return 1 - - - 1;}", Arguments());
+  REQUIRE(core::any_cast<int>(ret) == 0);
+  ret = in.interpret("def main(){return 1+++1;}", Arguments());
+  REQUIRE(core::any_cast<int>(ret) == 2);
+  // TODO if increment is implemented this ought to throw an error
+  ret = in.interpret("def main(){return 1 + + + 1;}", Arguments());
+  REQUIRE(core::any_cast<int>(ret) == 2);
 }
 
 TEST_CASE("If") {
@@ -250,7 +270,7 @@ TEST_CASE("Print") {
     REQUIRE(ss.str() == "1");
   }
   SECTION("String, Integer, Double, Bool via Operator") {
-    auto ret = in.interpret("def main(){print \"Herbert\" + 1 + 0.42 + true;}",
+    auto ret = in.interpret("def main(){print (\"Herbert\" + 1 + 0.42 + true);}",
                             Arguments());
     REQUIRE(ret.empty());
     REQUIRE(ss.str() == "Herbert10.42true");

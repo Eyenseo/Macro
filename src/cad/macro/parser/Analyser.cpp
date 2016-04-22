@@ -635,7 +635,8 @@ void op_operands(Signals& sigs) {
       if(biop.operation != ast::Operation::NOT &&
          biop.operation != ast::Operation::PRINT &&
          biop.operation != ast::Operation::TYPEOF &&
-         biop.operation != ast::Operation::NEGATIVE && !biop.left_operand) {
+         biop.operation != ast::Operation::NEGATIVE &&
+         biop.operation != ast::Operation::POSITIVE && !biop.left_operand) {
         auto stack = *s.current_message;
         Message m(biop.token, s.file);
         m << "Missing left operand '" << biop.token.token << "'";
