@@ -700,8 +700,18 @@ bool parse_scope_internals(const Tokens& tokens, size_t& token,
                            std::vector<ast::Scope::Node>& nodes) {
   ast::Scope::Node node;
 
+  auto expect_end = [&tokens, &token]() {
+    try {
+      expect_token(tokens, token, ";");
+    } catch(UserExc&) {
+      UserTailExc e;
+      add_exception_info(tokens, token - 1, e, [&e] { e << "Expected a ';'"; });
+      throw e;
+    }
+  };
+
   if(auto br = parse_break(tokens, token)) {
-    expect_token(tokens, token, ";");
+    expect_end();
     nodes.push_back(std::move(*br));
   } else if(auto def = parse_function_definition(tokens, token)) {
     nodes.push_back(std::move(*def));
@@ -713,35 +723,35 @@ bool parse_scope_internals(const Tokens& tokens, size_t& token,
       }
       nodes.push_back(std::move(*op));
     }
-    expect_token(tokens, token, ";");
+    expect_end();
   } else if(auto iff = parse_if(tokens, token)) {
     nodes.push_back(std::move(*iff));
   } else if(auto whi = parse_while(tokens, token)) {
     nodes.push_back(std::move(*whi));
   } else if(auto dwhi = parse_do_while(tokens, token)) {
     nodes.push_back(std::move(*dwhi));
-    expect_token(tokens, token, ";");
+    expect_end();
   } else if(auto ret = parse_return(tokens, token)) {
     nodes.push_back(std::move(*ret));
-    expect_token(tokens, token, ";");
+    expect_end();
   } else if(auto condition = parse_condition(tokens, token)) {
     nodes.push_back(value_to_node(*condition));
-    expect_token(tokens, token, ";");
+    expect_end();
   } else if(auto call = parse_callable(tokens, token)) {
     nodes.push_back(std::move(*call));
-    expect_token(tokens, token, ";");
+    expect_end();
   } else if(auto lit_bool = parse_literal_bool(tokens, token)) {
     nodes.push_back(std::move(*lit_bool));
-    expect_token(tokens, token, ";");
+    expect_end();
   } else if(auto lit_int = parse_literal_int(tokens, token)) {
     nodes.push_back(std::move(*lit_int));
-    expect_token(tokens, token, ";");
+    expect_end();
   } else if(auto lit_double = parse_literal_double(tokens, token)) {
     nodes.push_back(std::move(*lit_double));
-    expect_token(tokens, token, ";");
+    expect_end();
   } else if(auto lit_string = parse_literal_string(tokens, token)) {
     nodes.push_back(std::move(*lit_string));
-    expect_token(tokens, token, ";");
+    expect_end();
   } else if(auto scope = parse_scope(tokens, token)) {
     nodes.push_back(std::move(*scope));
   } else if(auto var = parse_variable(tokens, token)) {
@@ -749,7 +759,7 @@ bool parse_scope_internals(const Tokens& tokens, size_t& token,
     if(auto op = parse_operator(tokens, token, nodes)) {
       nodes.push_back(std::move(*op));
     }
-    expect_token(tokens, token, ";");
+    expect_end();
   } else {
     return false;
   }
