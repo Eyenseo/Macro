@@ -175,7 +175,7 @@ void analyse(State& state, const ast::ValueProducer& e);
 void analyse(State& state, const ast::Operator& e) {
   {
     Message m(e.token, state.file);
-    m << "At the operator '" << e.token.token << "' defined here:";
+    m << "At the operator '" << e.token.token << "' defined here";
     state.current_message->push_back(std::move(m));
   }
   state.signal->biop.emit(SignalType::START, state, e);
@@ -233,7 +233,7 @@ void analyse(State& state, const ast::Define& e) {
       [&state](const ast::callable::EntryFunction& e) {
         {
           Message m(e.token, state.file);
-          m << "In the 'main' function defined here:";
+          m << "In the 'main' function defined here";
           state.current_message->push_back(std::move(m));
         }
         analyse(state, e);
@@ -242,7 +242,7 @@ void analyse(State& state, const ast::Define& e) {
       [&state](const ast::callable::Function& e) {
         {
           Message m(e.token, state.file);
-          m << "In the '" << e.token.token << "' function defined here:";
+          m << "In the '" << e.token.token << "' function defined here";
           state.current_message->push_back(std::move(m));
         }
         analyse(state, e);
@@ -251,7 +251,7 @@ void analyse(State& state, const ast::Define& e) {
       [&state](const ast::Variable& e) {
         {
           Message m(e.token, state.file);
-          m << "At the variable '" << e.token.token << "' defined here:";
+          m << "At the variable '" << e.token.token << "' defined here";
           state.current_message->push_back(std::move(m));
         }
         state.stack.variables.push_back(e);
@@ -280,7 +280,7 @@ void analyse(State& state, const ast::Literal<ast::Literals::STRING>& e) {
 void analyse(State& state, const ast::logic::If& e) {
   {
     Message m(e.token, state.file);
-    m << "In the if defined here:";
+    m << "In the if defined here";
     state.current_message->push_back(std::move(m));
   }
   state.signal->iff.emit(SignalType::START, state, e);
@@ -294,7 +294,7 @@ void analyse(State& state, const ast::logic::If& e) {
   if(e.false_scope) {
     {
       Message m(e.false_scope->token, state.file);
-      m << "In the else part defined here::";
+      m << "In the else part defined here";
       state.current_message->push_back(std::move(m));
     }
     State inner(state, *e.false_scope);
@@ -309,7 +309,7 @@ void analyse(State& state, const ast::logic::If& e) {
 void analyse(State& state, const ast::loop::DoWhile& e) {
   {
     Message m(e.token, state.file);
-    m << "In the do-while defined here:";
+    m << "In the do-while defined here";
     state.current_message->push_back(std::move(m));
   }
   state.signal->dowhile.emit(SignalType::START, state, e);
@@ -331,7 +331,7 @@ void analyse(State& state, const ast::loop::For& e) {
 void analyse(State& state, const ast::loop::While& e) {
   {
     Message m(e.token, state.file);
-    m << "In the while defined here:";
+    m << "In the while defined here";
     state.current_message->push_back(std::move(m));
   }
   state.signal->whi.emit(SignalType::START, state, e);
@@ -348,7 +348,7 @@ void analyse(State& state, const ast::loop::While& e) {
 void analyse(State& state, const ast::Return& e) {
   {
     Message m(e.token, state.file);
-    m << "At return defined here:";
+    m << "At return defined here";
     state.current_message->push_back(std::move(m));
   }
   state.signal->ret.emit(SignalType::START, state, e);
@@ -495,9 +495,9 @@ void unique_callable_parameter(Signals& sigs) {
             auto stack = *s.current_message;
             Message m1(i->first.token, s.file);
             m1 << "Parameter have to be uniquely named, but '"
-               << i->first.token.token << "' was defined here:";
+               << i->first.token.token << "' was defined here";
             Message m2(j->first.token, s.file);
-            m2 << "and here:";
+            m2 << "and here";
             stack.push_back(std::move(m2));
             stack.push_back(std::move(m1));
             s.messages->push_back(std::move(stack));
@@ -516,9 +516,9 @@ void unique_function_parameter(Signals& sigs) {
             auto stack = *s.current_message;
             Message m1(i->token, s.file);
             m1 << "Parameter have to be uniquely named, but '" << i->token.token
-               << "' was defined here:";
+               << "' was defined here";
             Message m2(j->token, s.file);
-            m2 << "and here:";
+            m2 << "and here";
             stack.push_back(std::move(m2));
             stack.push_back(std::move(m1));
             s.messages->push_back(std::move(stack));
@@ -537,9 +537,9 @@ void unique_main_parameter(Signals& sigs) {
             auto stack = *s.current_message;
             Message m1(i->token, s.file);
             m1 << "Parameter have to be uniquely named, but '" << i->token.token
-               << "' was defined here:";
+               << "' was defined here";
             Message m2(j->token, s.file);
-            m2 << "and here:";
+            m2 << "and here";
             stack.push_back(std::move(m2));
             stack.push_back(std::move(m1));
             s.messages->push_back(std::move(stack));
@@ -558,9 +558,9 @@ void unique_main(Signals& sigs) {
       if(s.stack.functions.end() != it) {
         auto stack = *s.current_message;
         Message m1(enfun.token, s.file);
-        m1 << "Redefinition of the 'main' function here:";
+        m1 << "Redefinition of the 'main' function here";
         Message m2(it->get().token, s.file);
-        m2 << "and here:";
+        m2 << "and here";
         stack.push_back(std::move(m2));
         stack.push_back(std::move(m1));
         s.messages->push_back(std::move(stack));
@@ -602,9 +602,9 @@ void no_double_def_variable(Signals& sigs) {
         auto stack = *s.current_message;
         Message m1(var->second.get().token, s.file);
         m1 << "Redefinition of variable '" << var->second.get().token.token
-           << "' here:";
+           << "' here";
         Message m2(var->first.get().token, s.file);
-        m2 << "and here:";
+        m2 << "and here";
         stack.push_back(std::move(m2));
         stack.push_back(std::move(m1));
         s.messages->push_back(std::move(stack));
@@ -619,9 +619,9 @@ void no_double_def_function(Signals& sigs) {
         auto stack = *s.current_message;
         Message m1(fun->second.get().token, s.file);
         m1 << "Redefinition of function '" << fun->second.get().token.token
-           << "' here:";
+           << "' here";
         Message m2(fun->first.get().token, s.file);
-        m2 << "and here:";
+        m2 << "and here";
         stack.push_back(std::move(m2));
         stack.push_back(std::move(m1));
         s.messages->push_back(std::move(stack));

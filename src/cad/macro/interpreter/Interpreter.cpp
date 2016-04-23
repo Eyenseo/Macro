@@ -356,7 +356,7 @@ void Interpreter::interpret_none() const {
   } catch(std::exception&) {
     Exc<E, E::TAIL> e;
     add_exception_info(op.token, state.file, e, [&e, &op]() {
-      e << "At the operator '" << op.token.token << "' defined here:";
+      e << "At the operator '" << op.token.token << "' defined here";
     });
     std::throw_with_nested(e);
   }
@@ -460,14 +460,14 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
       } catch(std::exception&) {
         Exc<E, E::TAIL> e;
         add_exception_info(iff.token, state.file, e,
-                           [&e]() { e << "In the else part defined here:"; });
+                           [&e]() { e << "In the else part defined here"; });
         std::throw_with_nested(e);
       }
     }
   } catch(std::exception&) {
     Exc<E, E::TAIL> e;
     add_exception_info(iff.token, state.file, e,
-                       [&e]() { e << "In the if defined here:"; });
+                       [&e]() { e << "In the if defined here"; });
     std::throw_with_nested(e);
   }
   return {};
@@ -493,7 +493,7 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
   } catch(std::exception&) {
     Exc<E, E::TAIL> e;
     add_exception_info(whi.token, state.file, e,
-                       [&e]() { e << "In the do/while defined here:"; });
+                       [&e]() { e << "In the do/while defined here"; });
     std::throw_with_nested(e);
   }
 }
@@ -521,7 +521,7 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
   } catch(std::exception&) {
     Exc<E, E::TAIL> e;
     add_exception_info(whi.token, state.file, e,
-                       [&e]() { e << "In the while defined here:"; });
+                       [&e]() { e << "In the while defined here"; });
     std::throw_with_nested(e);
   }
 }
@@ -552,7 +552,7 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
   } catch(std::exception&) {
     Exc<E, E::TAIL> e;
     add_exception_info(ret.token, state.file, e,
-                       [&e]() { e << "In the return defined here:"; });
+                       [&e]() { e << "In the return defined here"; });
     std::throw_with_nested(e);
   }
 }
@@ -698,7 +698,7 @@ void Interpreter::add_arguments(State& state, Arguments& args,
       } catch(std::exception&) {
         Exc<E, E::TAIL> e;
         add_exception_info(fun.token, state.file, e, [&e, &fun]() {
-          e << "In the '" << fun.token.token << "' function defined here:";
+          e << "In the '" << fun.token.token << "' function defined here";
         });
         std::throw_with_nested(e);
       }
@@ -744,7 +744,7 @@ void Interpreter::add_arguments(State& state, Arguments& args,
     } catch(std::exception&) {
       Exc<E, E::TAIL> e;
       add_exception_info(fun.token, state.file, e, [&e, &fun]() {
-        e << "In the 'main' function defined here:";
+        e << "In the 'main' function defined here";
       });
       std::throw_with_nested(e);
     }

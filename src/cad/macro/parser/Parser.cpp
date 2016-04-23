@@ -519,7 +519,7 @@ parse_entry_function(const Tokens& tokens, size_t& token) {
   } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e,
-                       [&e] { e << "In the 'main' function defined here:"; });
+                       [&e] { e << "In the 'main' function defined here"; });
     std::throw_with_nested(e);
   }
   return {};
@@ -543,7 +543,7 @@ core::optional<ast::callable::Function> parse_function(const Tokens& tokens,
   } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e, [&tokens, &token, &e] {
-      e << "In the '" << tokens.at(token).token << "' function defined here:";
+      e << "In the '" << tokens.at(token).token << "' function defined here";
     });
     std::throw_with_nested(e);
   }
@@ -587,7 +587,7 @@ core::optional<ast::Define> parse_variable_definition(const Tokens& tokens,
   } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e, [&tokens, &token, &e] {
-      e << "At the '" << tokens.at(token).token << "' variable defined here:";
+      e << "At the '" << tokens.at(token).token << "' variable defined here";
     });
     std::throw_with_nested(e);
   }
@@ -686,7 +686,7 @@ core::optional<ast::callable::Callable> parse_callable(const Tokens& tokens,
     UserTailExc e;
     add_exception_info(tokens, token, e, [&tokens, &token, &e] {
       e << "In the function call '" << tokens.at(token).token
-        << "' defined here:";
+        << "' defined here";
     });
     std::throw_with_nested(e);
   }
@@ -844,7 +844,7 @@ core::optional<ast::Return> parse_return(const Tokens& tokens, size_t& token) {
   } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e,
-                       [&e] { e << "At return defined here:"; });
+                       [&e] { e << "At return defined here"; });
     std::throw_with_nested(e);
   }
   return {};
@@ -1372,7 +1372,7 @@ parse_operator(const Tokens& tokens, size_t& token,
   } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e, [&tokens, &token, &e] {
-      e << "At the operator '" << tokens.at(token).token << "' defined here:";
+      e << "At the operator '" << tokens.at(token).token << "' defined here";
     });
     std::throw_with_nested(e);
   }
@@ -1482,7 +1482,7 @@ void parse_false(const Tokens& tokens, size_t& token, ast::logic::If& iff) {
     } catch(UserExc&) {
       UserTailExc e;
       add_exception_info(tokens, token, e,
-                         [&e] { e << "In the else part defined here:"; });
+                         [&e] { e << "In the else part defined here"; });
       std::throw_with_nested(e);
     }
   }
@@ -1507,7 +1507,7 @@ core::optional<ast::logic::If> parse_if(const Tokens& tokens, size_t& token) {
   } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e,
-                       [&e] { e << "In the if defined here:"; });
+                       [&e] { e << "In the if defined here"; });
     std::throw_with_nested(e);
   }
   return {};
@@ -1562,7 +1562,7 @@ core::optional<ast::loop::While> parse_while(const Tokens& tokens,
   } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e,
-                       [&e] { e << "In the while defined here:"; });
+                       [&e] { e << "In the while defined here"; });
     std::throw_with_nested(e);
   }
   return {};
@@ -1584,7 +1584,7 @@ core::optional<ast::loop::DoWhile> parse_do_while(const Tokens& tokens,
   } catch(UserExc&) {
     UserTailExc e;
     add_exception_info(tokens, token, e,
-                       [&e] { e << "In the do-while defined here:"; });
+                       [&e] { e << "In the do-while defined here"; });
     std::throw_with_nested(e);
   }
   return {};
