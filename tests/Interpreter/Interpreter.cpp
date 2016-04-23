@@ -145,6 +145,18 @@ TEST_CASE("Function named parameter") {
   REQUIRE(core::any_cast<int>(ret) == 1);
 }
 
+TEST_CASE("Parameter assign in Scope") {
+  auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
+  Interpreter in(cp, nullptr);
+
+  auto ret = in.interpret(
+      "def fun(bar){do{{{{{bar = 42;}}}}}while(false); return bar;} def main(){return fun(bar:1);}", Arguments());
+  REQUIRE(core::any_cast<int>(ret) == 42);
+ret = in.interpret(
+      "def fun(bar){bar=2;do{{{{{bar = 42;}}}}}while(false); return bar;} def main(){return fun(bar:1);}", Arguments());
+  REQUIRE(core::any_cast<int>(ret) == 42);
+}
+
 TEST_CASE("Return global variable from function parameter") {
   auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
   Interpreter in(cp, nullptr);
