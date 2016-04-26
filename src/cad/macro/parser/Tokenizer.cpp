@@ -52,7 +52,7 @@ void token_begin(Macro macro, Position& position) {
 
 bool float_token_end(Macro macro, Position& position) {
   // TODO see http://en.cppreference.com/w/cpp/string/basic_string/stof
-  const static std::regex regex("(\\d*\\.\\d+)");
+  const static std::regex regex("^(\\d*\\.\\d+)");
   std::smatch match;
   std::regex_search(macro.begin() + position.string, macro.end(), match, regex);
 
@@ -70,7 +70,7 @@ void normal_token_end(Macro macro, Position& position) {
   std::regex_search(macro.begin() + position.string, macro.end(), match, regex);
 
   if(match.empty()) {
-    position.column += macro.size() - position.string;
+    // We're done - with you, everything and life...
     position.string = macro.size();
   } else {
     if(match.position(1) == 0) {
@@ -128,8 +128,8 @@ Token next_string_token(Macro macro, Position& position) {
       break;
     case '"':
       if(last_token != '\\') {
-        ++position.string; // Move to the next character
-        ++position.column; // Move to the next character
+        ++position.string;  // Move to the next character
+        ++position.column;  // Move to the next character
         end = 0;
       }
       ++position.column;
@@ -157,6 +157,67 @@ Token next_string_token(Macro macro, Position& position) {
   return ret;
 }
 
+bool ignore_in_line_comment(Macro macro, Position& position) {
+  auto end = macro.size();
+  auto current = macro[position.string];
+  auto next = (position.string + 1 <= end) ? macro[position.string + 1] : '\0';
+
+  if(current == '/' && next == '*') {
+    position.string += 2;
+    position.column += 2;
+
+    while(position.string < end) {
+      current = macro[position.string];
+      next = (position.string + 1 <= end) ? macro[position.string + 1] : '\0';
+
+      if(current == '\n' || current == '\r') {
+        position.source_line->append(macro.substr(
+            position.line_start, position.string - position.line_start));
+        position.line_start = position.string + 1;
+        position.source_line = std::make_shared<std::string>();
+
+        ++position.line;
+        position.column = 0;  // will be advanced a few lines down
+      } else if(current == '*' && next == '/') {
+        position.string += 2;
+        position.column += 2;
+        break;
+      }
+      ++position.column;
+      ++position.string;
+    }
+    return true;
+  }
+  return false;
+}
+
+bool ignore_line_comment(Macro macro, Position& position) {
+  auto end = macro.size();
+  const auto current = macro[position.string];
+  const auto next =
+      (position.string + 1 <= end) ? macro[position.string + 1] : '\0';
+
+  if(current == '/' && next == '/') {
+    position.string += 2;
+    while(position.string < end) {
+      if(macro[position.string] == '\n' || macro[position.string] == '\r') {
+        position.source_line->append(macro.substr(
+            position.line_start, position.string - position.line_start));
+        position.line_start = position.string + 1;
+        position.source_line = std::make_shared<std::string>();
+
+        ++position.string;
+        ++position.line;
+        position.column = 1;
+        break;
+      }
+      ++position.string;
+    }
+    return true;
+  }
+  return false;
+}
+
 Token next_token(Macro macro, Position& position) {
   if(macro[position.string] == '\"') {
     return next_string_token(macro, position);
@@ -180,7 +241,10 @@ std::vector<Token> tokenize(Macro macro) {
   token_begin(macro, position);
 
   while(position.string < macro.size()) {
-    tokens.push_back(next_token(macro, position));
+    if(!ignore_line_comment(macro, position) &&
+       !ignore_in_line_comment(macro, position)) {
+      tokens.push_back(next_token(macro, position));
+    }
     token_begin(macro, position);
   }
   position.source_line->append(
