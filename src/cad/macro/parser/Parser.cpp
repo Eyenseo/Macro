@@ -152,12 +152,14 @@ core::optional<ast::Variable> parse_variable(const Tokens& tokens,
 //////////////////////////////////////////
 /// Return parsing
 //////////////////////////////////////////
-core::optional<ast::Return> parse_return(const Tokens& tokens, size_t& token);
+core::optional<ast::callable::Return> parse_return(const Tokens& tokens,
+                                                   size_t& token);
 
 //////////////////////////////////////////
 /// Break parsing
 //////////////////////////////////////////
-core::optional<ast::Break> parse_break(const Tokens& tokens, size_t& token);
+core::optional<ast::loop::Break> parse_break(const Tokens& tokens,
+                                             size_t& token);
 
 //////////////////////////////////////////
 /// Operator parsing
@@ -254,11 +256,11 @@ Token node_to_token(const ast::Scope::Node& node) {
   using namespace ast;
   Token token;
 
-  node.match([&token](const Break& e) { token = e.token; },
+  node.match([&token](const loop::Break& e) { token = e.token; },
              [&token](const Variable& e) { token = e.token; },
              [&token](const Define& e) { token = e.token; },
              [&token](const callable::Callable& e) { token = e.token; },
-             [&token](const Return& e) { token = e.token; },
+             [&token](const callable::Return& e) { token = e.token; },
              [&token](const Scope& e) { token = e.token; },
              [&token](const Operator& e) { token = e.token; },
              [&token](const logic::If& e) { token = e.token; },
@@ -821,11 +823,12 @@ core::optional<ast::Variable> parse_variable(const Tokens& tokens,
 //////////////////////////////////////////
 /// Return parsing
 //////////////////////////////////////////
-core::optional<ast::Return> parse_return(const Tokens& tokens, size_t& token) {
+core::optional<ast::callable::Return> parse_return(const Tokens& tokens,
+                                                   size_t& token) {
   auto tmp = token;
   try {
     if(read_token(tokens, tmp, "return")) {
-      ast::Return ret(tokens.at(token));
+      ast::callable::Return ret(tokens.at(token));
 
       if(auto con = parse_condition(tokens, tmp)) {
         ret.output = std::make_unique<ast::ValueProducer>(std::move(*con));
@@ -862,11 +865,12 @@ core::optional<ast::Return> parse_return(const Tokens& tokens, size_t& token) {
 //////////////////////////////////////////
 /// Break parsing
 //////////////////////////////////////////
-core::optional<ast::Break> parse_break(const Tokens& tokens, size_t& token) {
+core::optional<ast::loop::Break> parse_break(const Tokens& tokens,
+                                             size_t& token) {
   auto tmp = token;
 
   if(read_token(tokens, tmp, "break")) {
-    ast::Break ret(tokens.at(token));
+    ast::loop::Break ret(tokens.at(token));
 
     token = tmp;
     return ret;
@@ -900,7 +904,7 @@ ast::ValueProducer node_to_value(ast::Scope::Node& node) {
       [&value](Literal<Literals::INT>& e) { value = std::move(e); },
       [&value](Literal<Literals::DOUBLE>& e) { value = std::move(e); },
       [&value](Literal<Literals::STRING>& e) { value = std::move(e); },
-      [](Break&) { throw_conversion(__FILE__, __LINE__, "Break"); },
+      [](loop::Break&) { throw_conversion(__FILE__, __LINE__, "Break"); },
       [](Define&) { throw_conversion(__FILE__, __LINE__, "Define"); },
       [](Return&) { throw_conversion(__FILE__, __LINE__, "Return"); },
       [](Scope&) { throw_conversion(__FILE__, __LINE__, "Scope"); },
@@ -922,11 +926,11 @@ ast::Operator node_to_operator(const Tokens& tokens, ast::Scope::Node& node) {
         expect_operator_type(__FILE__, __LINE__, op);
         ret = std::move(op);
       },
-      [&token](Break& ele) { token = ele.token; },
+      [&token](loop::Break& ele) { token = ele.token; },
       [&token](Variable& ele) { token = ele.token; },
       [&token](Define& ele) { token = ele.token; },
       [&token](callable::Callable& ele) { token = ele.token; },
-      [&token](Return& ele) { token = ele.token; },
+      [&token](callable::Return& ele) { token = ele.token; },
       [&token](Scope& ele) { token = ele.token; },
       [&token](logic::If& ele) { token = ele.token; },
       [&token](loop::While& ele) { token = ele.token; },
@@ -965,10 +969,10 @@ core::optional<ast::Variable> extract_var_def(ast::Scope::Node& node) {
                              [](const ast::callable::EntryFunction&) {});
 
       },                                                  //
-      [](const ast::Break&) {},                           //
+      [](const ast::loop::Break&) {},                     //
       [](const ast::Variable&) {},                        //
       [](const ast::callable::Callable&) {},              //
-      [](const ast::Return&) {},                          //
+      [](const ast::callable::Return&) {},                //
       [](const ast::Scope&) {},                           //
       [](const ast::Operator&) {},                        //
       [](const ast::logic::If&) {},                       //
@@ -1071,11 +1075,11 @@ bool is_value(const ast::Scope::Node& node) {
   bool ret = false;
 
   node.match([&ret](const Operator&) { ret = false; },
-             [&ret](const Break&) { ret = false; },
+             [&ret](const loop::Break&) { ret = false; },
              [&ret](const Variable&) { ret = true; },
              [&ret](const Define&) { ret = false; },
              [&ret](const callable::Callable&) { ret = true; },
-             [&ret](const Return&) { ret = false; },
+             [&ret](const callable::Return&) { ret = false; },
              [&ret](const Scope&) { ret = false; },
              [&ret](const logic::If&) { ret = false; },
              [&ret](const loop::While&) { ret = false; },
@@ -1174,11 +1178,11 @@ void assamble_operators_left_to_right(const std::string& file,
             assamble_operator(file, nodes, i, op);
           }
         },
-        [](ast::Break&) {},                            //
+        [](ast::loop::Break&) {},                      //
         [](ast::Variable&) {},                         //
         [](ast::Define&) {},                           //
         [](ast::callable::Callable&) {},               //
-        [](ast::Return&) {},                           //
+        [](ast::callable::Return&) {},                 //
         [](ast::Scope&) {},                            //
         [](ast::logic::If&) {},                        //
         [](ast::loop::While&) {},                      //
@@ -1207,11 +1211,11 @@ void assamble_operators_right_to_left(const std::string& file,
               assamble_operator(file, nodes, i, op);
             }
           },
-          [](ast::Break&) {},                            //
+          [](ast::loop::Break&) {},                      //
           [](ast::Variable&) {},                         //
           [](ast::Define&) {},                           //
           [](ast::callable::Callable&) {},               //
-          [](ast::Return&) {},                           //
+          [](ast::callable::Return&) {},                 //
           [](ast::Scope&) {},                            //
           [](ast::logic::If&) {},                        //
           [](ast::loop::While&) {},                      //

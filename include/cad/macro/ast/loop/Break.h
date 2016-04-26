@@ -1,5 +1,5 @@
-#ifndef cad_macro_ast_Break_h
-#define cad_macro_ast_Break_h
+#ifndef cad_macro_ast_loop_Break_h
+#define cad_macro_ast_loop_Break_h
 
 #include "cad/macro/ast/AST.h"
 
@@ -16,6 +16,7 @@ class ValueProducer;
 namespace cad {
 namespace macro {
 namespace ast {
+namespace loop {
 class Break : public AST {
 public:
   Break();
@@ -26,6 +27,7 @@ public:
     return os;
   }
 };
+}
 }
 }
 }

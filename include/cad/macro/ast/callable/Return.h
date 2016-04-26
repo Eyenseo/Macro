@@ -1,5 +1,5 @@
-#ifndef cad_macro_ast_Return
-#define cad_macro_ast_Return
+#ifndef cad_macro_ast_callable_Return_h
+#define cad_macro_ast_callable_Return_h
 
 #include "cad/macro/ast/AST.h"
 
@@ -16,6 +16,7 @@ class ValueProducer;
 namespace cad {
 namespace macro {
 namespace ast {
+namespace callable {
 class Return : public AST {
   void print_internals(IndentStream& os) const;
 
@@ -47,6 +48,7 @@ public:
     return os;
   }
 };
+}
 }
 }
 }

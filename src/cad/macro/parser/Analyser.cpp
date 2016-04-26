@@ -94,7 +94,7 @@ struct Stack {
 struct State;
 struct Signals {
   Signal<void(SignalType, const State&, const ast::Operator&)> biop;
-  Signal<void(SignalType, const State&, const ast::Break&)> br;
+  Signal<void(SignalType, const State&, const ast::loop::Break&)> br;
   Signal<void(SignalType, const State&, const ast::callable::Callable&)> call;
   Signal<void(SignalType, const State&, const ast::callable::EntryFunction&)>
       enfun;
@@ -112,7 +112,7 @@ struct Signals {
   Signal<void(SignalType, const State&, const ast::loop::DoWhile&)> dowhile;
   Signal<void(SignalType, const State&, const ast::loop::For&)> forr;
   Signal<void(SignalType, const State&, const ast::loop::While&)> whi;
-  Signal<void(SignalType, const State&, const ast::Return&)> ret;
+  Signal<void(SignalType, const State&, const ast::callable::Return&)> ret;
   Signal<void(SignalType, const State&, const ast::Scope&)> sco;
   Signal<void(SignalType, const State&, const ast::Variable&)> var;
 };
@@ -154,7 +154,7 @@ struct State {
 
 namespace analyse {
 void analyse(State& state, const ast::Operator& e);
-void analyse(State& state, const ast::Break& e);
+void analyse(State& state, const ast::loop::Break& e);
 void analyse(State& state, const ast::callable::Callable& e);
 void analyse(State& state, const ast::callable::EntryFunction& e);
 void analyse(State& state, const ast::callable::Function& e);
@@ -167,7 +167,7 @@ void analyse(State& state, const ast::logic::If& e);
 void analyse(State& state, const ast::loop::DoWhile& e);
 void analyse(State& state, const ast::loop::For& e);
 void analyse(State& state, const ast::loop::While& e);
-void analyse(State& state, const ast::Return& e);
+void analyse(State& state, const ast::callable::Return& e);
 void analyse(State& state, const ast::Scope& e);
 void analyse(State& state, const ast::Variable& e);
 void analyse(State& state, const ast::ValueProducer& e);
@@ -189,7 +189,7 @@ void analyse(State& state, const ast::Operator& e) {
   state.signal->biop.emit(SignalType::END, state, e);
   state.current_message->pop_back();
 }
-void analyse(State& state, const ast::Break& e) {
+void analyse(State& state, const ast::loop::Break& e) {
   state.signal->br.emit(SignalType::START, state, e);
   state.signal->br.emit(SignalType::END, state, e);
 }
@@ -345,7 +345,7 @@ void analyse(State& state, const ast::loop::While& e) {
   state.signal->whi.emit(SignalType::END, state, e);
   state.current_message->pop_back();
 }
-void analyse(State& state, const ast::Return& e) {
+void analyse(State& state, const ast::callable::Return& e) {
   {
     Message m(e.token, state.file);
     m << "At return defined here";
@@ -364,7 +364,7 @@ void analyse(State& state, const ast::Scope& e) {
   state.signal->sco.emit(SignalType::START, state, e);
   for(const auto& n : e.nodes) {
     n.match([&state](const Operator& e) { analyse(state, e); },
-            [&state](const Break& e) { analyse(state, e); },
+            [&state](const loop::Break& e) { analyse(state, e); },
             [&state](const callable::Callable& e) { analyse(state, e); },
             [&state](const Define& e) { analyse(state, e); },
             [&state](const Literal<Literals::BOOL>& e) { analyse(state, e); },
@@ -375,7 +375,7 @@ void analyse(State& state, const ast::Scope& e) {
             [&state](const loop::DoWhile& e) { analyse(state, e); },
             [&state](const loop::For& e) { analyse(state, e); },
             [&state](const loop::While& e) { analyse(state, e); },
-            [&state](const Return& e) { analyse(state, e); },
+            [&state](const callable::Return& e) { analyse(state, e); },
             [&state](const Scope& e) {
               State inner(state, e);
               analyse(inner, e);

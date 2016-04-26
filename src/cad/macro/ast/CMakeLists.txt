@@ -2,9 +2,7 @@ target_sources(
   ${PROJECT_NAME}
     PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}/AST.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/Break.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Define.cpp
-      ${CMAKE_CURRENT_SOURCE_DIR}/Return.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Scope.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Variable.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Operator.cpp

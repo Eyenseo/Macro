@@ -3,14 +3,14 @@
 
 #include "cad/macro/ast/AST.h"
 
-#include "cad/macro/ast/Break.h"
 #include "cad/macro/ast/Define.h"
 #include "cad/macro/ast/Literal.h"
 #include "cad/macro/ast/Operator.h"
-#include "cad/macro/ast/Return.h"
 #include "cad/macro/ast/Variable.h"
 #include "cad/macro/ast/callable/Callable.h"
+#include "cad/macro/ast/callable/Return.h"
 #include "cad/macro/ast/logic/If.h"
+#include "cad/macro/ast/loop/Break.h"
 #include "cad/macro/ast/loop/DoWhile.h"
 #include "cad/macro/ast/loop/For.h"
 #include "cad/macro/ast/loop/While.h"
@@ -30,7 +30,9 @@ namespace macro {
 namespace ast {
 class Scope : public AST {
   using Callable = callable::Callable;
+  using Return = callable::Return;
   using If = logic::If;
+  using Break = loop::Break;
   using While = loop::While;
   using DoWhile = loop::DoWhile;
   using For = loop::For;

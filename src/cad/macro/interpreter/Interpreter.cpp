@@ -117,7 +117,7 @@ void Interpreter::define_functions(State& state, const Scope& scope) const {
   for(const auto& n : scope.nodes) {
     n.match(
         [this, &state](const Define& def) { define_function(state, def); },  //
-        [this](const Break&) {},                                             //
+        [this](const loop::Break&) {},                                       //
         [this](const Callable&) {},                                          //
         [this](const DoWhile&) {},                                           //
         [this](const For&) {},                                               //
@@ -126,7 +126,7 @@ void Interpreter::define_functions(State& state, const Scope& scope) const {
         [this](const Literal<Literals::DOUBLE>&) {},                         //
         [this](const Literal<Literals::INT>&) {},                            //
         [this](const Literal<Literals::STRING>&) {},                         //
-        [this](const Return&) {},                                            //
+        [this](const callable::Return&) {},                                  //
         [this](const Scope&) {},                                             //
         [this](const Operator&) {},                                          //
         [this](const While&) {},                                             //
@@ -437,7 +437,7 @@ Interpreter::interpret(State& state, const ValueProducer& vp) const {
 //////////////////////////////////////////
 /// interpret fundamentals
 //////////////////////////////////////////
-void Interpreter::interpret(State& state, const ast::Break&) const {
+void Interpreter::interpret(State& state, const ast::loop::Break&) const {
   if(state.loopscope) {
     state.breaking = true;
   } else {
@@ -504,10 +504,10 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
     inner.loopscope = true;
     ::core::any ret;
 
-    if(foor.define){
+    if(foor.define) {
       define_variable(inner, *foor.define);
     }
-    if(foor.variable){
+    if(foor.variable) {
       interpret(inner, *foor.variable);
     }
 
@@ -551,7 +551,7 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
     std::throw_with_nested(e);
   }
 }
-::core::any Interpreter::interpret(State& state, const ast::Return& ret) const {
+::core::any Interpreter::interpret(State& state, const ast::callable::Return& ret) const {
   assert(ret.output);
 
   try {
@@ -602,7 +602,7 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
     n.match(
         [this, &state](const Define& e) { define_variable(state, e); },
         [this, &state](const Operator& e) { interpret(state, e); },
-        [this, &state](const Break& e) { interpret(state, e); },
+        [this, &state](const loop::Break& e) { interpret(state, e); },
         [this, &state](const Callable& e) { interpret(state, e); },
         [this, &state, &ret](const DoWhile& e) { ret = interpret(state, e); },
         [this, &state, &ret](const For& e) { ret = interpret(state, e); },
@@ -611,7 +611,9 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
         [this, &state](const Literal<Literals::DOUBLE>&) { /* ignore */ },
         [this, &state](const Literal<Literals::INT>&) { /* ignore */ },
         [this, &state](const Literal<Literals::STRING>&) { /* ignore */ },
-        [this, &state, &ret](const Return& e) { ret = interpret(state, e); },
+        [this, &state, &ret](const callable::Return& e) {
+          ret = interpret(state, e);
+        },
         [this, &state, &ret](const Scope& e) { ret = interpret(state, e); },
         [this, &state, &ret](const While& e) { ret = interpret(state, e); },
         [this, &state](const Variable&) { /* ignore */ });

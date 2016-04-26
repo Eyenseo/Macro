@@ -17,11 +17,9 @@ class Arguments;
 }
 namespace macro {
 namespace ast {
-class Break;
 class Define;
 class Define;
 class Operator;
-class Return;
 class Scope;
 class Scope;
 class Scope;
@@ -29,11 +27,13 @@ class ValueProducer;
 namespace callable {
 class Callable;
 class Function;
+class Return;
 }
 namespace logic {
 class If;
 }
 namespace loop {
+class Break;
 class DoWhile;
 class For;
 class While;
@@ -107,12 +107,12 @@ protected:
   //////////////////////////////////////////
   /// interpret fundamentals
   //////////////////////////////////////////
-  void interpret(State& state, const ast::Break& br) const;
+  void interpret(State& state, const ast::loop::Break& br) const;
   ::core::any interpret(State& state, const ast::logic::If& iff) const;
   ::core::any interpret(State& state, const ast::loop::DoWhile& whi) const;
   ::core::any interpret(State& state, const ast::loop::For& fo) const;
   ::core::any interpret(State& state, const ast::loop::While& whi) const;
-  ::core::any interpret(State& state, const ast::Return& ret) const;
+  ::core::any interpret(State& state, const ast::callable::Return& ret) const;
   ::core::any interpret(State& state, const ast::Scope& scope) const;
   ::core::any interpret_shared(State& state, const ast::Scope& scope) const;
   SmartRef<::core::any>
