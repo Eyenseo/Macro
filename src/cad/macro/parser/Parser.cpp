@@ -47,7 +47,7 @@ struct Tokens {
 };
 
 static std::vector<std::string> keywords{
-    "if",   "else",  "do",     "while", "for",   "var",    "def",
+    "if",   "else",  "do",     "while", "for",   "var",    "def",  "continue",
     "main", "break", "return", "true",  "false", "typeof", "print"};
 
 //////////////////////////////////////////
@@ -160,6 +160,11 @@ core::optional<ast::callable::Return> parse_return(const Tokens& tokens,
 //////////////////////////////////////////
 core::optional<ast::loop::Break> parse_break(const Tokens& tokens,
                                              size_t& token);
+//////////////////////////////////////////
+/// Continue parsing
+//////////////////////////////////////////
+core::optional<ast::loop::Continue> parse_continue(const Tokens& tokens,
+                                                   size_t& token);
 
 //////////////////////////////////////////
 /// Operator parsing
@@ -257,6 +262,7 @@ Token node_to_token(const ast::Scope::Node& node) {
   Token token;
 
   node.match([&token](const loop::Break& e) { token = e.token; },
+             [&token](const loop::Continue& e) { token = e.token; },
              [&token](const Variable& e) { token = e.token; },
              [&token](const Define& e) { token = e.token; },
              [&token](const callable::Callable& e) { token = e.token; },
@@ -721,6 +727,9 @@ bool parse_scope_internals(const Tokens& tokens, size_t& token,
   if(auto br = parse_break(tokens, token)) {
     expect_end();
     nodes.push_back(std::move(*br));
+  } else if(auto con = parse_continue(tokens, token)) {
+    expect_end();
+    nodes.push_back(std::move(*con));
   } else if(auto def = parse_function_definition(tokens, token)) {
     nodes.push_back(std::move(*def));
   } else if(auto var_def = parse_variable_definition(tokens, token)) {
@@ -879,6 +888,22 @@ core::optional<ast::loop::Break> parse_break(const Tokens& tokens,
 }
 
 //////////////////////////////////////////
+/// Continue parsing
+//////////////////////////////////////////
+core::optional<ast::loop::Continue> parse_continue(const Tokens& tokens,
+                                                   size_t& token) {
+  auto tmp = token;
+
+  if(read_token(tokens, tmp, "continue")) {
+    ast::loop::Continue ret(tokens.at(token));
+
+    token = tmp;
+    return ret;
+  }
+  return {};
+}
+
+//////////////////////////////////////////
 /// Operator parsing
 //////////////////////////////////////////
 template <typename T, typename is_Operator<T>::type>
@@ -905,6 +930,7 @@ ast::ValueProducer node_to_value(ast::Scope::Node& node) {
       [&value](Literal<Literals::DOUBLE>& e) { value = std::move(e); },
       [&value](Literal<Literals::STRING>& e) { value = std::move(e); },
       [](loop::Break&) { throw_conversion(__FILE__, __LINE__, "Break"); },
+      [](loop::Continue&) { throw_conversion(__FILE__, __LINE__, "Continue"); },
       [](Define&) { throw_conversion(__FILE__, __LINE__, "Define"); },
       [](Return&) { throw_conversion(__FILE__, __LINE__, "Return"); },
       [](Scope&) { throw_conversion(__FILE__, __LINE__, "Scope"); },
@@ -927,6 +953,7 @@ ast::Operator node_to_operator(const Tokens& tokens, ast::Scope::Node& node) {
         ret = std::move(op);
       },
       [&token](loop::Break& ele) { token = ele.token; },
+      [&token](loop::Continue& ele) { token = ele.token; },
       [&token](Variable& ele) { token = ele.token; },
       [&token](Define& ele) { token = ele.token; },
       [&token](callable::Callable& ele) { token = ele.token; },
@@ -970,6 +997,7 @@ core::optional<ast::Variable> extract_var_def(ast::Scope::Node& node) {
 
       },                                                  //
       [](const ast::loop::Break&) {},                     //
+      [](const ast::loop::Continue&) {},                  //
       [](const ast::Variable&) {},                        //
       [](const ast::callable::Callable&) {},              //
       [](const ast::callable::Return&) {},                //
@@ -1076,6 +1104,7 @@ bool is_value(const ast::Scope::Node& node) {
 
   node.match([&ret](const Operator&) { ret = false; },
              [&ret](const loop::Break&) { ret = false; },
+             [&ret](const loop::Continue&) { ret = false; },
              [&ret](const Variable&) { ret = true; },
              [&ret](const Define&) { ret = false; },
              [&ret](const callable::Callable&) { ret = true; },
@@ -1179,6 +1208,7 @@ void assamble_operators_left_to_right(const std::string& file,
           }
         },
         [](ast::loop::Break&) {},                      //
+        [](ast::loop::Continue&) {},                   //
         [](ast::Variable&) {},                         //
         [](ast::Define&) {},                           //
         [](ast::callable::Callable&) {},               //
@@ -1212,6 +1242,7 @@ void assamble_operators_right_to_left(const std::string& file,
             }
           },
           [](ast::loop::Break&) {},                      //
+          [](ast::loop::Continue&) {},                   //
           [](ast::Variable&) {},                         //
           [](ast::Define&) {},                           //
           [](ast::callable::Callable&) {},               //

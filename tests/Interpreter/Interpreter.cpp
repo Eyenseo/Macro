@@ -376,4 +376,23 @@ TEST_CASE("For") {
   REQUIRE(ss.str() == "0\n1\n2\n3\n");
 }
 
+TEST_CASE("Continue") {
+  auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
+  auto op = std::make_shared<OperatorProvider>();
+  std::stringstream ss;
+  Interpreter in(cp, op,ss);
+
+  auto ret = in.interpret("def main(){"
+                          "  for(var i = 0; i < 4; i = i + 1) {"
+                          "    if(i != 5) {"
+                          "      continue;"
+                          "    }"
+                          "    print i;"
+                          "    print \"\\n\";"
+                          "  }"
+                          "}",
+                          Arguments());
+  REQUIRE(ss.str() == "");
+}
+
 // FIXME test history stack  implementation

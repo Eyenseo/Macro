@@ -11,6 +11,7 @@
 #include "cad/macro/ast/callable/Return.h"
 #include "cad/macro/ast/logic/If.h"
 #include "cad/macro/ast/loop/Break.h"
+#include "cad/macro/ast/loop/Continue.h"
 #include "cad/macro/ast/loop/DoWhile.h"
 #include "cad/macro/ast/loop/For.h"
 #include "cad/macro/ast/loop/While.h"
@@ -33,14 +34,15 @@ class Scope : public AST {
   using Return = callable::Return;
   using If = logic::If;
   using Break = loop::Break;
+  using Continue = loop::Continue;
   using While = loop::While;
   using DoWhile = loop::DoWhile;
   using For = loop::For;
 
 public:
   using Node =
-      ::core::variant<Operator, Break, Callable, Define, DoWhile, For, If,
-                      Literal<Literals::BOOL>, Literal<Literals::DOUBLE>,
+      ::core::variant<Operator, Break, Continue, Callable, Define, DoWhile, For,
+                      If, Literal<Literals::BOOL>, Literal<Literals::DOUBLE>,
                       Literal<Literals::INT>, Literal<Literals::STRING>, Return,
                       Scope, Variable, While>;
 

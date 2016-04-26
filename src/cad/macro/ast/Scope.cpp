@@ -15,6 +15,7 @@ void Scope::print_internals(std::ostream& os) const {
   IndentStream indent_os(os);
   for(auto& v : nodes) {
     v.match([&os](const Operator& n) { os << n; },                   //
+            [&os](const Continue& n) { os << n; },                   //
             [&os](const Break& n) { os << n; },                      //
             [&os](const Callable& n) { os << n; },                   //
             [&os](const Define& n) { os << n; },                     //

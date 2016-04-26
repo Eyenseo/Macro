@@ -5,4 +5,5 @@ target_sources(
       ${CMAKE_CURRENT_SOURCE_DIR}/DoWhile.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/For.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Break.cpp
+      ${CMAKE_CURRENT_SOURCE_DIR}/Continue.cpp
 )

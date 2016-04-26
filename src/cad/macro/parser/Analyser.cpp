@@ -95,6 +95,7 @@ struct State;
 struct Signals {
   Signal<void(SignalType, const State&, const ast::Operator&)> biop;
   Signal<void(SignalType, const State&, const ast::loop::Break&)> br;
+  Signal<void(SignalType, const State&, const ast::loop::Continue&)> con;
   Signal<void(SignalType, const State&, const ast::callable::Callable&)> call;
   Signal<void(SignalType, const State&, const ast::callable::EntryFunction&)>
       enfun;
@@ -155,6 +156,7 @@ struct State {
 namespace analyse {
 void analyse(State& state, const ast::Operator& e);
 void analyse(State& state, const ast::loop::Break& e);
+void analyse(State& state, const ast::loop::Continue& e);
 void analyse(State& state, const ast::callable::Callable& e);
 void analyse(State& state, const ast::callable::EntryFunction& e);
 void analyse(State& state, const ast::callable::Function& e);
@@ -192,6 +194,10 @@ void analyse(State& state, const ast::Operator& e) {
 void analyse(State& state, const ast::loop::Break& e) {
   state.signal->br.emit(SignalType::START, state, e);
   state.signal->br.emit(SignalType::END, state, e);
+}
+void analyse(State& state, const ast::loop::Continue& e) {
+  state.signal->con.emit(SignalType::START, state, e);
+  state.signal->con.emit(SignalType::END, state, e);
 }
 void analyse(State& state, const ast::callable::Callable& e) {
   state.signal->call.emit(SignalType::START, state, e);
@@ -324,9 +330,30 @@ void analyse(State& state, const ast::loop::DoWhile& e) {
   state.current_message->pop_back();
 }
 void analyse(State& state, const ast::loop::For& e) {
+  {
+    Message m(e.token, state.file);
+    m << "In the do-while defined here";
+    state.current_message->push_back(std::move(m));
+  }
   state.signal->forr.emit(SignalType::START, state, e);
-  // TODO for
+  State inner(state, *e.scope, true);
+  if(e.define) {
+    analyse(inner, *e.define);
+  }
+  if(e.variable) {
+    analyse(inner, *e.variable);
+  }
+  if(e.condition) {
+    analyse(inner, *e.condition);
+  }
+  if(e.operation) {
+    analyse(inner, *e.operation);
+  }
+  if(e.scope) {
+    analyse(inner, *e.scope);
+  }
   state.signal->forr.emit(SignalType::END, state, e);
+  state.current_message->pop_back();
 }
 void analyse(State& state, const ast::loop::While& e) {
   {
@@ -364,6 +391,7 @@ void analyse(State& state, const ast::Scope& e) {
   state.signal->sco.emit(SignalType::START, state, e);
   for(const auto& n : e.nodes) {
     n.match([&state](const Operator& e) { analyse(state, e); },
+            [&state](const loop::Continue& e) { analyse(state, e); },
             [&state](const loop::Break& e) { analyse(state, e); },
             [&state](const callable::Callable& e) { analyse(state, e); },
             [&state](const Define& e) { analyse(state, e); },
@@ -415,6 +443,7 @@ std::reference_wrapper<const Token> node_to_token(const ast::Scope::Node& n) {
   std::reference_wrapper<const Token> ret = t;
 
   n.match([&ret](const Operator& n) { ret = n.token; },                   //
+          [&ret](const Continue& n) { ret = n.token; },                   //
           [&ret](const Break& n) { ret = n.token; },                      //
           [&ret](const Callable& n) { ret = n.token; },                   //
           [&ret](const Define& n) { ret = n.token; },                     //
@@ -434,7 +463,7 @@ std::reference_wrapper<const Token> node_to_token(const ast::Scope::Node& n) {
 }
 }
 
-void break_and_return_last(Signals& sigs) {
+void break_last_node(Signals& sigs) {
   sigs.br.connect([](SignalType t, const State& s, const auto& br) {
     if(t == SignalType::START) {
       // TODO missing !=
@@ -447,6 +476,22 @@ void break_and_return_last(Signals& sigs) {
       }
     }
   });
+}
+void continue_last_node(Signals& sigs) {
+  sigs.con.connect([](SignalType t, const State& s, const auto& con) {
+    if(t == SignalType::START) {
+      // TODO missing !=
+      if(!(s.scope.get().nodes.back() == ast::Scope::Node(con))) {
+        auto stack = *s.current_message;
+        Message m(node_to_token(s.scope.get().nodes.back()), s.file);
+        m << "Statement after continue";
+        stack.push_back(std::move(m));
+        s.messages->push_back(std::move(stack));
+      }
+    }
+  });
+}
+void return_last_node(Signals& sigs) {
   sigs.ret.connect([](SignalType t, const State& s, const auto& ret) {
     if(t == SignalType::START) {
       // TODO missing !=
@@ -467,6 +512,19 @@ void no_break_in_non_loop(Signals& sigs) {
         auto stack = *s.current_message;
         Message m(br.token, s.file);
         m << "Break outside of loop";
+        stack.push_back(std::move(m));
+        s.messages->push_back(std::move(stack));
+      }
+    }
+  });
+}
+void no_continue_in_non_loop(Signals& sigs) {
+  sigs.con.connect([](SignalType t, const State& s, const auto& con) {
+    if(t == SignalType::START) {
+      if(!s.loop) {
+        auto stack = *s.current_message;
+        Message m(con.token, s.file);
+        m << "Continue outside of loop";
         stack.push_back(std::move(m));
         s.messages->push_back(std::move(stack));
       }
@@ -812,7 +870,10 @@ void while_con(Signals& sigs) {
 
 void register_checks(Signals& sigs) {
   no_break_in_non_loop(sigs);
-  break_and_return_last(sigs);
+  no_continue_in_non_loop(sigs);
+  break_last_node(sigs);
+  continue_last_node(sigs);
+  return_last_node(sigs);
   no_return_in_root(sigs);
   unique_callable_parameter(sigs);
   unique_function_parameter(sigs);

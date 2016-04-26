@@ -34,6 +34,7 @@ class If;
 }
 namespace loop {
 class Break;
+class Continue;
 class DoWhile;
 class For;
 class While;
@@ -108,6 +109,7 @@ protected:
   /// interpret fundamentals
   //////////////////////////////////////////
   void interpret(State& state, const ast::loop::Break& br) const;
+  void interpret(State& state, const ast::loop::Continue& br) const;
   ::core::any interpret(State& state, const ast::logic::If& iff) const;
   ::core::any interpret(State& state, const ast::loop::DoWhile& whi) const;
   ::core::any interpret(State& state, const ast::loop::For& fo) const;

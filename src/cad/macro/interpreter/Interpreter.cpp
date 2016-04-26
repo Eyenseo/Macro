@@ -37,6 +37,7 @@ struct Interpreter::State {
   std::string scope;
   std::string file;
   bool breaking;
+  bool continuing;
   bool loopscope;
   bool returning;
 
@@ -45,6 +46,7 @@ struct Interpreter::State {
       , scope(std::move(s))
       , file(std::move(f))
       , breaking(false)
+      , continuing(false)
       , loopscope(false)
       , returning(false) {
   }
@@ -53,6 +55,7 @@ struct Interpreter::State {
       , scope(other.scope)
       , file(other.file)
       , breaking(other.breaking)
+      , continuing(other.continuing)
       , loopscope(other.loopscope)
       , returning(other.returning) {
   }
@@ -117,6 +120,7 @@ void Interpreter::define_functions(State& state, const Scope& scope) const {
   for(const auto& n : scope.nodes) {
     n.match(
         [this, &state](const Define& def) { define_function(state, def); },  //
+        [this](const loop::Continue&) {},                                    //
         [this](const loop::Break&) {},                                       //
         [this](const Callable&) {},                                          //
         [this](const DoWhile&) {},                                           //
@@ -444,6 +448,13 @@ void Interpreter::interpret(State& state, const ast::loop::Break&) const {
     assert(false); /* analyser checked */
   }
 }
+void Interpreter::interpret(State& state, const ast::loop::Continue&) const {
+  if(state.loopscope) {
+    state.continuing = true;
+  } else {
+    assert(false); /* analyser checked */
+  }
+}
 ::core::any Interpreter::interpret(State& state,
                                    const ast::logic::If& iff) const {
   assert(iff.condition);
@@ -485,6 +496,9 @@ void Interpreter::interpret(State& state, const ast::loop::Break&) const {
     while(!inner.returning && !inner.breaking &&
           any_to_bool(interpret(inner, *whi.condition))) {
       ret = interpret_shared(inner, *whi.scope);
+      if(inner.continuing) {
+        inner.continuing = false;
+      }
     }
     if(inner.returning) {
       state.returning = true;
@@ -515,6 +529,9 @@ void Interpreter::interpret(State& state, const ast::loop::Break&) const {
           any_to_bool(interpret(inner, *foor.condition))) {
       ret = interpret_shared(inner, *foor.scope);
       ret = interpret(inner, *foor.operation);
+      if(inner.continuing) {
+        inner.continuing = false;
+      }
     }
     if(inner.returning) {
       state.returning = true;
@@ -539,6 +556,9 @@ void Interpreter::interpret(State& state, const ast::loop::Break&) const {
     while(!inner.returning && !inner.breaking &&
           any_to_bool(interpret(inner, *whi.condition))) {
       ret = interpret_shared(inner, *whi.scope);
+      if(inner.continuing) {
+        inner.continuing = false;
+      }
     }
     if(inner.returning) {
       state.returning = true;
@@ -551,7 +571,8 @@ void Interpreter::interpret(State& state, const ast::loop::Break&) const {
     std::throw_with_nested(e);
   }
 }
-::core::any Interpreter::interpret(State& state, const ast::callable::Return& ret) const {
+::core::any Interpreter::interpret(State& state,
+                                   const ast::callable::Return& ret) const {
   assert(ret.output);
 
   try {
@@ -586,10 +607,12 @@ void Interpreter::interpret(State& state, const ast::loop::Break&) const {
   State inner(state);
   auto ret = interpret_shared(inner, scope);
 
-  if(inner.breaking) {
-    state.breaking = true;
-  } else if(inner.returning) {
+  if(inner.returning) {
     state.returning = true;
+  } else if(inner.breaking) {
+    state.breaking = true;
+  } else if(inner.continuing) {
+    state.continuing = true;
   }
   return ret;
 }
@@ -603,6 +626,7 @@ void Interpreter::interpret(State& state, const ast::loop::Break&) const {
         [this, &state](const Define& e) { define_variable(state, e); },
         [this, &state](const Operator& e) { interpret(state, e); },
         [this, &state](const loop::Break& e) { interpret(state, e); },
+        [this, &state](const loop::Continue& e) { interpret(state, e); },
         [this, &state](const Callable& e) { interpret(state, e); },
         [this, &state, &ret](const DoWhile& e) { ret = interpret(state, e); },
         [this, &state, &ret](const For& e) { ret = interpret(state, e); },
@@ -618,7 +642,7 @@ void Interpreter::interpret(State& state, const ast::loop::Break&) const {
         [this, &state, &ret](const While& e) { ret = interpret(state, e); },
         [this, &state](const Variable&) { /* ignore */ });
 
-    if(state.breaking || state.returning) {
+    if(state.breaking || state.returning || state.continuing) {
       break;
     }
   }

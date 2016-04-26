@@ -967,6 +967,28 @@ TEST_CASE("break") {
   }
 }
 
+TEST_CASE("contine") {
+  SECTION("While") {
+    auto line1 = std::make_shared<std::string>("var a; while(a){continue;}");
+    auto ast = parse(*line1);
+
+    Scope expected({0, 0, ""});
+    {
+      Define def({1, 1, "var", line1});
+      def.definition = Variable({1, 5, "a", line1});
+      While w({1, 8, "while", line1});
+      w.condition =
+          std::make_unique<ValueProducer>(Variable({1, 14, "a", line1}));
+      w.scope = std::make_unique<Scope>(Token(1, 16, "{", line1));
+      w.scope->nodes.emplace_back(Continue(Token(1, 17, "continue", line1)));
+      expected.nodes.push_back(std::move(def));
+      expected.nodes.push_back(std::move(w));
+    }
+
+    REQUIRE(ast == expected);
+  }
+}
+
 TEST_CASE("Number Literals") {
   SECTION("Integer") {
     SECTION("positive") {
@@ -1596,8 +1618,12 @@ TEST_CASE("return and break last") {
     REQUIRE_THROWS_AS(parse("def main(){return 1; 1 + 1;}"),
                       ExceptionBase<UserE>);
   }
-  SECTION("return") {
+  SECTION("break") {
     REQUIRE_THROWS_AS(parse("def main(){while(true){break; 1;}}"),
+                      ExceptionBase<UserE>);
+  }
+  SECTION("continue") {
+    REQUIRE_THROWS_AS(parse("def main(){while(true){continue; 1;}}"),
                       ExceptionBase<UserE>);
   }
 }
