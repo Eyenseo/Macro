@@ -21,8 +21,8 @@ CATCH_TRANSLATE_EXCEPTION(std::exception& e) {
 
 TEST_CASE("Define") {
   SECTION("EntryFunction") {
-    auto ast = parse("def main() {}");
     auto line1 = std::make_shared<std::string>("def main() {}");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -37,8 +37,8 @@ TEST_CASE("Define") {
   }
 
   SECTION("Function") {
-    auto ast = parse("def fun() {}");
     auto line1 = std::make_shared<std::string>("def fun() {}");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -53,8 +53,8 @@ TEST_CASE("Define") {
   }
 
   SECTION("Variable") {
-    auto ast = parse("var foo;");
     auto line1 = std::make_shared<std::string>("var foo;");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -68,8 +68,8 @@ TEST_CASE("Define") {
   }
 
   SECTION("Parameter") {
-    auto ast = parse("def fun(herbert) {}");
     auto line1 = std::make_shared<std::string>("def fun(herbert) {}");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -88,8 +88,8 @@ TEST_CASE("Define") {
   }
 
   SECTION("Multiple Parameter") {
-    auto ast = parse("def fun(herbert, berta) {}");
     auto line1 = std::make_shared<std::string>("def fun(herbert, berta) {}");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -112,8 +112,8 @@ TEST_CASE("Define") {
 
 TEST_CASE("Callable") {
   SECTION("Parameterless") {
-    auto ast = parse("fun();");
     auto line1 = std::make_shared<std::string>("fun();");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -130,9 +130,9 @@ TEST_CASE("Callable") {
   }
 
   SECTION("Parameter") {
-    auto ast = parse("var herbert; fun(foo:herbert);");
     auto line1 =
         std::make_shared<std::string>("var herbert; fun(foo:herbert);");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -156,9 +156,9 @@ TEST_CASE("Callable") {
   }
 
   SECTION("Multiple Parameter") {
-    auto ast = parse("var herbert; var berta; fun(foo:herbert, bar:berta);");
     auto line1 = std::make_shared<std::string>(
         "var herbert; var berta; fun(foo:herbert, bar:berta);");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -184,8 +184,8 @@ TEST_CASE("Callable") {
   }
 
   SECTION("Function Parameter") {
-    auto ast = parse("fun(foo:gun());");
     auto line1 = std::make_shared<std::string>("fun(foo:gun());");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -201,8 +201,8 @@ TEST_CASE("Callable") {
   }
 
   SECTION("Multiple Function Parameter") {
-    auto ast = parse("fun(foo:gun(), bar:hun());");
     auto line1 = std::make_shared<std::string>("fun(foo:gun(), bar:hun());");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -223,8 +223,8 @@ TEST_CASE("Callable") {
 
 TEST_CASE("Return") {
   SECTION("Variable") {
-    auto ast = parse("def main() {return 1;}");
     auto line1 = std::make_shared<std::string>("def main() {return 1;}");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -244,8 +244,8 @@ TEST_CASE("Return") {
   }
 
   SECTION("Function") {
-    auto ast = parse("def main() {return fun();}");
     auto line1 = std::make_shared<std::string>("def main() {return fun();}");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -274,8 +274,8 @@ TEST_CASE("Return") {
 TEST_CASE("If") {
   SECTION("Input") {
     SECTION("Variable") {
-      auto ast = parse("if(true){}");
       auto line1 = std::make_shared<std::string>("if(true){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -291,8 +291,8 @@ TEST_CASE("If") {
     }
 
     SECTION("Function") {
-      auto ast = parse("if(fun()){}");
       auto line1 = std::make_shared<std::string>("if(fun()){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -306,8 +306,8 @@ TEST_CASE("If") {
       REQUIRE(ast == expected);
     }
     SECTION("Literal") {
-      auto ast = parse("if(true){}");
       auto line1 = std::make_shared<std::string>("if(true){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -325,8 +325,8 @@ TEST_CASE("If") {
 
   SECTION("Operator") {
     SECTION("Equal") {
-      auto ast = parse("if(true == true){}");
       auto line1 = std::make_shared<std::string>("if(true == true){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -350,8 +350,8 @@ TEST_CASE("If") {
     }
 
     SECTION("Not Equal") {
-      auto ast = parse("if(true != true){}");
       auto line1 = std::make_shared<std::string>("if(true != true){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -375,8 +375,8 @@ TEST_CASE("If") {
     }
 
     SECTION("Greater") {
-      auto ast = parse("if(true > true){}");
       auto line1 = std::make_shared<std::string>("if(true > true){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -400,8 +400,8 @@ TEST_CASE("If") {
     }
 
     SECTION("Greater Equal") {
-      auto ast = parse("if(true >= true){}");
       auto line1 = std::make_shared<std::string>("if(true >= true){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -425,8 +425,8 @@ TEST_CASE("If") {
     }
 
     SECTION("Smaller") {
-      auto ast = parse("if(true < true){}");
       auto line1 = std::make_shared<std::string>("if(true < true){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -450,8 +450,8 @@ TEST_CASE("If") {
     }
 
     SECTION("Smaller Equal") {
-      auto ast = parse("if(true <= true){}");
       auto line1 = std::make_shared<std::string>("if(true <= true){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -475,8 +475,8 @@ TEST_CASE("If") {
     }
 
     SECTION("Not var") {
-      auto ast = parse("if(!true){}");
       auto line1 = std::make_shared<std::string>("if(!true){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -496,8 +496,8 @@ TEST_CASE("If") {
     }
 
     SECTION("Not operator") {
-      auto ast = parse("if(!(true == true)){}");
       auto line1 = std::make_shared<std::string>("if(!(true == true)){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -529,8 +529,8 @@ TEST_CASE("If") {
 
   SECTION("Literals") {
     SECTION("Boolean") {
-      auto ast = parse("if(true == false){}");
       auto line1 = std::make_shared<std::string>("if(true == false){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -553,8 +553,8 @@ TEST_CASE("If") {
     }
 
     SECTION("Integer") {
-      auto ast = parse("if(1 == 1){}");
       auto line1 = std::make_shared<std::string>("if(1 == 1){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -577,8 +577,8 @@ TEST_CASE("If") {
     }
 
     SECTION("Double") {
-      auto ast = parse("if(.1 == .1){}");
       auto line1 = std::make_shared<std::string>("if(.1 == .1){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -602,8 +602,8 @@ TEST_CASE("If") {
 
     SECTION("String") {
       // The escaped " counts one!
-      auto ast = parse("if(\"a\" == \"a\"){}");
       auto line1 = std::make_shared<std::string>("if(\"a\" == \"a\"){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -628,9 +628,9 @@ TEST_CASE("If") {
 
   SECTION("Combination") {
     SECTION("Brackets") {
-      auto ast = parse("var a;var b;var c;if(a == b && (a == c || c == b)){}");
       auto line1 = std::make_shared<std::string>(
           "var a;var b;var c;if(a == b && (a == c || c == b)){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -683,9 +683,9 @@ TEST_CASE("If") {
     }
 
     SECTION("Bracketless") {
-      auto ast = parse("var a;var b;var c;if(a == b && a == c || c == b){}");
       auto line1 = std::make_shared<std::string>(
           "var a;var b;var c;if(a == b && a == c || c == b){}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -737,8 +737,8 @@ TEST_CASE("If") {
     }
 
     SECTION("Else") {
-      auto ast = parse("var a; if(a){}else{}");
       auto line1 = std::make_shared<std::string>("var a; if(a){}else{}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -760,8 +760,8 @@ TEST_CASE("If") {
 
 TEST_CASE("While") {  // Basically an if
   SECTION("default") {
-    auto ast = parse("var a; while(a){}");
     auto line1 = std::make_shared<std::string>("var a; while(a){}");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -780,8 +780,8 @@ TEST_CASE("While") {  // Basically an if
 }
 TEST_CASE("DoWhile") {
   SECTION("default") {
-    auto ast = parse("var a; do{}while(a);");
     auto line1 = std::make_shared<std::string>("var a; do{}while(a);");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -801,8 +801,8 @@ TEST_CASE("DoWhile") {
 
 TEST_CASE("Variable define and assign") {
   SECTION("define and assign") {
-    auto ast = parse("var foo = foo + 1;");
     auto line1 = std::make_shared<std::string>("var foo = foo + 1;");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -875,8 +875,8 @@ TEST_CASE("Variable define and assign") {
 TEST_CASE("\"free\" operators") {
   SECTION("free assign") {
     SECTION("define and assign") {
-      auto ast = parse("var foo; foo = foo + 1;");
       auto line1 = std::make_shared<std::string>("var foo; foo = foo + 1;");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -947,8 +947,8 @@ TEST_CASE("\"free\" operators") {
 
 TEST_CASE("break") {
   SECTION("While") {
-    auto ast = parse("var a; while(a){break;}");
     auto line1 = std::make_shared<std::string>("var a; while(a){break;}");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -970,8 +970,8 @@ TEST_CASE("break") {
 TEST_CASE("Number Literals") {
   SECTION("Integer") {
     SECTION("positive") {
-      auto ast = parse("def main() {return 1;}");
       auto line1 = std::make_shared<std::string>("def main() {return 1;}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -990,8 +990,8 @@ TEST_CASE("Number Literals") {
       REQUIRE(ast == expected);
     }
     SECTION("negative") {
-      auto ast = parse("def main() {return -1;}");
       auto line1 = std::make_shared<std::string>("def main() {return -1;}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1013,8 +1013,8 @@ TEST_CASE("Number Literals") {
       REQUIRE(ast == expected);
     }
     SECTION("negative operator") {
-      auto ast = parse("def main() {return 1 - 1;}");
       auto line1 = std::make_shared<std::string>("def main() {return 1 - 1;}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1039,8 +1039,8 @@ TEST_CASE("Number Literals") {
       REQUIRE(ast == expected);
     }
     SECTION("negative operator nospace") {
-      auto ast = parse("def main() {return 1-1;}");
       auto line1 = std::make_shared<std::string>("def main() {return 1-1;}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1065,8 +1065,8 @@ TEST_CASE("Number Literals") {
       REQUIRE(ast == expected);
     }
     SECTION("negativ leading literal") {
-      auto ast = parse("def main() {1; -1;}");
       auto line1 = std::make_shared<std::string>("def main() {1; -1;}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1091,8 +1091,8 @@ TEST_CASE("Number Literals") {
   }
   SECTION("Double") {
     SECTION("positive") {
-      auto ast = parse("def main() {return .1;}");
       auto line1 = std::make_shared<std::string>("def main() {return .1;}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1111,8 +1111,8 @@ TEST_CASE("Number Literals") {
       REQUIRE(ast == expected);
     }
     SECTION("negative") {
-      auto ast = parse("def main() {return -.1;}");
       auto line1 = std::make_shared<std::string>("def main() {return -.1;}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1134,9 +1134,9 @@ TEST_CASE("Number Literals") {
       REQUIRE(ast == expected);
     }
     SECTION("negative operator") {
-      auto ast = parse("def main() {return .1 - .1;}");
       auto line1 =
           std::make_shared<std::string>("def main() {return .1 - .1;}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1161,8 +1161,8 @@ TEST_CASE("Number Literals") {
       REQUIRE(ast == expected);
     }
     SECTION("negative operator nospace") {
-      auto ast = parse("def main() {return .1-.1;}");
       auto line1 = std::make_shared<std::string>("def main() {return .1-.1;}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1187,8 +1187,8 @@ TEST_CASE("Number Literals") {
       REQUIRE(ast == expected);
     }
     SECTION("negativ leading literal") {
-      auto ast = parse("def main() {.1; -.1;}");
       auto line1 = std::make_shared<std::string>("def main() {.1; -.1;}");
+      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1213,8 +1213,8 @@ TEST_CASE("Number Literals") {
   }
   // TODO this section should be in a test case for operators
   SECTION("Operator substracht one negative") {
-    auto ast = parse("def main() {return 1--1;}");
     auto line1 = std::make_shared<std::string>("def main() {return 1--1;}");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -1242,8 +1242,8 @@ TEST_CASE("Number Literals") {
     REQUIRE(ast == expected);
   }
   SECTION("Operator substracht two negative") {
-    auto ast = parse("def main() {return 1---1;}");
     auto line1 = std::make_shared<std::string>("def main() {return 1---1;}");
+    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -1275,24 +1275,273 @@ TEST_CASE("Number Literals") {
   }
 }
 
-// TODO
-// TEST_CASE("For") {
-//   auto ast = parse("for(var a = 0; a < 10; a = a + 1){}");
+TEST_CASE("For") {
+  SECTION("Empty header") {
+    auto line1 = std::make_shared<std::string>("def main() {for(;;){}}");
+    auto ast = parse(*line1);
 
-//   Scope expected({0, 0, "",line1});
-//   {
-//     For f({1, 1, "For",line1});
-//     f.condition = std::make_unique<ValueProducer>(Variable({1, 4,
-//     "a",line1}));
+    Scope expected({0, 0, ""});
+    {
+      Define def_m({1, 1, "def", line1});
+      EntryFunction main({1, 5, "main", line1});
+      main.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+      For f({1, 13, "for", line1});
+      f.scope = std::make_unique<Scope>(Token(1, 20, "{", line1));
 
+      main.scope->nodes.push_back(std::move(f));
+      def_m.definition = std::move(main);
+      expected.nodes.push_back(std::move(def_m));
+    }
+    REQUIRE(ast == expected);
+  }
+  SECTION("First header place") {
+    SECTION("Pre defined variable") {
+      auto line1 =
+          std::make_shared<std::string>("def main() {var a;for(a = 0;;){}}");
+      auto ast = parse(*line1);
 
-//     f.true_scope = std::make_unique<Scope>(Token(1, 6, "{"));
-//     f.false_scope = std::make_unique<Scope>(Token(1, 12, "{"));
-//     expected.nodes.push_back(std::move(f));
-//   }
+      Scope expected({0, 0, ""});
+      {
+        Define def_m({1, 1, "def", line1});
+        EntryFunction main({1, 5, "main", line1});
+        Define def_v({1, 13, "var", line1});
+        For f({1, 19, "for", line1});
+        Operator op({1, 25, "=", line1});
+        Literal<Literals::INT> lit({1, 27, "0", line1});
 
-//   REQUIRE(ast == expected);
-// }
+        main.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        def_v.definition = Variable({1, 17, "a", line1});
+        op.operation = Operation::ASSIGNMENT;
+        lit.data = 0;
+
+        op.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 23, "a", line1}));
+        op.right_operand = std::make_unique<ValueProducer>(std::move(lit));
+        f.variable = std::move(op);
+        f.scope = std::make_unique<Scope>(Token(1, 31, "{", line1));
+
+        main.scope->nodes.push_back(std::move(def_v));
+        main.scope->nodes.push_back(std::move(f));
+        def_m.definition = std::move(main);
+        expected.nodes.push_back(std::move(def_m));
+      }
+      REQUIRE(ast == expected);
+    }
+    SECTION("Defined variable") {
+      auto line1 =
+          std::make_shared<std::string>("def main() {for(var a = 0;;){}}");
+      auto ast = parse(*line1);
+
+      Scope expected({0, 0, ""});
+      {
+        Define def_m({1, 1, "def", line1});
+        EntryFunction main({1, 5, "main", line1});
+        For f({1, 13, "for", line1});
+        Define def_v({1, 17, "var", line1});
+        Operator op({1, 23, "=", line1});
+        Literal<Literals::INT> lit({1, 25, "0", line1});
+
+        main.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        def_v.definition = Variable({1, 21, "a", line1});
+        op.operation = Operation::ASSIGNMENT;
+        lit.data = 0;
+
+        op.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 21, "a", line1}));
+        op.right_operand = std::make_unique<ValueProducer>(std::move(lit));
+        f.define = std::move(def_v);
+        f.variable = std::move(op);
+        f.scope = std::make_unique<Scope>(Token(1, 29, "{", line1));
+
+        main.scope->nodes.push_back(std::move(f));
+        def_m.definition = std::move(main);
+        expected.nodes.push_back(std::move(def_m));
+      }
+      REQUIRE(ast == expected);
+    }
+    SECTION("Function") {
+      auto line1 = std::make_shared<std::string>("def main() {for(fun();;){}}");
+      auto ast = parse(*line1);
+
+      Scope expected({0, 0, ""});
+      {
+        Define def_m({1, 1, "def", line1});
+        EntryFunction main({1, 5, "main", line1});
+        For f({1, 13, "for", line1});
+
+        main.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        f.variable = Callable({1, 17, "fun", line1});
+        f.scope = std::make_unique<Scope>(Token(1, 25, "{", line1));
+
+        main.scope->nodes.push_back(std::move(f));
+        def_m.definition = std::move(main);
+        expected.nodes.push_back(std::move(def_m));
+      }
+      REQUIRE(ast == expected);
+    }
+  }
+  SECTION("Second header place") {
+    SECTION("Variable") {
+      auto line1 =
+          std::make_shared<std::string>("def main() {var a; for(;a;){}}");
+      auto ast = parse(*line1);
+
+      Scope expected({0, 0, ""});
+      {
+        Define def_m({1, 1, "def", line1});
+        EntryFunction main({1, 5, "main", line1});
+        Define def_v({1, 13, "var", line1});
+        For f({1, 20, "for", line1});
+
+        main.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        def_v.definition = Variable({1, 17, "a", line1});
+        f.condition =
+            std::make_unique<ValueProducer>(Variable({1, 25, "a", line1}));
+        f.scope = std::make_unique<Scope>(Token(1, 28, "{", line1));
+
+        main.scope->nodes.push_back(std::move(def_v));
+        main.scope->nodes.push_back(std::move(f));
+        def_m.definition = std::move(main);
+        expected.nodes.push_back(std::move(def_m));
+      }
+      REQUIRE(ast == expected);
+    }
+    SECTION("Function") {
+      auto line1 = std::make_shared<std::string>("def main() {for(;fun();){}}");
+      auto ast = parse(*line1);
+
+      Scope expected({0, 0, ""});
+      {
+        Define def_m({1, 1, "def", line1});
+        EntryFunction main({1, 5, "main", line1});
+        For f({1, 13, "for", line1});
+
+        main.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        f.condition =
+            std::make_unique<ValueProducer>(Callable({1, 18, "fun", line1}));
+        f.scope = std::make_unique<Scope>(Token(1, 25, "{", line1));
+
+        main.scope->nodes.push_back(std::move(f));
+        def_m.definition = std::move(main);
+        expected.nodes.push_back(std::move(def_m));
+      }
+      REQUIRE(ast == expected);
+    }
+    SECTION("Operator") {
+      auto line1 =
+          std::make_shared<std::string>("def main() {for(;true == fun();){}}");
+      auto ast = parse(*line1);
+
+      Scope expected({0, 0, ""});
+      {
+        Define def_m({1, 1, "def", line1});
+        EntryFunction main({1, 5, "main", line1});
+        For f({1, 13, "for", line1});
+        Operator op({1, 23, "==", line1});
+        Literal<Literals::BOOL> lit({1, 18, "true", line1});
+        Callable fun({1, 26, "fun", line1});
+
+        main.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        lit.data = true;
+        op.operation = Operation::EQUAL;
+        op.left_operand = std::make_unique<ValueProducer>(std::move(lit));
+        op.right_operand = std::make_unique<ValueProducer>(std::move(fun));
+
+        f.condition = std::make_unique<ValueProducer>(std::move(op));
+        f.scope = std::make_unique<Scope>(Token(1, 33, "{", line1));
+
+        main.scope->nodes.push_back(std::move(f));
+        def_m.definition = std::move(main);
+        expected.nodes.push_back(std::move(def_m));
+      }
+      REQUIRE(ast == expected);
+    }
+  }
+  SECTION("Third section") {
+    SECTION("Variable") {
+      auto line1 =
+          std::make_shared<std::string>("def main() {var a; for(;;a){}}");
+      auto ast = parse(*line1);
+
+      Scope expected({0, 0, ""});
+      {
+        Define def_m({1, 1, "def", line1});
+        EntryFunction main({1, 5, "main", line1});
+        Define def_v({1, 13, "var", line1});
+        For f({1, 20, "for", line1});
+
+        main.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        def_v.definition = Variable({1, 17, "a", line1});
+        f.operation = Variable({1, 26, "a", line1});
+        f.scope = std::make_unique<Scope>(Token(1, 28, "{", line1));
+
+        main.scope->nodes.push_back(std::move(def_v));
+        main.scope->nodes.push_back(std::move(f));
+        def_m.definition = std::move(main);
+        expected.nodes.push_back(std::move(def_m));
+      }
+      REQUIRE(ast == expected);
+    }
+    SECTION("Function") {
+      auto line1 = std::make_shared<std::string>("def main() {for(;;fun()){}}");
+      auto ast = parse(*line1);
+
+      Scope expected({0, 0, ""});
+      {
+        Define def_m({1, 1, "def", line1});
+        EntryFunction main({1, 5, "main", line1});
+        For f({1, 13, "for", line1});
+
+        main.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        f.operation = Callable({1, 19, "fun", line1});
+        f.scope = std::make_unique<Scope>(Token(1, 25, "{", line1));
+
+        main.scope->nodes.push_back(std::move(f));
+        def_m.definition = std::move(main);
+        expected.nodes.push_back(std::move(def_m));
+      }
+      REQUIRE(ast == expected);
+    }
+    SECTION("Operator") {
+      auto line1 = std::make_shared<std::string>(
+          "def main() {var a;for(;;a = a + 1){}}");
+      auto ast = parse(*line1);
+
+      Scope expected({0, 0, ""});
+      {
+        Define def_m({1, 1, "def", line1});
+        EntryFunction main({1, 5, "main", line1});
+        Define def_v({1, 13, "var", line1});
+        For f({1, 19, "for", line1});
+        Operator op_as({1, 27, "=", line1});
+        Operator op_ad({1, 31, "+", line1});
+        Literal<Literals::INT> lit({1, 33, "1", line1});
+
+        main.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
+        def_v.definition = Variable({1, 17, "a", line1});
+        lit.data = 1;
+        op_ad.operation = Operation::ADD;
+        op_ad.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 29, "a", line1}));
+        op_ad.right_operand = std::make_unique<ValueProducer>(std::move(lit));
+
+        op_as.operation = Operation::ASSIGNMENT;
+        op_as.left_operand =
+            std::make_unique<ValueProducer>(Variable({1, 25, "a", line1}));
+        op_as.right_operand = std::make_unique<ValueProducer>(std::move(op_ad));
+
+        f.operation = std::move(op_as);
+        f.scope = std::make_unique<Scope>(Token(1, 35, "{", line1));
+
+        main.scope->nodes.push_back(std::move(def_v));
+        main.scope->nodes.push_back(std::move(f));
+        def_m.definition = std::move(main);
+        expected.nodes.push_back(std::move(def_m));
+      }
+      REQUIRE(ast == expected);
+    }
+  }
+}
 
 // TEST_CASE("Complete") {
 //   const std::string raw_macro = "\n"

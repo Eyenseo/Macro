@@ -8,16 +8,15 @@ namespace macro {
 namespace ast {
 namespace loop {
 void For::print_internals(IndentStream& os) const {
-  os << "Variable:\n";
+  os << "Define:\n";
+  if(define) {
+    os.indent() << *define;
+    os.dedent();
+  }
+  os << "Variable initialization:\n";
   if(variable) {
     os.indent() << *variable;
     os.dedent();
-
-    os << "Variable initialization:\n";
-    if(variable_init) {
-      os.indent() << *variable_init;
-      os.dedent();
-    }
   }
 
   While::print_internals(os);
@@ -29,33 +28,15 @@ void For::print_internals(IndentStream& os) const {
   }
 }
 
-For::For() {
-}
-For::For(const For& other)
-    : While(other)
-    , variable(other.variable)
-    , variable_init(other.variable_init)
-    , operation(other.operation) {
-}
-For::For(For&& other) {
-  swap(*this, other);
-}
 For::For(parser::Token token)
     : While(std::move(token)) {
-}
-For::~For() {
-}
-
-For& For::operator=(For other) {
-  swap(*this, other);
-  return *this;
 }
 
 bool For::operator==(const For& other) const {
   if(this == &other) {
     return true;
   } else if(While::operator==(other)) {
-    return variable == other.variable && variable_init == other.variable_init &&
+    return define == other.define && variable == other.variable &&
            operation == other.operation;
   }
   return false;

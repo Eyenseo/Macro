@@ -236,6 +236,12 @@ core::optional<ast::loop::While> parse_while(const Tokens& tokens,
                                              size_t& token);
 core::optional<ast::loop::DoWhile> parse_do_while(const Tokens& tokens,
                                                   size_t& token);
+void parse_for_variable(const Tokens& tokens, size_t& token, ast::loop::For& f);
+void parse_for_conditon(const Tokens& tokens, size_t& token, ast::loop::For& f);
+void parse_for_operation(const Tokens& tokens, size_t& token,
+                         ast::loop::For& f);
+void parse_for_header(const Tokens& tokens, size_t& token, ast::loop::For& f);
+core::optional<ast::loop::For> parse_for(const Tokens& tokens, size_t& token);
 
 //////////////////////////////////////////
 /// Implementation
@@ -731,6 +737,8 @@ bool parse_scope_internals(const Tokens& tokens, size_t& token,
   } else if(auto dwhi = parse_do_while(tokens, token)) {
     nodes.push_back(std::move(*dwhi));
     expect_end();
+  } else if(auto foor = parse_for(tokens, token)) {
+    nodes.push_back(std::move(*foor));
   } else if(auto ret = parse_return(tokens, token)) {
     nodes.push_back(std::move(*ret));
     expect_end();
@@ -760,6 +768,7 @@ bool parse_scope_internals(const Tokens& tokens, size_t& token,
       nodes.push_back(std::move(*op));
     }
     expect_end();
+  } else if(read_token(tokens, token, ";")) {
   } else {
     return false;
   }
@@ -1580,6 +1589,78 @@ core::optional<ast::loop::DoWhile> parse_do_while(const Tokens& tokens,
       parse_while_condition(tokens, tmp, w);
       token = tmp;
       return w;
+    }
+  } catch(UserExc&) {
+    UserTailExc e;
+    add_exception_info(tokens, token, e,
+                       [&e] { e << "In the do-while defined here"; });
+    std::throw_with_nested(e);
+  }
+  return {};
+}
+
+void parse_for_variable(const Tokens& tokens, size_t& token,
+                        ast::loop::For& f) {
+  auto tmp = token;
+
+  if(auto def = parse_variable_definition(tokens, tmp)) {
+    std::vector<ast::Scope::Node> op_wip;
+    def->definition.match(
+        [&op_wip](ast::Variable& e) { op_wip.push_back(e); },
+        [](ast::callable::Function&) { assert(false && "Can't happen."); });
+    f.define = std::move(*def);
+    if(auto op = parse_operator(tokens, tmp, op_wip)) {
+      f.variable = std::move(*op);
+    }
+    token = tmp;
+  } else if(auto con = parse_condition(tokens, tmp)) {
+    f.variable = std::move(*con);
+    token = tmp;
+  }
+}
+void parse_for_conditon(const Tokens& tokens, size_t& token,
+                        ast::loop::For& f) {
+  auto tmp = token;
+
+  if(auto con = parse_condition(tokens, tmp)) {
+    f.condition = std::make_unique<ast::ValueProducer>(std::move(*con));
+    token = tmp;
+  }
+}
+void parse_for_operation(const Tokens& tokens, size_t& token,
+                         ast::loop::For& f) {
+  auto tmp = token;
+
+  if(auto con = parse_condition(tokens, tmp)) {
+    f.operation = std::move(*con);
+    token = tmp;
+  }
+}
+void parse_for_header(const Tokens& tokens, size_t& token, ast::loop::For& f) {
+
+  auto tmp = token;
+  expect_token(tokens, tmp, "(");
+  parse_for_variable(tokens, tmp, f);
+  expect_token(tokens, tmp, ";");
+  parse_for_conditon(tokens, tmp, f);
+  expect_token(tokens, tmp, ";");
+  parse_for_operation(tokens, tmp, f);
+  expect_token(tokens, tmp, ")");
+  token = tmp;
+}
+
+core::optional<ast::loop::For> parse_for(const Tokens& tokens, size_t& token) {
+  auto tmp = token;
+
+  try {
+    if(read_token(tokens, tmp, "for")) {
+      ast::loop::For f(tokens.at(token));
+
+      parse_for_header(tokens, tmp, f);
+      parse_while_scope(tokens, tmp, f);
+
+      token = tmp;
+      return f;
     }
   } catch(UserExc&) {
     UserTailExc e;

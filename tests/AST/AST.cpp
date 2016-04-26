@@ -443,6 +443,23 @@ TEST_CASE("For") {
     For b({0, 0, ""});
     REQUIRE(a == b);
   }
+  // Define
+  SECTION("Define") {
+    SECTION("Same") {
+      For a({0, 0, ""});
+      a.define = Define({0, 0, ""});
+      For b({0, 0, ""});
+      b.define = Define({0, 0, ""});
+      REQUIRE(a == b);
+    }
+    SECTION("N/One") {
+      For a({0, 0, ""});
+      Condition ac({0, 0, ""});
+      a.define = Define({0, 0, ""});
+      For b({0, 0, ""});
+      REQUIRE_FALSE(a == b);
+    }
+  }
   // Variable
   SECTION("Variable") {
     SECTION("Same") {
@@ -464,14 +481,14 @@ TEST_CASE("For") {
   SECTION("Variable initialization") {
     SECTION("Same") {
       For a({0, 0, ""});
-      a.variable_init = Operator({0, 0, ""});
+      a.variable = Operator({0, 0, ""});
       For b({0, 0, ""});
-      b.variable_init = Operator({0, 0, ""});
+      b.variable = Operator({0, 0, ""});
       REQUIRE(a == b);
     }
     SECTION("N/One") {
       For a({0, 0, ""});
-      a.variable_init = Operator({0, 0, ""});
+      a.variable = Operator({0, 0, ""});
       For b({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }

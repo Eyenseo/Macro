@@ -149,11 +149,13 @@ TEST_CASE("Parameter assign in Scope") {
   auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
   Interpreter in(cp, nullptr);
 
-  auto ret = in.interpret(
-      "def fun(bar){do{{{{{bar = 42;}}}}}while(false); return bar;} def main(){return fun(bar:1);}", Arguments());
+  auto ret = in.interpret("def fun(bar){do{{{{{bar = 42;}}}}}while(false); "
+                          "return bar;} def main(){return fun(bar:1);}",
+                          Arguments());
   REQUIRE(core::any_cast<int>(ret) == 42);
-ret = in.interpret(
-      "def fun(bar){bar=2;do{{{{{bar = 42;}}}}}while(false); return bar;} def main(){return fun(bar:1);}", Arguments());
+  ret = in.interpret("def fun(bar){bar=2;do{{{{{bar = 42;}}}}}while(false); "
+                     "return bar;} def main(){return fun(bar:1);}",
+                     Arguments());
   REQUIRE(core::any_cast<int>(ret) == 42);
 }
 
@@ -356,6 +358,22 @@ TEST_CASE("Assign in Condition") {
       "def main(){var i = 0; if(i = 1){ return 1;} else {return 0;}}",
       Arguments());
   REQUIRE(core::any_cast<int>(ret) == 1);
+}
+
+TEST_CASE("For") {
+  auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
+  auto op = std::make_shared<OperatorProvider>();
+  std::stringstream ss;
+  Interpreter in(cp, op,ss);
+
+  auto ret = in.interpret("def main(){"
+                          "  for(var i = 0; i < 4; i = i + 1) {"
+                          "    print i;"
+                          "    print \"\\n\";"
+                          "  }"
+                          "}",
+                          Arguments());
+  REQUIRE(ss.str() == "0\n1\n2\n3\n");
 }
 
 // FIXME test history stack  implementation

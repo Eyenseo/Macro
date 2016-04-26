@@ -28,7 +28,7 @@ Condition& Condition::operator=(Condition other) {
 }
 
 void Condition::print_internals(IndentStream& os) const {
-  os << "Contition:\n";
+  os << "Condition:\n";
   if(condition) {
     os.indent();
     condition->value.match(

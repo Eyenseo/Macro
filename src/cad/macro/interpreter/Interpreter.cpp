@@ -497,9 +497,35 @@ void Interpreter::interpret(State& state, const ast::Break&) const {
     std::throw_with_nested(e);
   }
 }
-::core::any Interpreter::interpret(State&, const ast::loop::For&) const {
-  /* TODO */ assert(false && "Not implemented");
-  return {};
+::core::any Interpreter::interpret(State& state,
+                                   const ast::loop::For& foor) const {
+  try {
+    State inner(state);
+    inner.loopscope = true;
+    ::core::any ret;
+
+    if(foor.define){
+      define_variable(inner, *foor.define);
+    }
+    if(foor.variable){
+      interpret(inner, *foor.variable);
+    }
+
+    while(!inner.returning && !inner.breaking &&
+          any_to_bool(interpret(inner, *foor.condition))) {
+      ret = interpret_shared(inner, *foor.scope);
+      ret = interpret(inner, *foor.operation);
+    }
+    if(inner.returning) {
+      state.returning = true;
+    }
+    return ret;
+  } catch(std::exception&) {
+    Exc<E, E::TAIL> e;
+    add_exception_info(foor.token, state.file, e,
+                       [&e]() { e << "In the for defined here"; });
+    std::throw_with_nested(e);
+  }
 }
 ::core::any Interpreter::interpret(State& state,
                                    const ast::loop::While& whi) const {
