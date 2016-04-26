@@ -100,7 +100,7 @@ void token_end(Macro macro, Position& position) {
 }
 
 Token next_string_token(Macro macro, Position& position) {
-  const auto start = position.string;
+  auto start = position;
   char last_token = '\0';
   auto end = macro.size();
 
@@ -128,7 +128,8 @@ Token next_string_token(Macro macro, Position& position) {
       break;
     case '"':
       if(last_token != '\\') {
-        ++position.string;
+        ++position.string; // Move to the next character
+        ++position.column; // Move to the next character
         end = 0;
       }
       ++position.column;
@@ -136,9 +137,10 @@ Token next_string_token(Macro macro, Position& position) {
       break;
     case '\\':
       if(last_token != '\\') {
-        ++position.string;
+        last_token = '\\';
+      } else {
+        last_token = '\0';  // We consumed the last escape
       }
-      last_token = '\0';  // We consumed the last escape
       ++position.column;
       break;
     default:
@@ -149,8 +151,9 @@ Token next_string_token(Macro macro, Position& position) {
   }
 
   const auto ret =
-      Token(position.line, position.column,
-            macro.substr(start, position.string - start), position.source_line);
+      Token(start.line, start.column,
+            macro.substr(start.string, position.string - start.string),
+            start.source_line);
   return ret;
 }
 

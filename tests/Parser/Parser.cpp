@@ -608,9 +608,9 @@ TEST_CASE("If") {
       Scope expected({0, 0, ""});
       {
         If iff({1, 1, "if", line1});
-        Operator op({1, 7, "==", line1});
-        Literal<Literals::STRING> left({1, 6, "\"a\"", line1});
-        Literal<Literals::STRING> right({1, 12, "\"a\"", line1});
+        Operator op({1, 8, "==", line1});
+        Literal<Literals::STRING> left({1, 4, "\"a\"", line1});
+        Literal<Literals::STRING> right({1, 11, "\"a\"", line1});
         left.data = "a";
         right.data = "a";
         op.left_operand = std::make_unique<ValueProducer>(left);
@@ -618,7 +618,7 @@ TEST_CASE("If") {
         op.operation = Operation::EQUAL;
 
         iff.condition = std::make_unique<ValueProducer>(op);
-        iff.true_scope = std::make_unique<Scope>(Token(1, 13, "{", line1));
+        iff.true_scope = std::make_unique<Scope>(Token(1, 15, "{", line1));
         expected.nodes.push_back(std::move(iff));
       }
 
