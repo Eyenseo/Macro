@@ -1714,11 +1714,12 @@ ast::Scope parse(std::string macro, std::string file_name) {
   for(size_t i = 0; i < tokens.size(); ++i) {
     parse_scope_internals(tokens, i, root);
   }
-  auto messages = analyse(root, file_name);
+  Analyser ana(file_name);
+  auto messages = ana.analyse(root);
 
-  if(messages->size() > 0) {
+  if(messages.size() > 0) {
     UserTailExc exc;
-    for(const auto& s : *messages) {
+    for(const auto& s : messages) {
       for(const auto& m : s) {
         exc << m.message();
       }

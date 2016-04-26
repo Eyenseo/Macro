@@ -1,439 +1,21 @@
 #include "cad/macro/parser/Analyser.h"
 
-#include "cad/macro/parser/Message.h"
 #include "cad/macro/ast/Scope.h"
-
-#include <p3/common/signal/Signal.h>
+#include "cad/macro/parser/Message.h"
+#include "cad/macro/parser/analyser/State.h"
 
 #include <algorithm>
+#include <cassert>
 
 namespace cad {
 namespace macro {
 namespace parser {
 namespace {
-
 template <typename T>
 using Signal = p3::common::signal::Signal<T>;
+using SignalType = Analyser::SignalType;
+using State = analyser::State;
 
-enum class SignalType { START, END };
-
-struct Stack {
-  using RV = std::reference_wrapper<const ast::Variable>;
-
-  template <typename T>
-  struct myPair {  // optional doesn't like std::pair or std::tuple ...
-    std::reference_wrapper<const T> first;
-    std::reference_wrapper<const T> second;
-  };
-
-  std::vector<std::reference_wrapper<const ast::Variable>> variables;
-  std::vector<std::reference_wrapper<const ast::callable::Function>> functions;
-  Stack* parent = nullptr;
-
-  ::core::optional<myPair<ast::Variable>> has_double_var() const {
-    if(variables.size() > 1) {
-      const auto& back = variables.back().get();
-      auto it = std::find_if(variables.begin(), variables.end() - 1,
-                             [&back](const auto& var) {
-                               return var.get().token.token == back.token.token;
-                             });
-
-      if(variables.end() - 1 != it) {
-        return {{*it, back}};
-      }
-    }
-    return {};
-  }
-
-  bool has_var(const std::string& name) const {
-    if(variables.end() != std::find_if(variables.begin(), variables.end(),
-                                       [&name](const auto& var) {
-                                         return var.get().token.token == name;
-                                       })) {
-      return true;
-    } else if(parent) {
-      return parent->has_var(name);
-    }
-    return false;
-  }
-
-  ::core::optional<myPair<ast::callable::Function>> has_double_fun() const {
-    if(functions.size() > 1) {
-      auto& back = functions.back().get();
-      auto it = std::find_if(
-          functions.begin(), functions.end() - 1, [&back](const auto& fun) {
-            if(fun.get().token.token == back.token.token &&
-               fun.get().parameter.size() == back.parameter.size()) {
-              // Parameter
-              for(const auto& fp : fun.get().parameter) {
-                bool found = false;
-                for(const auto& cp : back.parameter) {
-                  if(fp.token.token == cp.token.token) {
-                    found = true;
-                    break;
-                  }
-                }
-                if(!found) {
-                  return false;
-                }
-              }
-            } else {
-              return false;
-            }
-            return true;
-          });
-
-      if(functions.end() - 1 != it) {
-        return {{*it, back}};
-      }
-    }
-    return {};
-  }
-};
-
-struct State;
-struct Signals {
-  Signal<void(SignalType, const State&, const ast::Operator&)> biop;
-  Signal<void(SignalType, const State&, const ast::loop::Break&)> br;
-  Signal<void(SignalType, const State&, const ast::loop::Continue&)> con;
-  Signal<void(SignalType, const State&, const ast::callable::Callable&)> call;
-  Signal<void(SignalType, const State&, const ast::callable::EntryFunction&)>
-      enfun;
-  Signal<void(SignalType, const State&, const ast::callable::Function&)> fun;
-  Signal<void(SignalType, const State&, const ast::Define&)> def;
-  Signal<void(SignalType, const State&,
-              const ast::Literal<ast::Literals::BOOL>&)> bo;
-  Signal<void(SignalType, const State&,
-              const ast::Literal<ast::Literals::DOUBLE>&)> dou;
-  Signal<void(SignalType, const State&,
-              const ast::Literal<ast::Literals::INT>&)> intt;
-  Signal<void(SignalType, const State&,
-              const ast::Literal<ast::Literals::STRING>&)> str;
-  Signal<void(SignalType, const State&, const ast::logic::If&)> iff;
-  Signal<void(SignalType, const State&, const ast::loop::DoWhile&)> dowhile;
-  Signal<void(SignalType, const State&, const ast::loop::For&)> forr;
-  Signal<void(SignalType, const State&, const ast::loop::While&)> whi;
-  Signal<void(SignalType, const State&, const ast::callable::Return&)> ret;
-  Signal<void(SignalType, const State&, const ast::Scope&)> sco;
-  Signal<void(SignalType, const State&, const ast::Variable&)> var;
-};
-
-struct State {
-  using MessageStack = std::vector<Message>;
-
-  Stack stack;
-  std::shared_ptr<MessageStack> current_message;
-  std::shared_ptr<std::vector<MessageStack>> messages;
-  std::shared_ptr<Signals> signal;
-  std::reference_wrapper<const ast::Scope> scope;
-  std::string file;
-  bool loop;
-  bool root_scope;
-
-  State(const ast::Scope& s, std::string f)
-      : stack()
-      , current_message(std::make_shared<MessageStack>())
-      , messages(std::make_shared<std::vector<MessageStack>>())
-      , signal(std::make_shared<Signals>())
-      , scope(s)
-      , file(std::move(f))
-      , loop(false)
-      , root_scope(false) {
-  }
-  State(State& parent, const ast::Scope& s, bool l = false)
-      : stack()
-      , current_message(parent.current_message)
-      , messages(parent.messages)
-      , signal(parent.signal)
-      , scope(s)
-      , file(parent.file)
-      , loop(l ? l : parent.loop)
-      , root_scope(parent.root_scope) {
-    stack.parent = &parent.stack;
-  }
-};
-
-namespace analyse {
-void analyse(State& state, const ast::Operator& e);
-void analyse(State& state, const ast::loop::Break& e);
-void analyse(State& state, const ast::loop::Continue& e);
-void analyse(State& state, const ast::callable::Callable& e);
-void analyse(State& state, const ast::callable::EntryFunction& e);
-void analyse(State& state, const ast::callable::Function& e);
-void analyse(State& state, const ast::Define& e);
-void analyse(State& state, const ast::Literal<ast::Literals::BOOL>& e);
-void analyse(State& state, const ast::Literal<ast::Literals::DOUBLE>& e);
-void analyse(State& state, const ast::Literal<ast::Literals::INT>& e);
-void analyse(State& state, const ast::Literal<ast::Literals::STRING>& e);
-void analyse(State& state, const ast::logic::If& e);
-void analyse(State& state, const ast::loop::DoWhile& e);
-void analyse(State& state, const ast::loop::For& e);
-void analyse(State& state, const ast::loop::While& e);
-void analyse(State& state, const ast::callable::Return& e);
-void analyse(State& state, const ast::Scope& e);
-void analyse(State& state, const ast::Variable& e);
-void analyse(State& state, const ast::ValueProducer& e);
-
-void analyse(State& state, const ast::Operator& e) {
-  {
-    Message m(e.token, state.file);
-    m << "At the operator '" << e.token.token << "' defined here";
-    state.current_message->push_back(std::move(m));
-  }
-  state.signal->biop.emit(SignalType::START, state, e);
-
-  if(e.left_operand) {
-    analyse(state, *e.left_operand);
-  }
-  if(e.right_operand) {
-    analyse(state, *e.right_operand);
-  }
-  state.signal->biop.emit(SignalType::END, state, e);
-  state.current_message->pop_back();
-}
-void analyse(State& state, const ast::loop::Break& e) {
-  state.signal->br.emit(SignalType::START, state, e);
-  state.signal->br.emit(SignalType::END, state, e);
-}
-void analyse(State& state, const ast::loop::Continue& e) {
-  state.signal->con.emit(SignalType::START, state, e);
-  state.signal->con.emit(SignalType::END, state, e);
-}
-void analyse(State& state, const ast::callable::Callable& e) {
-  state.signal->call.emit(SignalType::START, state, e);
-  for(const auto& p : e.parameter) {
-    analyse(state, p.second);
-  }
-  state.signal->call.emit(SignalType::END, state, e);
-}
-void analyse(State& state, const ast::callable::EntryFunction& e) {
-  state.signal->enfun.emit(SignalType::START, state, e);
-  if(e.scope) {
-    State inner(state, *e.scope);
-    inner.loop = false;        // we mark a new start
-    inner.root_scope = false;  // we are not part of the root - we can return
-    for(const auto& p : e.parameter) {
-      inner.stack.variables.push_back(p);
-    }
-
-    analyse(inner, *e.scope);
-  }
-  state.signal->enfun.emit(SignalType::END, state, e);
-}
-void analyse(State& state, const ast::callable::Function& e) {
-  state.signal->fun.emit(SignalType::START, state, e);
-  if(e.scope) {
-    State inner(state, *e.scope);
-    inner.loop = false;        // we mark a new start
-    inner.root_scope = false;  // we are not part of the root - we can return
-    for(const auto& p : e.parameter) {
-      inner.stack.variables.push_back(p);
-    }
-    analyse(inner, *e.scope);
-  }
-  state.signal->fun.emit(SignalType::END, state, e);
-}
-void analyse(State& state, const ast::Define& e) {
-  state.signal->def.emit(SignalType::START, state, e);
-  e.definition.match(
-      [&state](const ast::callable::EntryFunction& e) {
-        {
-          Message m(e.token, state.file);
-          m << "In the 'main' function defined here";
-          state.current_message->push_back(std::move(m));
-        }
-        analyse(state, e);
-        state.stack.functions.push_back(e);
-      },
-      [&state](const ast::callable::Function& e) {
-        {
-          Message m(e.token, state.file);
-          m << "In the '" << e.token.token << "' function defined here";
-          state.current_message->push_back(std::move(m));
-        }
-        analyse(state, e);
-        state.stack.functions.push_back(e);
-      },
-      [&state](const ast::Variable& e) {
-        {
-          Message m(e.token, state.file);
-          m << "At the variable '" << e.token.token << "' defined here";
-          state.current_message->push_back(std::move(m));
-        }
-        state.stack.variables.push_back(e);
-        // We are good - if a variable is declared twice can be checked on the
-        // end signal
-      });
-  state.current_message->pop_back();
-  state.signal->def.emit(SignalType::END, state, e);
-}
-void analyse(State& state, const ast::Literal<ast::Literals::BOOL>& e) {
-  state.signal->bo.emit(SignalType::START, state, e);
-  state.signal->bo.emit(SignalType::END, state, e);
-}
-void analyse(State& state, const ast::Literal<ast::Literals::DOUBLE>& e) {
-  state.signal->dou.emit(SignalType::START, state, e);
-  state.signal->dou.emit(SignalType::END, state, e);
-}
-void analyse(State& state, const ast::Literal<ast::Literals::INT>& e) {
-  state.signal->intt.emit(SignalType::START, state, e);
-  state.signal->intt.emit(SignalType::END, state, e);
-}
-void analyse(State& state, const ast::Literal<ast::Literals::STRING>& e) {
-  state.signal->str.emit(SignalType::START, state, e);
-  state.signal->str.emit(SignalType::END, state, e);
-}
-void analyse(State& state, const ast::logic::If& e) {
-  {
-    Message m(e.token, state.file);
-    m << "In the if defined here";
-    state.current_message->push_back(std::move(m));
-  }
-  state.signal->iff.emit(SignalType::START, state, e);
-  if(e.condition) {
-    analyse(state, *e.condition);
-  }
-  if(e.true_scope) {
-    State inner(state, *e.true_scope);
-    analyse(inner, *e.true_scope);
-  }
-  if(e.false_scope) {
-    {
-      Message m(e.false_scope->token, state.file);
-      m << "In the else part defined here";
-      state.current_message->push_back(std::move(m));
-    }
-    State inner(state, *e.false_scope);
-    analyse(inner, *e.false_scope);
-    if(state.current_message->size() > 0) {
-      state.current_message->pop_back();
-    }
-  }
-  state.signal->iff.emit(SignalType::END, state, e);
-  state.current_message->pop_back();
-}
-void analyse(State& state, const ast::loop::DoWhile& e) {
-  {
-    Message m(e.token, state.file);
-    m << "In the do-while defined here";
-    state.current_message->push_back(std::move(m));
-  }
-  state.signal->dowhile.emit(SignalType::START, state, e);
-  if(e.condition) {
-    analyse(state, *e.condition);
-  }
-  if(e.scope) {
-    State inner(state, *e.scope, true);
-    analyse(inner, *e.scope);
-  }
-  state.signal->dowhile.emit(SignalType::END, state, e);
-  state.current_message->pop_back();
-}
-void analyse(State& state, const ast::loop::For& e) {
-  {
-    Message m(e.token, state.file);
-    m << "In the do-while defined here";
-    state.current_message->push_back(std::move(m));
-  }
-  state.signal->forr.emit(SignalType::START, state, e);
-  State inner(state, *e.scope, true);
-  if(e.define) {
-    analyse(inner, *e.define);
-  }
-  if(e.variable) {
-    analyse(inner, *e.variable);
-  }
-  if(e.condition) {
-    analyse(inner, *e.condition);
-  }
-  if(e.operation) {
-    analyse(inner, *e.operation);
-  }
-  if(e.scope) {
-    analyse(inner, *e.scope);
-  }
-  state.signal->forr.emit(SignalType::END, state, e);
-  state.current_message->pop_back();
-}
-void analyse(State& state, const ast::loop::While& e) {
-  {
-    Message m(e.token, state.file);
-    m << "In the while defined here";
-    state.current_message->push_back(std::move(m));
-  }
-  state.signal->whi.emit(SignalType::START, state, e);
-  if(e.condition) {
-    analyse(state, *e.condition);
-  }
-  if(e.scope) {
-    State inner(state, *e.scope, true);
-    analyse(inner, *e.scope);
-  }
-  state.signal->whi.emit(SignalType::END, state, e);
-  state.current_message->pop_back();
-}
-void analyse(State& state, const ast::callable::Return& e) {
-  {
-    Message m(e.token, state.file);
-    m << "At return defined here";
-    state.current_message->push_back(std::move(m));
-  }
-  state.signal->ret.emit(SignalType::START, state, e);
-  if(e.output) {
-    analyse(state, *e.output);
-  }
-  state.signal->ret.emit(SignalType::END, state, e);
-  state.current_message->pop_back();
-}
-void analyse(State& state, const ast::Scope& e) {
-  using namespace ast;
-
-  state.signal->sco.emit(SignalType::START, state, e);
-  for(const auto& n : e.nodes) {
-    n.match([&state](const Operator& e) { analyse(state, e); },
-            [&state](const loop::Continue& e) { analyse(state, e); },
-            [&state](const loop::Break& e) { analyse(state, e); },
-            [&state](const callable::Callable& e) { analyse(state, e); },
-            [&state](const Define& e) { analyse(state, e); },
-            [&state](const Literal<Literals::BOOL>& e) { analyse(state, e); },
-            [&state](const Literal<Literals::DOUBLE>& e) { analyse(state, e); },
-            [&state](const Literal<Literals::INT>& e) { analyse(state, e); },
-            [&state](const Literal<Literals::STRING>& e) { analyse(state, e); },
-            [&state](const logic::If& e) { analyse(state, e); },
-            [&state](const loop::DoWhile& e) { analyse(state, e); },
-            [&state](const loop::For& e) { analyse(state, e); },
-            [&state](const loop::While& e) { analyse(state, e); },
-            [&state](const callable::Return& e) { analyse(state, e); },
-            [&state](const Scope& e) {
-              State inner(state, e);
-              analyse(inner, e);
-            },
-            [&state](const Variable& e) { analyse(state, e); });
-  }
-  state.signal->sco.emit(SignalType::END, state, e);
-}
-void analyse(State& state, const ast::Variable& e) {
-  state.signal->var.emit(SignalType::START, state, e);
-  state.signal->var.emit(SignalType::END, state, e);
-}
-void analyse(State& state, const ast::ValueProducer& e) {
-  using namespace ast;
-
-  e.value.match(
-      [&state](const Operator& e) { analyse(state, e); },
-      [&state](const callable::Callable& e) { analyse(state, e); },
-      [&state](const Literal<Literals::BOOL>& e) { analyse(state, e); },
-      [&state](const Literal<Literals::DOUBLE>& e) { analyse(state, e); },
-      [&state](const Literal<Literals::INT>& e) { analyse(state, e); },
-      [&state](const Literal<Literals::STRING>& e) { analyse(state, e); },
-      [&state](const Variable& e) { analyse(state, e); });
-}
-}
-///////////////////////////////////////////
-///////////////////////////////////////////
-///////////////////////////////////////////
-namespace visitor {
-namespace {
 std::reference_wrapper<const Token> node_to_token(const ast::Scope::Node& n) {
   using namespace ast;
   using namespace loop;
@@ -463,450 +45,728 @@ std::reference_wrapper<const Token> node_to_token(const ast::Scope::Node& n) {
 }
 }
 
-void break_last_node(Signals& sigs) {
-  sigs.br.connect([](SignalType t, const State& s, const auto& br) {
+//////////////////////////////////////////
+// Walker
+//////////////////////////////////////////
+void Analyser::analyse(State& state, const ast::Operator& e) {
+  {
+    Message m(e.token, file_);
+    m << "At the operator '" << e.token.token << "' defined here";
+    current_message_.push_back(std::move(m));
+  }
+  biop.emit(*this, SignalType::START, state, e);
+
+  if(e.left_operand) {
+    analyse(state, *e.left_operand);
+  }
+  if(e.right_operand) {
+    analyse(state, *e.right_operand);
+  }
+  biop.emit(*this, SignalType::END, state, e);
+  current_message_.pop_back();
+}
+void Analyser::analyse(State& state, const ast::loop::Break& e) {
+  br.emit(*this, SignalType::START, state, e);
+  br.emit(*this, SignalType::END, state, e);
+}
+void Analyser::analyse(State& state, const ast::loop::Continue& e) {
+  con.emit(*this, SignalType::START, state, e);
+  con.emit(*this, SignalType::END, state, e);
+}
+void Analyser::analyse(State& state, const ast::callable::Callable& e) {
+  call.emit(*this, SignalType::START, state, e);
+  for(const auto& p : e.parameter) {
+    analyse(state, p.second);
+  }
+  call.emit(*this, SignalType::END, state, e);
+}
+void Analyser::analyse(State& state, const ast::callable::EntryFunction& e) {
+  enfun.emit(*this, SignalType::START, state, e);
+  if(e.scope) {
+    State inner(state, *e.scope);
+    inner.loop = false;        // we mark a new start
+    inner.root_scope = false;  // we are not part of the root - we can return
+    for(const auto& p : e.parameter) {
+      inner.stack.variables.push_back(p);
+    }
+
+    analyse(inner, *e.scope);
+  }
+  enfun.emit(*this, SignalType::END, state, e);
+}
+void Analyser::analyse(State& state, const ast::callable::Function& e) {
+  fun.emit(*this, SignalType::START, state, e);
+  if(e.scope) {
+    State inner(state, *e.scope);
+    inner.loop = false;        // we mark a new start
+    inner.root_scope = false;  // we are not part of the root - we can return
+    for(const auto& p : e.parameter) {
+      inner.stack.variables.push_back(p);
+    }
+    analyse(inner, *e.scope);
+  }
+  fun.emit(*this, SignalType::END, state, e);
+}
+void Analyser::analyse(State& state, const ast::Define& e) {
+  def.emit(*this, SignalType::START, state, e);
+  e.definition.match(
+      [this, &state](const ast::callable::EntryFunction& e) {
+        {
+          Message m(e.token, file_);
+          m << "In the 'main' function defined here";
+          current_message_.push_back(std::move(m));
+        }
+        analyse(state, e);
+        state.stack.functions.push_back(e);
+      },
+      [this, &state](const ast::callable::Function& e) {
+        {
+          Message m(e.token, file_);
+          m << "In the '" << e.token.token << "' function defined here";
+          current_message_.push_back(std::move(m));
+        }
+        analyse(state, e);
+        state.stack.functions.push_back(e);
+      },
+      [this, &state](const ast::Variable& e) {
+        {
+          Message m(e.token, file_);
+          m << "At the variable '" << e.token.token << "' defined here";
+          current_message_.push_back(std::move(m));
+        }
+        state.stack.variables.push_back(e);
+        // We are good - if a variable is declared twice can be checked on the
+        // end signal
+      });
+  current_message_.pop_back();
+  def.emit(*this, SignalType::END, state, e);
+}
+void Analyser::analyse(State& state,
+                       const ast::Literal<ast::Literals::BOOL>& e) {
+  bo.emit(*this, SignalType::START, state, e);
+  bo.emit(*this, SignalType::END, state, e);
+}
+void Analyser::analyse(State& state,
+                       const ast::Literal<ast::Literals::DOUBLE>& e) {
+  dou.emit(*this, SignalType::START, state, e);
+  dou.emit(*this, SignalType::END, state, e);
+}
+void Analyser::analyse(State& state,
+                       const ast::Literal<ast::Literals::INT>& e) {
+  intt.emit(*this, SignalType::START, state, e);
+  intt.emit(*this, SignalType::END, state, e);
+}
+void Analyser::analyse(State& state,
+                       const ast::Literal<ast::Literals::STRING>& e) {
+  str.emit(*this, SignalType::START, state, e);
+  str.emit(*this, SignalType::END, state, e);
+}
+void Analyser::analyse(State& state, const ast::logic::If& e) {
+  {
+    Message m(e.token, file_);
+    m << "In the if defined here";
+    current_message_.push_back(std::move(m));
+  }
+  iff.emit(*this, SignalType::START, state, e);
+  if(e.condition) {
+    analyse(state, *e.condition);
+  }
+  if(e.true_scope) {
+    State inner(state, *e.true_scope);
+    analyse(inner, *e.true_scope);
+  }
+  if(e.false_scope) {
+    {
+      Message m(e.false_scope->token, file_);
+      m << "In the else part defined here";
+      current_message_.push_back(std::move(m));
+    }
+    State inner(state, *e.false_scope);
+    analyse(inner, *e.false_scope);
+    if(current_message_.size() > 0) {
+      current_message_.pop_back();
+    }
+  }
+  iff.emit(*this, SignalType::END, state, e);
+  current_message_.pop_back();
+}
+void Analyser::analyse(State& state, const ast::loop::DoWhile& e) {
+  {
+    Message m(e.token, file_);
+    m << "In the do-while defined here";
+    current_message_.push_back(std::move(m));
+  }
+  dowhile.emit(*this, SignalType::START, state, e);
+  if(e.condition) {
+    analyse(state, *e.condition);
+  }
+  if(e.scope) {
+    State inner(state, *e.scope, true);
+    analyse(inner, *e.scope);
+  }
+  dowhile.emit(*this, SignalType::END, state, e);
+  current_message_.pop_back();
+}
+void Analyser::analyse(State& state, const ast::loop::For& e) {
+  {
+    Message m(e.token, file_);
+    m << "In the do-while defined here";
+    current_message_.push_back(std::move(m));
+  }
+  forr.emit(*this, SignalType::START, state, e);
+  State inner(state, *e.scope, true);
+  if(e.define) {
+    analyse(inner, *e.define);
+  }
+  if(e.variable) {
+    analyse(inner, *e.variable);
+  }
+  if(e.condition) {
+    analyse(inner, *e.condition);
+  }
+  if(e.operation) {
+    analyse(inner, *e.operation);
+  }
+  if(e.scope) {
+    analyse(inner, *e.scope);
+  }
+  forr.emit(*this, SignalType::END, state, e);
+  current_message_.pop_back();
+}
+void Analyser::analyse(State& state, const ast::loop::While& e) {
+  {
+    Message m(e.token, file_);
+    m << "In the while defined here";
+    current_message_.push_back(std::move(m));
+  }
+  whi.emit(*this, SignalType::START, state, e);
+  if(e.condition) {
+    analyse(state, *e.condition);
+  }
+  if(e.scope) {
+    State inner(state, *e.scope, true);
+    analyse(inner, *e.scope);
+  }
+  whi.emit(*this, SignalType::END, state, e);
+  current_message_.pop_back();
+}
+void Analyser::analyse(State& state, const ast::callable::Return& e) {
+  {
+    Message m(e.token, file_);
+    m << "At return defined here";
+    current_message_.push_back(std::move(m));
+  }
+  ret.emit(*this, SignalType::START, state, e);
+  if(e.output) {
+    analyse(state, *e.output);
+  }
+  ret.emit(*this, SignalType::END, state, e);
+  current_message_.pop_back();
+}
+void Analyser::analyse(State& state, const ast::Scope& e) {
+  using namespace ast;
+
+  sco.emit(*this, SignalType::START, state, e);
+  for(const auto& n : e.nodes) {
+    n.match(
+        [this, &state](const Operator& e) { analyse(state, e); },
+        [this, &state](const loop::Continue& e) { analyse(state, e); },
+        [this, &state](const loop::Break& e) { analyse(state, e); },
+        [this, &state](const callable::Callable& e) { analyse(state, e); },
+        [this, &state](const Define& e) { analyse(state, e); },
+        [this, &state](const Literal<Literals::BOOL>& e) { analyse(state, e); },
+        [this, &state](const Literal<Literals::DOUBLE>& e) {
+          analyse(state, e);
+        },
+        [this, &state](const Literal<Literals::INT>& e) { analyse(state, e); },
+        [this, &state](const Literal<Literals::STRING>& e) {
+          analyse(state, e);
+        },
+        [this, &state](const logic::If& e) { analyse(state, e); },
+        [this, &state](const loop::DoWhile& e) { analyse(state, e); },
+        [this, &state](const loop::For& e) { analyse(state, e); },
+        [this, &state](const loop::While& e) { analyse(state, e); },
+        [this, &state](const callable::Return& e) { analyse(state, e); },
+        [this, &state](const Scope& e) {
+          State inner(state, e);
+          analyse(inner, e);
+        },
+        [this, &state](const Variable& e) { analyse(state, e); });
+  }
+  sco.emit(*this, SignalType::END, state, e);
+}
+void Analyser::analyse(State& state, const ast::Variable& e) {
+  var.emit(*this, SignalType::START, state, e);
+  var.emit(*this, SignalType::END, state, e);
+}
+void Analyser::analyse(State& state, const ast::ValueProducer& e) {
+  using namespace ast;
+
+  e.value.match(
+      [this, &state](const Operator& e) { analyse(state, e); },
+      [this, &state](const callable::Callable& e) { analyse(state, e); },
+      [this, &state](const Literal<Literals::BOOL>& e) { analyse(state, e); },
+      [this, &state](const Literal<Literals::DOUBLE>& e) { analyse(state, e); },
+      [this, &state](const Literal<Literals::INT>& e) { analyse(state, e); },
+      [this, &state](const Literal<Literals::STRING>& e) { analyse(state, e); },
+      [this, &state](const Variable& e) { analyse(state, e); });
+}
+
+//////////////////////////////////////////
+// Visitors
+//////////////////////////////////////////
+void Analyser::break_last_node() {
+  br.connect([](Analyser& ana, SignalType t, const State& s, const auto& br) {
     if(t == SignalType::START) {
       // TODO missing !=
       if(!(s.scope.get().nodes.back() == ast::Scope::Node(br))) {
-        auto stack = *s.current_message;
-        Message m(node_to_token(s.scope.get().nodes.back()), s.file);
+        auto stack = ana.current_message_;
+        Message m(node_to_token(s.scope.get().nodes.back()), ana.file_);
         m << "Statement after break";
         stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
-void continue_last_node(Signals& sigs) {
-  sigs.con.connect([](SignalType t, const State& s, const auto& con) {
+void Analyser::continue_last_node() {
+  con.connect([](Analyser& ana, SignalType t, const State& s, const auto& con) {
     if(t == SignalType::START) {
       // TODO missing !=
       if(!(s.scope.get().nodes.back() == ast::Scope::Node(con))) {
-        auto stack = *s.current_message;
-        Message m(node_to_token(s.scope.get().nodes.back()), s.file);
+        auto stack = ana.current_message_;
+        Message m(node_to_token(s.scope.get().nodes.back()), ana.file_);
         m << "Statement after continue";
         stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
-void return_last_node(Signals& sigs) {
-  sigs.ret.connect([](SignalType t, const State& s, const auto& ret) {
+void Analyser::return_last_node() {
+  ret.connect([](Analyser& ana, SignalType t, const State& s, const auto& ret) {
     if(t == SignalType::START) {
       // TODO missing !=
       if(!(s.scope.get().nodes.back() == ast::Scope::Node(ret))) {
-        auto stack = *s.current_message;
-        Message m(node_to_token(s.scope.get().nodes.back()), s.file);
+        auto stack = ana.current_message_;
+        Message m(node_to_token(s.scope.get().nodes.back()), ana.file_);
         m << "Statement after return";
         stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
-void no_break_in_non_loop(Signals& sigs) {
-  sigs.br.connect([](SignalType t, const State& s, const auto& br) {
+void Analyser::no_break_in_non_loop() {
+  br.connect([](Analyser& ana, SignalType t, const State& s, const auto& br) {
     if(t == SignalType::START) {
       if(!s.loop) {
-        auto stack = *s.current_message;
-        Message m(br.token, s.file);
+        auto stack = ana.current_message_;
+        Message m(br.token, ana.file_);
         m << "Break outside of loop";
         stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
-void no_continue_in_non_loop(Signals& sigs) {
-  sigs.con.connect([](SignalType t, const State& s, const auto& con) {
+void Analyser::no_continue_in_non_loop() {
+  con.connect([](Analyser& ana, SignalType t, const State& s, const auto& con) {
     if(t == SignalType::START) {
       if(!s.loop) {
-        auto stack = *s.current_message;
-        Message m(con.token, s.file);
+        auto stack = ana.current_message_;
+        Message m(con.token, ana.file_);
         m << "Continue outside of loop";
         stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
-void no_return_in_root(Signals& sigs) {
-  sigs.ret.connect([](SignalType t, const State& s, const auto& ret) {
+void Analyser::no_return_in_root() {
+  ret.connect([](Analyser& ana, SignalType t, const State& s, const auto& ret) {
     if(t == SignalType::START) {
       if(s.root_scope) {
-        auto stack = *s.current_message;
-        Message m(ret.token, s.file);
+        auto stack = ana.current_message_;
+        Message m(ret.token, ana.file_);
         m << "Return statement in root scope";
         stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
-void unique_callable_parameter(Signals& sigs) {
-  sigs.call.connect([](SignalType t, const State& s, const auto& call) {
+void Analyser::unique_callable_parameter() {
+  call.connect([](Analyser& ana, SignalType t, const State&, const auto& call) {
     if(t == SignalType::START) {
       for(auto i = call.parameter.begin(); i != call.parameter.end(); ++i) {
         for(auto j = i + 1; j != call.parameter.end(); ++j) {
           if(i->first.token.token == j->first.token.token) {
-            auto stack = *s.current_message;
-            Message m1(i->first.token, s.file);
+            auto stack = ana.current_message_;
+            Message m1(i->first.token, ana.file_);
             m1 << "Parameter have to be uniquely named, but '"
                << i->first.token.token << "' was defined here";
-            Message m2(j->first.token, s.file);
+            Message m2(j->first.token, ana.file_);
             m2 << "and here";
             stack.push_back(std::move(m2));
             stack.push_back(std::move(m1));
-            s.messages->push_back(std::move(stack));
+            ana.messages_.push_back(std::move(stack));
           }
         }
       }
     }
   });
 }
-void unique_function_parameter(Signals& sigs) {
-  sigs.fun.connect([](SignalType t, const State& s, const auto& fun) {
+void Analyser::unique_function_parameter() {
+  fun.connect([](Analyser& ana, SignalType t, const State&, const auto& fun) {
     if(t == SignalType::START) {
       for(auto i = fun.parameter.begin(); i != fun.parameter.end(); ++i) {
         for(auto j = i + 1; j != fun.parameter.end(); ++j) {
           if(i->token.token == j->token.token) {
-            auto stack = *s.current_message;
-            Message m1(i->token, s.file);
+            auto stack = ana.current_message_;
+            Message m1(i->token, ana.file_);
             m1 << "Parameter have to be uniquely named, but '" << i->token.token
                << "' was defined here";
-            Message m2(j->token, s.file);
+            Message m2(j->token, ana.file_);
             m2 << "and here";
             stack.push_back(std::move(m2));
             stack.push_back(std::move(m1));
-            s.messages->push_back(std::move(stack));
+            ana.messages_.push_back(std::move(stack));
           }
         }
       }
     }
   });
 }
-void unique_main_parameter(Signals& sigs) {
-  sigs.enfun.connect([](SignalType t, const State& s, const auto& enfun) {
+void Analyser::unique_main_parameter() {
+  enfun.connect([](Analyser& ana, SignalType t, const State&,
+                   const auto& enfun) {
     if(t == SignalType::START) {
       for(auto i = enfun.parameter.begin(); i != enfun.parameter.end(); ++i) {
         for(auto j = i + 1; j != enfun.parameter.end(); ++j) {
           if(i->token.token == j->token.token) {
-            auto stack = *s.current_message;
-            Message m1(i->token, s.file);
+            auto stack = ana.current_message_;
+            Message m1(i->token, ana.file_);
             m1 << "Parameter have to be uniquely named, but '" << i->token.token
                << "' was defined here";
-            Message m2(j->token, s.file);
+            Message m2(j->token, ana.file_);
             m2 << "and here";
             stack.push_back(std::move(m2));
             stack.push_back(std::move(m1));
-            s.messages->push_back(std::move(stack));
+            ana.messages_.push_back(std::move(stack));
           }
         }
       }
     }
   });
 }
-void unique_main(Signals& sigs) {
-  sigs.enfun.connect([](SignalType t, const State& s, const auto& enfun) {
-    if(t == SignalType::START) {
-      auto it = std::find_if(
-          s.stack.functions.begin(), s.stack.functions.end(),
-          [](const auto& fun) { return fun.get().token.token == "main"; });
-      if(s.stack.functions.end() != it) {
-        auto stack = *s.current_message;
-        Message m1(enfun.token, s.file);
-        m1 << "Redefinition of the 'main' function here";
-        Message m2(it->get().token, s.file);
-        m2 << "and here";
-        stack.push_back(std::move(m2));
-        stack.push_back(std::move(m1));
-        s.messages->push_back(std::move(stack));
-      }
-    }
-  });
+void Analyser::unique_main() {
+  enfun.connect(
+      [](Analyser& ana, SignalType t, const State& s, const auto& enfun) {
+        if(t == SignalType::START) {
+          auto it = std::find_if(
+              s.stack.functions.begin(), s.stack.functions.end(),
+              [](const auto& fun) { return fun.get().token.token == "main"; });
+          if(s.stack.functions.end() != it) {
+            auto stack = ana.current_message_;
+            Message m1(enfun.token, ana.file_);
+            m1 << "Redefinition of the 'main' function here";
+            Message m2(it->get().token, ana.file_);
+            m2 << "and here";
+            stack.push_back(std::move(m2));
+            stack.push_back(std::move(m1));
+            ana.messages_.push_back(std::move(stack));
+          }
+        }
+      });
 }
-void main_in_root(Signals& sigs) {
-  sigs.enfun.connect([](SignalType t, const State& s, const auto& enfun) {
-    if(t == SignalType::START) {
-      // We get the extra parent through the analyse scope method
-      if(!s.root_scope) {
-        auto stack = *s.current_message;
-        Message m(enfun.token, s.file);
-        m << "The main function has to be in the root scope";
-        stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
-      }
-    }
-  });
+void Analyser::main_in_root() {
+  enfun.connect(
+      [](Analyser& ana, SignalType t, const State& s, const auto& enfun) {
+        if(t == SignalType::START) {
+          // We get the extra parent through the analyse scope method
+          if(!s.root_scope) {
+            auto stack = ana.current_message_;
+            Message m(enfun.token, ana.file_);
+            m << "The main function has to be in the root scope";
+            stack.push_back(std::move(m));
+            ana.messages_.push_back(std::move(stack));
+          }
+        }
+      });
 }
-void variable_available(Signals& sigs) {
-  sigs.var.connect([](SignalType t, const State& s, const auto& var) {
+void Analyser::variable_available() {
+  var.connect([](Analyser& ana, SignalType t, const State& s, const auto& var) {
     if(t == SignalType::START) {
       if(!s.stack.has_var(var.token.token)) {
-        auto stack = *s.current_message;
-        Message m(var.token, s.file);
+        auto stack = ana.current_message_;
+        Message m(var.token, ana.file_);
         m << "Undefined variable '" << var.token.token << "'";
         stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
-void no_double_def_variable(Signals& sigs) {
-  sigs.def.connect([](SignalType t, const State& s, const auto&) {
+void Analyser::no_double_def_variable() {
+  def.connect([](Analyser& ana, SignalType t, const State& s, const auto&) {
     if(t == SignalType::END) {
       if(auto var = s.stack.has_double_var()) {
-        auto stack = *s.current_message;
-        Message m1(var->second.get().token, s.file);
+        auto stack = ana.current_message_;
+        Message m1(var->second.get().token, ana.file_);
         m1 << "Redefinition of variable '" << var->second.get().token.token
            << "' here";
-        Message m2(var->first.get().token, s.file);
+        Message m2(var->first.get().token, ana.file_);
         m2 << "and here";
         stack.push_back(std::move(m2));
         stack.push_back(std::move(m1));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
-void no_double_def_function(Signals& sigs) {
-  sigs.def.connect([](SignalType t, const State& s, const auto&) {
+void Analyser::no_double_def_function() {
+  def.connect([](Analyser& ana, SignalType t, const State& s, const auto&) {
     if(t == SignalType::END) {
       if(auto fun = s.stack.has_double_fun()) {
-        auto stack = *s.current_message;
-        Message m1(fun->second.get().token, s.file);
+        auto stack = ana.current_message_;
+        Message m1(fun->second.get().token, ana.file_);
         m1 << "Redefinition of function '" << fun->second.get().token.token
            << "' here";
-        Message m2(fun->first.get().token, s.file);
+        Message m2(fun->first.get().token, ana.file_);
         m2 << "and here";
         stack.push_back(std::move(m2));
         stack.push_back(std::move(m1));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
-void op_operands(Signals& sigs) {
-  sigs.biop.connect([](SignalType t, const State& s, const auto& biop) {
+void Analyser::op_operands() {
+  biop.connect([](Analyser& ana, SignalType t, const State&, const auto& biop) {
     if(t == SignalType::END) {
       if(biop.operation != ast::Operation::NOT &&
          biop.operation != ast::Operation::PRINT &&
          biop.operation != ast::Operation::TYPEOF &&
          biop.operation != ast::Operation::NEGATIVE &&
          biop.operation != ast::Operation::POSITIVE && !biop.left_operand) {
-        auto stack = *s.current_message;
-        Message m(biop.token, s.file);
+        auto stack = ana.current_message_;
+        Message m(biop.token, ana.file_);
         m << "Missing left operand '" << biop.token.token << "'";
         stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
       if(!biop.right_operand) {
-        auto stack = *s.current_message;
-        Message m(biop.token, s.file);
+        auto stack = ana.current_message_;
+        Message m(biop.token, ana.file_);
         m << "Missing right operand '" << biop.token.token << "'";
         stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
-void op_operator(Signals& sigs) {
-  sigs.biop.connect([](SignalType t, const State& s, const auto& biop) {
+void Analyser::op_operator() {
+  biop.connect([](Analyser& ana, SignalType t, const State&, const auto& biop) {
     if(t == SignalType::END) {
       if(biop.operation == ast::Operation::NONE) {
-        auto stack = *s.current_message;
-        Message m(biop.token, s.file);
+        auto stack = ana.current_message_;
+        Message m(biop.token, ana.file_);
         m << "Missing operator '" << biop.token.token << "'";
         stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
-void op_assign_var(Signals& sigs) {
-  auto mesage = [&](const State& s, const Token& t, const char* const type) {
-    auto stack = *s.current_message;
-    Message m(t, s.file);
+void Analyser::op_assign_var() {
+  auto message = [](Analyser& ana, const Token& t, const char* const type) {
+    auto stack = ana.current_message_;
+    Message m(t, ana.file_);
     m << "Left hand side  has to be a variable, but was a " << type << " '"
       << t.token << "'";
     stack.push_back(std::move(m));
-    s.messages->push_back(std::move(stack));
+    ana.messages_.push_back(std::move(stack));
   };
 
-  sigs.biop.connect([&mesage](SignalType t, const State& s, const auto& biop) {
-    if(t == SignalType::END) {
-      if(biop.operation == ast::Operation::ASSIGNMENT) {
-        biop.left_operand->value.match(
-            [&s, &mesage](const ast::Operator& e) {
-              mesage(s, e.token, "operator");
-            },
-            [&s, &mesage](const ast::callable::Callable& e) {
-              mesage(s, e.token, "function call");
-            },
-            [&s, &mesage](const ast::Literal<ast::Literals::BOOL>& e) {
-              mesage(s, e.token, "literal");
-            },
-            [&s, &mesage](const ast::Literal<ast::Literals::DOUBLE>& e) {
-              mesage(s, e.token, "literal");
-            },
-            [&s, &mesage](const ast::Literal<ast::Literals::INT>& e) {
-              mesage(s, e.token, "literal");
-            },
-            [&s, &mesage](const ast::Literal<ast::Literals::STRING>& e) {
-              mesage(s, e.token, "literal");
-            },
-            [&s](const ast::Variable&) {
-              /* good */
-            });
-      }
-    }
-  });
+  biop.connect(
+      [&message](Analyser& ana, SignalType t, const State&, const auto& biop) {
+        if(t == SignalType::END) {
+          if(biop.operation == ast::Operation::ASSIGNMENT) {
+            biop.left_operand->value.match(
+                [&message, &ana](const ast::Operator& e) {
+                  message(ana, e.token, "operator");
+                },
+                [&message, &ana](const ast::callable::Callable& e) {
+                  message(ana, e.token, "function call");
+                },
+                [&message, &ana](const ast::Literal<ast::Literals::BOOL>& e) {
+                  message(ana, e.token, "literal");
+                },
+                [&message, &ana](const ast::Literal<ast::Literals::DOUBLE>& e) {
+                  message(ana, e.token, "literal");
+                },
+                [&message, &ana](const ast::Literal<ast::Literals::INT>& e) {
+                  message(ana, e.token, "literal");
+                },
+                [&message, &ana](const ast::Literal<ast::Literals::STRING>& e) {
+                  message(ana, e.token, "literal");
+                },
+                [](const ast::Variable&) {
+                  /* good */
+                });
+          }
+        }
+      });
 }
-void function_scope(Signals& sigs) {
-  sigs.fun.connect([](SignalType t, const State& s, const auto& fun) {
+void Analyser::function_scope() {
+  fun.connect([](Analyser& ana, SignalType t, const State&, const auto& fun) {
     if(t == SignalType::START) {
       if(!fun.scope) {
-        auto stack = *s.current_message;
-        Message m(fun.token, s.file);
+        auto stack = ana.current_message_;
+        Message m(fun.token, ana.file_);
         m << "Missing scope '" << fun.token.token << "'";
         stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
-void main_scope(Signals& sigs) {
-  sigs.enfun.connect([](SignalType t, const State& s, const auto& enfun) {
-    if(t == SignalType::START) {
-      if(!enfun.scope) {
-        auto stack = *s.current_message;
-        Message m(enfun.token, s.file);
-        m << "Missing scope '" << enfun.token.token << "'";
-        stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
-      }
-    }
-  });
+void Analyser::main_scope() {
+  enfun.connect(
+      [](Analyser& ana, SignalType t, const State&, const auto& enfun) {
+        if(t == SignalType::START) {
+          if(!enfun.scope) {
+            auto stack = ana.current_message_;
+            Message m(enfun.token, ana.file_);
+            m << "Missing scope '" << enfun.token.token << "'";
+            stack.push_back(std::move(m));
+            ana.messages_.push_back(std::move(stack));
+          }
+        }
+      });
 }
-void if_scope(Signals& sigs) {
-  sigs.iff.connect([](SignalType t, const State& s, const auto& iff) {
+void Analyser::if_scope() {
+  iff.connect([](Analyser& ana, SignalType t, const State&, const auto& iff) {
     if(t == SignalType::START) {
       if(!iff.true_scope) {
-        auto stack = *s.current_message;
-        Message m(iff.token, s.file);
+        auto stack = ana.current_message_;
+        Message m(iff.token, ana.file_);
         m << "Missing scope '" << iff.token.token << "'";
         stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
-void do_while_scope(Signals& sigs) {
-  sigs.dowhile.connect([](SignalType t, const State& s, const auto& dowhile) {
-    if(t == SignalType::START) {
-      if(!dowhile.scope) {
-        auto stack = *s.current_message;
-        Message m(dowhile.token, s.file);
-        m << "Missing scope '" << dowhile.token.token << "'";
-        stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
-      }
-    }
-  });
+void Analyser::do_while_scope() {
+  dowhile.connect(
+      [](Analyser& ana, SignalType t, const State&, const auto& dowhile) {
+        if(t == SignalType::START) {
+          if(!dowhile.scope) {
+            auto stack = ana.current_message_;
+            Message m(dowhile.token, ana.file_);
+            m << "Missing scope '" << dowhile.token.token << "'";
+            stack.push_back(std::move(m));
+            ana.messages_.push_back(std::move(stack));
+          }
+        }
+      });
 }
-void while_scope(Signals& sigs) {
-  sigs.whi.connect([](SignalType t, const State& s, const auto& whi) {
+void Analyser::while_scope() {
+  whi.connect([](Analyser& ana, SignalType t, const State&, const auto& whi) {
     if(t == SignalType::START) {
       if(!whi.scope) {
-        auto stack = *s.current_message;
-        Message m(whi.token, s.file);
+        auto stack = ana.current_message_;
+        Message m(whi.token, ana.file_);
         m << "Missing scope '" << whi.token.token << "'";
         stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
-void if_con(Signals& sigs) {
-  sigs.iff.connect([](SignalType t, const State& s, const auto& iff) {
+void Analyser::if_con() {
+  iff.connect([](Analyser& ana, SignalType t, const State&, const auto& iff) {
     if(t == SignalType::START) {
       if(!iff.condition) {
-        auto stack = *s.current_message;
-        Message m(iff.token, s.file);
+        auto stack = ana.current_message_;
+        Message m(iff.token, ana.file_);
         m << "Missing condition '" << iff.token.token << "'";
         stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
-void do_while_con(Signals& sigs) {
-  sigs.dowhile.connect([](SignalType t, const State& s, const auto& dowhile) {
-    if(t == SignalType::START) {
-      if(!dowhile.condition) {
-        auto stack = *s.current_message;
-        Message m(dowhile.token, s.file);
-        m << "Missing condition '" << dowhile.token.token << "'";
-        stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
-      }
-    }
-  });
+void Analyser::do_while_con() {
+  dowhile.connect(
+      [](Analyser& ana, SignalType t, const State&, const auto& dowhile) {
+        if(t == SignalType::START) {
+          if(!dowhile.condition) {
+            auto stack = ana.current_message_;
+            Message m(dowhile.token, ana.file_);
+            m << "Missing condition '" << dowhile.token.token << "'";
+            stack.push_back(std::move(m));
+            ana.messages_.push_back(std::move(stack));
+          }
+        }
+      });
 }
-void while_con(Signals& sigs) {
-  sigs.whi.connect([](SignalType t, const State& s, const auto& whi) {
+void Analyser::while_con() {
+  whi.connect([](Analyser& ana, SignalType t, const State&, const auto& whi) {
     if(t == SignalType::START) {
       if(!whi.condition) {
-        auto stack = *s.current_message;
-        Message m(whi.token, s.file);
+        auto stack = ana.current_message_;
+        Message m(whi.token, ana.file_);
         m << "Missing condition '" << whi.token.token << "'";
         stack.push_back(std::move(m));
-        s.messages->push_back(std::move(stack));
+        ana.messages_.push_back(std::move(stack));
       }
     }
   });
 }
 
-void register_checks(Signals& sigs) {
-  no_break_in_non_loop(sigs);
-  no_continue_in_non_loop(sigs);
-  break_last_node(sigs);
-  continue_last_node(sigs);
-  return_last_node(sigs);
-  no_return_in_root(sigs);
-  unique_callable_parameter(sigs);
-  unique_function_parameter(sigs);
-  unique_main_parameter(sigs);
-  unique_main(sigs);
-  main_in_root(sigs);
-  variable_available(sigs);
-  no_double_def_variable(sigs);
-  no_double_def_function(sigs);
-  op_operands(sigs);  // Should not be needed - better safe than sorry
-  op_operator(sigs);  // Should not be needed - better safe than sorry
-  op_assign_var(sigs);
-  function_scope(sigs);  // Should not be needed - better safe than sorry
-  main_scope(sigs);      // Should not be needed - better safe than sorry
-  if_scope(sigs);        // Should not be needed - better safe than sorry
-  do_while_scope(sigs);  // Should not be needed - better safe than sorry
-  while_scope(sigs);     // Should not be needed - better safe than sorry
-  if_con(sigs);          // Should not be needed - better safe than sorry
-  do_while_con(sigs);    // Should not be needed - better safe than sorry
-  while_con(sigs);       // Should not be needed - better safe than sorry
-}
-}
+//////////////////////////////////////////
+// Interface
+//////////////////////////////////////////
+Analyser::Analyser(std::string file)
+    : file_(std::move(file)) {
+  no_break_in_non_loop();
+  no_continue_in_non_loop();
+  break_last_node();
+  continue_last_node();
+  return_last_node();
+  no_return_in_root();
+  unique_callable_parameter();
+  unique_function_parameter();
+  unique_main_parameter();
+  unique_main();
+  main_in_root();
+  variable_available();
+  no_double_def_variable();
+  no_double_def_function();
+  op_assign_var();
+  op_operands();     // Should not be needed - better safe than sorry
+  op_operator();     // Should not be needed - better safe than sorry
+  function_scope();  // Should not be needed - better safe than sorry
+  main_scope();      // Should not be needed - better safe than sorry
+  if_scope();        // Should not be needed - better safe than sorry
+  do_while_scope();  // Should not be needed - better safe than sorry
+  while_scope();     // Should not be needed - better safe than sorry
+  if_con();          // Should not be needed - better safe than sorry
+  do_while_con();    // Should not be needed - better safe than sorry
+  while_con();       // Should not be needed - better safe than sorry
 }
 
-std::shared_ptr<std::vector<std::vector<Message>>>
-analyse(const ast::Scope& scope, std::string file) {
-  State state(scope, file);
+std::vector<std::vector<Message>> Analyser::analyse(const ast::Scope& scope) {
+  State state(scope);
   state.root_scope = true;
 
-  visitor::register_checks(*state.signal);
-  analyse::analyse(state, scope);
+  analyse(state, scope);
 
-  return state.messages;
+  current_message_.clear();
+  return std::move(messages_);
 }
 }
 }

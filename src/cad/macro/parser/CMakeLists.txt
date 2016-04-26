@@ -7,3 +7,4 @@ target_sources(
       ${CMAKE_CURRENT_SOURCE_DIR}/Token.cpp
       ${CMAKE_CURRENT_SOURCE_DIR}/Tokenizer.cpp
 )
+add_subdirectory(analyser)
