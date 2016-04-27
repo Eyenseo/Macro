@@ -284,7 +284,7 @@ TEST_CASE("Token Info") {
       {5, 5, "}", line5}};
   tokens = tokenizer::tokenize(*code);
 
-  // REQUIRE(tokens == expected);
+  REQUIRE(tokens == expected);
 }
 
 TEST_CASE("Token Comparison") {
