@@ -8,8 +8,8 @@
 #include "cad/macro/ast/callable/Callable.h"
 #include "cad/macro/ast/loop/While.h"
 
-#include <core/variant.hpp>
-#include <core/optional.hpp>
+#include <eggs/variant.hpp>
+#include <experimental/optional>
 
 namespace cad {
 namespace macro {
@@ -20,9 +20,9 @@ protected:
   void print_internals(IndentStream& os) const;
 
 public:
-  ::core::optional<Define> define;
-  ::core::optional<ValueProducer> variable;
-  ::core::optional<ValueProducer> operation;
+  std::experimental::optional<Define> define;
+  std::experimental::optional<ValueProducer> variable;
+  std::experimental::optional<ValueProducer> operation;
 
   For(parser::Token token);
 

@@ -1,7 +1,7 @@
 #include "cad/macro/interpreter/Stack.h"
 
-#include "cad/macro/ast/callable/Function.h"
 #include "cad/macro/ast/Variable.h"
+#include "cad/macro/ast/callable/Function.h"
 
 namespace cad {
 namespace macro {
@@ -57,7 +57,7 @@ void Stack::add_variable(std::string name) {
   } else if(exists_variable(name)) {
     throw_variable_exists(__FILE__, __LINE__, name);
   }
-  variables_.emplace_back(std::move(name), ::core::any());
+  variables_.emplace_back(std::move(name), linb::any());
 }
 
 void Stack::add_function(FunctionRef fun) {
@@ -69,7 +69,7 @@ void Stack::add_function(FunctionRef fun) {
   functions_.emplace_back(std::move(fun));
 }
 
-void Stack::add_alias(std::string name, ::core::any& variable) {
+void Stack::add_alias(std::string name, linb::any& variable) {
   if(exists_function(name)) {
     throw_function_exists(__FILE__, __LINE__, name);
   } else if(exists_variable(name)) {

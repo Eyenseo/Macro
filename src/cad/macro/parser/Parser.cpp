@@ -8,8 +8,8 @@
 #include "cad/macro/parser/Message.h"
 
 #include <exception.h>
-#include <core/optional.hpp>
 
+#include <experimental/optional>
 #include <string>
 #include <regex>
 #include <cassert>
@@ -91,18 +91,18 @@ bool read_token(const Tokens& tokens, size_t& token,
 //////////////////////////////////////////
 /// Literal parsing
 //////////////////////////////////////////
-core::optional<ast::Literal<ast::Literals::BOOL>>
+std::experimental::optional<ast::Literal<ast::Literals::BOOL>>
 parse_literal_bool(const Tokens& tokens, size_t& token);
 
-core::optional<ast::Literal<ast::Literals::INT>>
+std::experimental::optional<ast::Literal<ast::Literals::INT>>
 parse_literal_int(const Tokens& tokens, size_t& token);
 
-core::optional<ast::Literal<ast::Literals::DOUBLE>>
+std::experimental::optional<ast::Literal<ast::Literals::DOUBLE>>
 parse_literal_double(const Tokens& tokens, size_t& token);
 
 void unescape_string(std::string& s);
 
-core::optional<ast::Literal<ast::Literals::STRING>>
+std::experimental::optional<ast::Literal<ast::Literals::STRING>>
 parse_literal_string(const Tokens& tokens, size_t& token);
 
 //////////////////////////////////////////
@@ -113,25 +113,25 @@ void expect_not_keyword(const Tokens& tokens, const size_t token);
 template <typename T, typename is_Function<T>::type = false>
 void parse_function_parameter(const Tokens& tokens, size_t& token, T& fun);
 template <typename T, typename is_Function<T>::type = true>
-core::optional<T> parse_function_internals(const Tokens& tokens, size_t& token,
-                                           T&& fun);
-core::optional<ast::callable::EntryFunction>
+std::experimental::optional<T> parse_function_internals(const Tokens& tokens,
+                                                        size_t& token, T&& fun);
+std::experimental::optional<ast::callable::EntryFunction>
 parse_entry_function(const Tokens& tokens, size_t& token);
-core::optional<ast::callable::Function> parse_function(const Tokens& tokens,
-                                                       size_t& token);
-core::optional<ast::Define> parse_function_definition(const Tokens& tokens,
-                                                      size_t& token);
-core::optional<ast::Define> parse_variable_definition(const Tokens& tokens,
-                                                      size_t& token);
+std::experimental::optional<ast::callable::Function>
+parse_function(const Tokens& tokens, size_t& token);
+std::experimental::optional<ast::Define>
+parse_function_definition(const Tokens& tokens, size_t& token);
+std::experimental::optional<ast::Define>
+parse_variable_definition(const Tokens& tokens, size_t& token);
 
 //////////////////////////////////////////
 /// Callable parsing
 //////////////////////////////////////////
 void expect_named_parameter(const Tokens& tokens, size_t& token);
-core::optional<std::pair<ast::Variable, ast::ValueProducer>>
+std::experimental::optional<std::pair<ast::Variable, ast::ValueProducer>>
 parse_callable_parameter(const Tokens& tokens, size_t& token);
-core::optional<ast::callable::Callable> parse_callable(const Tokens& tokens,
-                                                       size_t& token);
+std::experimental::optional<ast::callable::Callable>
+parse_callable(const Tokens& tokens, size_t& token);
 
 //////////////////////////////////////////
 /// Scope parsing
@@ -140,31 +140,31 @@ bool parse_scope_internals(const Tokens& tokens, size_t& token,
                            std::vector<ast::Scope::Node>& nodes);
 void parse_scope_internals(const Tokens& tokens, size_t& token,
                            ast::Scope& scope);
-core::optional<ast::Scope> parse_scope(const Tokens& tokens, size_t& token);
-
+std::experimental::optional<ast::Scope> parse_scope(const Tokens& tokens,
+                                                    size_t& token);
 
 //////////////////////////////////////////
 /// Variable parsing
 //////////////////////////////////////////
-core::optional<ast::Variable> parse_variable(const Tokens& tokens,
-                                             size_t& token);
+std::experimental::optional<ast::Variable> parse_variable(const Tokens& tokens,
+                                                          size_t& token);
 
 //////////////////////////////////////////
 /// Return parsing
 //////////////////////////////////////////
-core::optional<ast::callable::Return> parse_return(const Tokens& tokens,
-                                                   size_t& token);
+std::experimental::optional<ast::callable::Return>
+parse_return(const Tokens& tokens, size_t& token);
 
 //////////////////////////////////////////
 /// Break parsing
 //////////////////////////////////////////
-core::optional<ast::loop::Break> parse_break(const Tokens& tokens,
-                                             size_t& token);
+std::experimental::optional<ast::loop::Break> parse_break(const Tokens& tokens,
+                                                          size_t& token);
 //////////////////////////////////////////
 /// Continue parsing
 //////////////////////////////////////////
-core::optional<ast::loop::Continue> parse_continue(const Tokens& tokens,
-                                                   size_t& token);
+std::experimental::optional<ast::loop::Continue>
+parse_continue(const Tokens& tokens, size_t& token);
 
 //////////////////////////////////////////
 /// Operator parsing
@@ -176,7 +176,8 @@ bool is_value(const ast::Scope::Node& node);
 ast::ValueProducer node_to_value(ast::Scope::Node& node);
 ast::Scope::Node value_to_node(ast::ValueProducer& producer);
 ast::Operator node_to_operator(const Tokens& tokens, ast::Scope::Node& node);
-core::optional<ast::Variable> extract_var_def(ast::Scope::Node& node);
+std::experimental::optional<ast::Variable>
+extract_var_def(ast::Scope::Node& node);
 void setup_operator_wokespace(std::vector<ast::Scope::Node>& workspace,
                               std::vector<ast::Scope::Node>& nodes,
                               ast::Operator& op);
@@ -207,21 +208,21 @@ void assamble_operators_right_to_left(const std::string& file,
                                       FUN fun);
 void assamble_operator(const std::string& file,
                        std::vector<ast::Scope::Node>& nodes);
-core::optional<ast::Operator> parse_unary_operator(const Tokens& tokens,
-                                                   size_t& token);
-core::optional<ast::Operator> parse_binary_operator(const Tokens& tokens,
-                                                    size_t& token);
-core::optional<ast::Operator> parse_operator_internals(const Tokens& tokens,
-                                                       size_t& token);
-core::optional<ast::Operator>
+std::experimental::optional<ast::Operator>
+parse_unary_operator(const Tokens& tokens, size_t& token);
+std::experimental::optional<ast::Operator>
+parse_binary_operator(const Tokens& tokens, size_t& token);
+std::experimental::optional<ast::Operator>
+parse_operator_internals(const Tokens& tokens, size_t& token);
+std::experimental::optional<ast::Operator>
 parse_operator(const Tokens& tokens, size_t& token,
                std::vector<ast::Scope::Node>& nodes);
 
 //////////////////////////////////////////
 /// Condition parsing
 //////////////////////////////////////////
-core::optional<ast::ValueProducer> parse_condition(const Tokens& tokens,
-                                                   size_t& token);
+std::experimental::optional<ast::ValueProducer>
+parse_condition(const Tokens& tokens, size_t& token);
 
 //////////////////////////////////////////
 /// If parsing
@@ -230,7 +231,8 @@ void parse_if_condition(const Tokens& tokens, size_t& token,
                         ast::logic::If& iff);
 void parse_true(const Tokens& tokens, size_t& token, ast::logic::If& iff);
 void parse_false(const Tokens& tokens, size_t& token, ast::logic::If& iff);
-core::optional<ast::logic::If> parse_if(const Tokens& tokens, size_t& token);
+std::experimental::optional<ast::logic::If> parse_if(const Tokens& tokens,
+                                                     size_t& token);
 
 //////////////////////////////////////////
 /// While parsing
@@ -239,16 +241,17 @@ void parse_while_condition(const Tokens& tokens, size_t& token,
                            ast::loop::While& whi);
 void parse_while_scope(const Tokens& tokens, size_t& token,
                        ast::loop::While& whi);
-core::optional<ast::loop::While> parse_while(const Tokens& tokens,
-                                             size_t& token);
-core::optional<ast::loop::DoWhile> parse_do_while(const Tokens& tokens,
-                                                  size_t& token);
+std::experimental::optional<ast::loop::While> parse_while(const Tokens& tokens,
+                                                          size_t& token);
+std::experimental::optional<ast::loop::DoWhile>
+parse_do_while(const Tokens& tokens, size_t& token);
 void parse_for_variable(const Tokens& tokens, size_t& token, ast::loop::For& f);
 void parse_for_conditon(const Tokens& tokens, size_t& token, ast::loop::For& f);
 void parse_for_operation(const Tokens& tokens, size_t& token,
                          ast::loop::For& f);
 void parse_for_header(const Tokens& tokens, size_t& token, ast::loop::For& f);
-core::optional<ast::loop::For> parse_for(const Tokens& tokens, size_t& token);
+std::experimental::optional<ast::loop::For> parse_for(const Tokens& tokens,
+                                                      size_t& token);
 
 //////////////////////////////////////////
 /// Implementation
@@ -261,22 +264,23 @@ Token node_to_token(const ast::Scope::Node& node) {
   using namespace ast;
   Token token;
 
-  node.match([&token](const loop::Break& e) { token = e.token; },
-             [&token](const loop::Continue& e) { token = e.token; },
-             [&token](const Variable& e) { token = e.token; },
-             [&token](const Define& e) { token = e.token; },
-             [&token](const callable::Callable& e) { token = e.token; },
-             [&token](const callable::Return& e) { token = e.token; },
-             [&token](const Scope& e) { token = e.token; },
-             [&token](const Operator& e) { token = e.token; },
-             [&token](const logic::If& e) { token = e.token; },
-             [&token](const loop::While& e) { token = e.token; },
-             [&token](const loop::DoWhile& e) { token = e.token; },
-             [&token](const loop::For& e) { token = e.token; },
-             [&token](const Literal<Literals::BOOL>& e) { token = e.token; },
-             [&token](const Literal<Literals::INT>& e) { token = e.token; },
-             [&token](const Literal<Literals::DOUBLE>& e) { token = e.token; },
-             [&token](const Literal<Literals::STRING>& e) { token = e.token; });
+  eggs::match(
+      node, [&token](const loop::Break& e) { token = e.token; },
+      [&token](const loop::Continue& e) { token = e.token; },
+      [&token](const Variable& e) { token = e.token; },
+      [&token](const Define& e) { token = e.token; },
+      [&token](const callable::Callable& e) { token = e.token; },
+      [&token](const callable::Return& e) { token = e.token; },
+      [&token](const Scope& e) { token = e.token; },
+      [&token](const Operator& e) { token = e.token; },
+      [&token](const logic::If& e) { token = e.token; },
+      [&token](const loop::While& e) { token = e.token; },
+      [&token](const loop::DoWhile& e) { token = e.token; },
+      [&token](const loop::For& e) { token = e.token; },
+      [&token](const Literal<Literals::BOOL>& e) { token = e.token; },
+      [&token](const Literal<Literals::INT>& e) { token = e.token; },
+      [&token](const Literal<Literals::DOUBLE>& e) { token = e.token; },
+      [&token](const Literal<Literals::STRING>& e) { token = e.token; });
   return token;
 }
 
@@ -374,7 +378,7 @@ bool read_token(const Tokens& tokens, size_t& token,
 //////////////////////////////////////////
 /// Literal parsing
 //////////////////////////////////////////
-core::optional<ast::Literal<ast::Literals::BOOL>>
+std::experimental::optional<ast::Literal<ast::Literals::BOOL>>
 parse_literal_bool(const Tokens& tokens, size_t& token) {
   auto tmp = token;
 
@@ -394,7 +398,7 @@ parse_literal_bool(const Tokens& tokens, size_t& token) {
   return {};
 }
 
-core::optional<ast::Literal<ast::Literals::INT>>
+std::experimental::optional<ast::Literal<ast::Literals::INT>>
 parse_literal_int(const Tokens& tokens, size_t& token) {
   const static std::regex regex("([0-9]+)");
   auto tmp = token;
@@ -409,7 +413,7 @@ parse_literal_int(const Tokens& tokens, size_t& token) {
   return {};
 }
 
-core::optional<ast::Literal<ast::Literals::DOUBLE>>
+std::experimental::optional<ast::Literal<ast::Literals::DOUBLE>>
 parse_literal_double(const Tokens& tokens, size_t& token) {
   const static std::regex regex("([0-9]?.[0-9]+)");
   auto tmp = token;
@@ -449,7 +453,7 @@ void unescape_string(std::string& s) {
   replace_all("\\a", "\a");
 }
 
-core::optional<ast::Literal<ast::Literals::STRING>>
+std::experimental::optional<ast::Literal<ast::Literals::STRING>>
 parse_literal_string(const Tokens& tokens, size_t& token) {
   const static std::regex regex("(\\\".*\\\")");
   auto tmp = token;
@@ -500,8 +504,8 @@ void parse_function_parameter(const Tokens& tokens, size_t& token, T& fun) {
 }
 
 template <typename T, typename is_Function<T>::type>
-core::optional<T> parse_function_internals(const Tokens& tokens, size_t& token,
-                                           T&& fun) {
+std::experimental::optional<T>
+parse_function_internals(const Tokens& tokens, size_t& token, T&& fun) {
   auto tmp = token;
 
   parse_function_parameter(tokens, tmp, fun);
@@ -519,7 +523,7 @@ core::optional<T> parse_function_internals(const Tokens& tokens, size_t& token,
   return fun;
 }
 
-core::optional<ast::callable::EntryFunction>
+std::experimental::optional<ast::callable::EntryFunction>
 parse_entry_function(const Tokens& tokens, size_t& token) {
   auto tmp = token;
   try {
@@ -539,8 +543,8 @@ parse_entry_function(const Tokens& tokens, size_t& token) {
   return {};
 }
 
-core::optional<ast::callable::Function> parse_function(const Tokens& tokens,
-                                                       size_t& token) {
+std::experimental::optional<ast::callable::Function>
+parse_function(const Tokens& tokens, size_t& token) {
   const static std::regex regex("([a-z][a-z0-9_]*)");
   auto tmp = token;
   try {
@@ -564,8 +568,8 @@ core::optional<ast::callable::Function> parse_function(const Tokens& tokens,
   return {};
 }
 
-core::optional<ast::Define> parse_function_definition(const Tokens& tokens,
-                                                      size_t& token) {
+std::experimental::optional<ast::Define>
+parse_function_definition(const Tokens& tokens, size_t& token) {
   auto tmp = token;
   if(read_token(tokens, tmp, "def")) {
     ast::Define def(tokens.at(token));
@@ -583,8 +587,8 @@ core::optional<ast::Define> parse_function_definition(const Tokens& tokens,
   return {};
 }
 
-core::optional<ast::Define> parse_variable_definition(const Tokens& tokens,
-                                                      size_t& token) {
+std::experimental::optional<ast::Define>
+parse_variable_definition(const Tokens& tokens, size_t& token) {
   auto tmp = token;
   try {
     if(read_token(tokens, tmp, "var")) {
@@ -634,7 +638,7 @@ void expect_no_space_between_bracket(const Tokens& tokens, const size_t token) {
   }
 }
 
-core::optional<std::pair<ast::Variable, ast::ValueProducer>>
+std::experimental::optional<std::pair<ast::Variable, ast::ValueProducer>>
 parse_callable_parameter(const Tokens& tokens, size_t& token) {
   auto tmp = token;
 
@@ -670,8 +674,8 @@ parse_callable_parameter(const Tokens& tokens, size_t& token) {
   return {};
 }
 
-core::optional<ast::callable::Callable> parse_callable(const Tokens& tokens,
-                                                       size_t& token) {
+std::experimental::optional<ast::callable::Callable>
+parse_callable(const Tokens& tokens, size_t& token) {
   const static std::regex regex("([a-z][a-z0-9_]*)");
 
   auto tmp = token;
@@ -796,7 +800,8 @@ void parse_scope_internals(const Tokens& tokens, size_t& token,
   }
 }
 
-core::optional<ast::Scope> parse_scope(const Tokens& tokens, size_t& token) {
+std::experimental::optional<ast::Scope> parse_scope(const Tokens& tokens,
+                                                    size_t& token) {
   auto tmp = token;
 
   if(read_token(tokens, tmp, "{")) {
@@ -814,8 +819,8 @@ core::optional<ast::Scope> parse_scope(const Tokens& tokens, size_t& token) {
 //////////////////////////////////////////
 /// Variable parsing
 //////////////////////////////////////////
-core::optional<ast::Variable> parse_variable(const Tokens& tokens,
-                                             size_t& token) {
+std::experimental::optional<ast::Variable> parse_variable(const Tokens& tokens,
+                                                          size_t& token) {
   const static std::regex regex("([a-z][a-z0-9_]*)");
   auto tmp = token;
 
@@ -832,8 +837,8 @@ core::optional<ast::Variable> parse_variable(const Tokens& tokens,
 //////////////////////////////////////////
 /// Return parsing
 //////////////////////////////////////////
-core::optional<ast::callable::Return> parse_return(const Tokens& tokens,
-                                                   size_t& token) {
+std::experimental::optional<ast::callable::Return>
+parse_return(const Tokens& tokens, size_t& token) {
   auto tmp = token;
   try {
     if(read_token(tokens, tmp, "return")) {
@@ -874,8 +879,8 @@ core::optional<ast::callable::Return> parse_return(const Tokens& tokens,
 //////////////////////////////////////////
 /// Break parsing
 //////////////////////////////////////////
-core::optional<ast::loop::Break> parse_break(const Tokens& tokens,
-                                             size_t& token) {
+std::experimental::optional<ast::loop::Break> parse_break(const Tokens& tokens,
+                                                          size_t& token) {
   auto tmp = token;
 
   if(read_token(tokens, tmp, "break")) {
@@ -890,8 +895,8 @@ core::optional<ast::loop::Break> parse_break(const Tokens& tokens,
 //////////////////////////////////////////
 /// Continue parsing
 //////////////////////////////////////////
-core::optional<ast::loop::Continue> parse_continue(const Tokens& tokens,
-                                                   size_t& token) {
+std::experimental::optional<ast::loop::Continue>
+parse_continue(const Tokens& tokens, size_t& token) {
   auto tmp = token;
 
   if(read_token(tokens, tmp, "continue")) {
@@ -921,8 +926,8 @@ ast::ValueProducer node_to_value(ast::Scope::Node& node) {
   using namespace callable;
   ast::ValueProducer value;
 
-  node.match(
-      [&value](Variable& e) { value = std::move(e); },
+  eggs::match(
+      node, [&value](Variable& e) { value = std::move(e); },
       [&value](Callable& e) { value = std::move(e); },
       [&value](Operator& e) { value = std::move(e); },
       [&value](Literal<Literals::BOOL>& e) { value = std::move(e); },
@@ -945,28 +950,28 @@ ast::Operator node_to_operator(const Tokens& tokens, ast::Scope::Node& node) {
   using namespace ast;
 
   ast::Operator ret;
-  ::core::optional<Token> token;
+  std::experimental::optional<Token> token;
 
-  node.match(
-      [&ret](Operator& op) {
-        expect_operator_type(__FILE__, __LINE__, op);
-        ret = std::move(op);
-      },
-      [&token](loop::Break& ele) { token = ele.token; },
-      [&token](loop::Continue& ele) { token = ele.token; },
-      [&token](Variable& ele) { token = ele.token; },
-      [&token](Define& ele) { token = ele.token; },
-      [&token](callable::Callable& ele) { token = ele.token; },
-      [&token](callable::Return& ele) { token = ele.token; },
-      [&token](Scope& ele) { token = ele.token; },
-      [&token](logic::If& ele) { token = ele.token; },
-      [&token](loop::While& ele) { token = ele.token; },
-      [&token](loop::DoWhile& ele) { token = ele.token; },
-      [&token](loop::For& ele) { token = ele.token; },
-      [&token](Literal<Literals::BOOL>& ele) { token = ele.token; },
-      [&token](Literal<Literals::INT>& ele) { token = ele.token; },
-      [&token](Literal<Literals::DOUBLE>& ele) { token = ele.token; },
-      [&token](Literal<Literals::STRING>& ele) { token = ele.token; });
+  eggs::match(node,
+              [&ret](Operator& op) {
+                expect_operator_type(__FILE__, __LINE__, op);
+                ret = std::move(op);
+              },
+              [&token](loop::Break& ele) { token = ele.token; },
+              [&token](loop::Continue& ele) { token = ele.token; },
+              [&token](Variable& ele) { token = ele.token; },
+              [&token](Define& ele) { token = ele.token; },
+              [&token](callable::Callable& ele) { token = ele.token; },
+              [&token](callable::Return& ele) { token = ele.token; },
+              [&token](Scope& ele) { token = ele.token; },
+              [&token](logic::If& ele) { token = ele.token; },
+              [&token](loop::While& ele) { token = ele.token; },
+              [&token](loop::DoWhile& ele) { token = ele.token; },
+              [&token](loop::For& ele) { token = ele.token; },
+              [&token](Literal<Literals::BOOL>& ele) { token = ele.token; },
+              [&token](Literal<Literals::INT>& ele) { token = ele.token; },
+              [&token](Literal<Literals::DOUBLE>& ele) { token = ele.token; },
+              [&token](Literal<Literals::STRING>& ele) { token = ele.token; });
   if(token) {
     throw_unexprected_token(*token, tokens.file);
   }
@@ -975,8 +980,8 @@ ast::Operator node_to_operator(const Tokens& tokens, ast::Scope::Node& node) {
 
 ast::Scope::Node value_to_node(ast::ValueProducer& producer) {
   ast::Scope::Node node;
-  producer.value.match(
-      [&node](ast::Variable& e) { node = std::move(e); },
+  eggs::match(
+      producer.value, [&node](ast::Variable& e) { node = std::move(e); },
       [&node](ast::callable::Callable& e) { node = std::move(e); },
       [&node](ast::Operator& e) { node = std::move(e); },
       [&node](ast::Literal<ast::Literals::BOOL>& e) { node = std::move(e); },
@@ -986,31 +991,33 @@ ast::Scope::Node value_to_node(ast::ValueProducer& producer) {
   return node;
 }
 
-core::optional<ast::Variable> extract_var_def(ast::Scope::Node& node) {
-  ::core::optional<ast::Variable> ret;
+std::experimental::optional<ast::Variable>
+extract_var_def(ast::Scope::Node& node) {
+  std::experimental::optional<ast::Variable> ret;
 
-  node.match(
-      [&ret](const ast::Define& def) {
-        def.definition.match([&ret](const ast::Variable& var) { ret = var; },
-                             [](const ast::callable::Function&) {},
-                             [](const ast::callable::EntryFunction&) {});
+  eggs::match(node,
+              [&ret](const ast::Define& def) {
+                eggs::match(def.definition,
+                            [&ret](const ast::Variable& var) { ret = var; },
+                            [](const ast::callable::Function&) {},
+                            [](const ast::callable::EntryFunction&) {});
 
-      },                                                  //
-      [](const ast::loop::Break&) {},                     //
-      [](const ast::loop::Continue&) {},                  //
-      [](const ast::Variable&) {},                        //
-      [](const ast::callable::Callable&) {},              //
-      [](const ast::callable::Return&) {},                //
-      [](const ast::Scope&) {},                           //
-      [](const ast::Operator&) {},                        //
-      [](const ast::logic::If&) {},                       //
-      [](const ast::loop::While&) {},                     //
-      [](const ast::loop::DoWhile&) {},                   //
-      [](const ast::loop::For&) {},                       //
-      [](const ast::Literal<ast::Literals::BOOL>&) {},    //
-      [](const ast::Literal<ast::Literals::INT>&) {},     //
-      [](const ast::Literal<ast::Literals::DOUBLE>&) {},  //
-      [](const ast::Literal<ast::Literals::STRING>&) {});
+              },                                                  //
+              [](const ast::loop::Break&) {},                     //
+              [](const ast::loop::Continue&) {},                  //
+              [](const ast::Variable&) {},                        //
+              [](const ast::callable::Callable&) {},              //
+              [](const ast::callable::Return&) {},                //
+              [](const ast::Scope&) {},                           //
+              [](const ast::Operator&) {},                        //
+              [](const ast::logic::If&) {},                       //
+              [](const ast::loop::While&) {},                     //
+              [](const ast::loop::DoWhile&) {},                   //
+              [](const ast::loop::For&) {},                       //
+              [](const ast::Literal<ast::Literals::BOOL>&) {},    //
+              [](const ast::Literal<ast::Literals::INT>&) {},     //
+              [](const ast::Literal<ast::Literals::DOUBLE>&) {},  //
+              [](const ast::Literal<ast::Literals::STRING>&) {});
   return ret;
 }
 
@@ -1102,22 +1109,22 @@ bool is_value(const ast::Scope::Node& node) {
 
   bool ret = false;
 
-  node.match([&ret](const Operator&) { ret = false; },
-             [&ret](const loop::Break&) { ret = false; },
-             [&ret](const loop::Continue&) { ret = false; },
-             [&ret](const Variable&) { ret = true; },
-             [&ret](const Define&) { ret = false; },
-             [&ret](const callable::Callable&) { ret = true; },
-             [&ret](const callable::Return&) { ret = false; },
-             [&ret](const Scope&) { ret = false; },
-             [&ret](const logic::If&) { ret = false; },
-             [&ret](const loop::While&) { ret = false; },
-             [&ret](const loop::DoWhile&) { ret = false; },
-             [&ret](const loop::For&) { ret = false; },
-             [&ret](const Literal<Literals::BOOL>&) { ret = true; },
-             [&ret](const Literal<Literals::INT>&) { ret = true; },
-             [&ret](const Literal<Literals::DOUBLE>&) { ret = true; },
-             [&ret](const Literal<Literals::STRING>&) { ret = true; });
+  eggs::match(node, [&ret](const Operator&) { ret = false; },
+              [&ret](const loop::Break&) { ret = false; },
+              [&ret](const loop::Continue&) { ret = false; },
+              [&ret](const Variable&) { ret = true; },
+              [&ret](const Define&) { ret = false; },
+              [&ret](const callable::Callable&) { ret = true; },
+              [&ret](const callable::Return&) { ret = false; },
+              [&ret](const Scope&) { ret = false; },
+              [&ret](const logic::If&) { ret = false; },
+              [&ret](const loop::While&) { ret = false; },
+              [&ret](const loop::DoWhile&) { ret = false; },
+              [&ret](const loop::For&) { ret = false; },
+              [&ret](const Literal<Literals::BOOL>&) { ret = true; },
+              [&ret](const Literal<Literals::INT>&) { ret = true; },
+              [&ret](const Literal<Literals::DOUBLE>&) { ret = true; },
+              [&ret](const Literal<Literals::STRING>&) { ret = true; });
 
   return ret;
 }
@@ -1199,29 +1206,29 @@ void assamble_operators_left_to_right(const std::string& file,
                                       std::vector<ast::Scope::Node>& nodes,
                                       FUN fun) {
   for(size_t i = 0; i < nodes.size(); ++i) {
-    nodes.at(i).match(
-        [&file, &nodes, &i, &fun](ast::Operator& op) {
-          expect_operator_type(__FILE__, __LINE__, op);
+    eggs::match(nodes.at(i),
+                [&file, &nodes, &i, &fun](ast::Operator& op) {
+                  expect_operator_type(__FILE__, __LINE__, op);
 
-          if(fun(op) && !op.left_operand && !op.right_operand) {
-            assamble_operator(file, nodes, i, op);
-          }
-        },
-        [](ast::loop::Break&) {},                      //
-        [](ast::loop::Continue&) {},                   //
-        [](ast::Variable&) {},                         //
-        [](ast::Define&) {},                           //
-        [](ast::callable::Callable&) {},               //
-        [](ast::callable::Return&) {},                 //
-        [](ast::Scope&) {},                            //
-        [](ast::logic::If&) {},                        //
-        [](ast::loop::While&) {},                      //
-        [](ast::loop::DoWhile&) {},                    //
-        [](ast::loop::For&) {},                        //
-        [](ast::Literal<ast::Literals::BOOL>&) {},     //
-        [](ast::Literal<ast::Literals::INT>&) {},      //
-        [](ast::Literal<ast::Literals::DOUBLE>&) {},   //
-        [](ast::Literal<ast::Literals::STRING>&) {});  //
+                  if(fun(op) && !op.left_operand && !op.right_operand) {
+                    assamble_operator(file, nodes, i, op);
+                  }
+                },
+                [](ast::loop::Break&) {},                      //
+                [](ast::loop::Continue&) {},                   //
+                [](ast::Variable&) {},                         //
+                [](ast::Define&) {},                           //
+                [](ast::callable::Callable&) {},               //
+                [](ast::callable::Return&) {},                 //
+                [](ast::Scope&) {},                            //
+                [](ast::logic::If&) {},                        //
+                [](ast::loop::While&) {},                      //
+                [](ast::loop::DoWhile&) {},                    //
+                [](ast::loop::For&) {},                        //
+                [](ast::Literal<ast::Literals::BOOL>&) {},     //
+                [](ast::Literal<ast::Literals::INT>&) {},      //
+                [](ast::Literal<ast::Literals::DOUBLE>&) {},   //
+                [](ast::Literal<ast::Literals::STRING>&) {});  //
   }
 }
 
@@ -1233,29 +1240,29 @@ void assamble_operators_right_to_left(const std::string& file,
   if(i > 0)
     do {
       --i;
-      nodes.at(i).match(
-          [&file, &nodes, &i, &fun](ast::Operator& op) {
-            expect_operator_type(__FILE__, __LINE__, op);
+      eggs::match(nodes.at(i),
+                  [&file, &nodes, &i, &fun](ast::Operator& op) {
+                    expect_operator_type(__FILE__, __LINE__, op);
 
-            if(fun(op) && !op.left_operand && !op.right_operand) {
-              assamble_operator(file, nodes, i, op);
-            }
-          },
-          [](ast::loop::Break&) {},                      //
-          [](ast::loop::Continue&) {},                   //
-          [](ast::Variable&) {},                         //
-          [](ast::Define&) {},                           //
-          [](ast::callable::Callable&) {},               //
-          [](ast::callable::Return&) {},                 //
-          [](ast::Scope&) {},                            //
-          [](ast::logic::If&) {},                        //
-          [](ast::loop::While&) {},                      //
-          [](ast::loop::DoWhile&) {},                    //
-          [](ast::loop::For&) {},                        //
-          [](ast::Literal<ast::Literals::BOOL>&) {},     //
-          [](ast::Literal<ast::Literals::INT>&) {},      //
-          [](ast::Literal<ast::Literals::DOUBLE>&) {},   //
-          [](ast::Literal<ast::Literals::STRING>&) {});  //
+                    if(fun(op) && !op.left_operand && !op.right_operand) {
+                      assamble_operator(file, nodes, i, op);
+                    }
+                  },
+                  [](ast::loop::Break&) {},                      //
+                  [](ast::loop::Continue&) {},                   //
+                  [](ast::Variable&) {},                         //
+                  [](ast::Define&) {},                           //
+                  [](ast::callable::Callable&) {},               //
+                  [](ast::callable::Return&) {},                 //
+                  [](ast::Scope&) {},                            //
+                  [](ast::logic::If&) {},                        //
+                  [](ast::loop::While&) {},                      //
+                  [](ast::loop::DoWhile&) {},                    //
+                  [](ast::loop::For&) {},                        //
+                  [](ast::Literal<ast::Literals::BOOL>&) {},     //
+                  [](ast::Literal<ast::Literals::INT>&) {},      //
+                  [](ast::Literal<ast::Literals::DOUBLE>&) {},   //
+                  [](ast::Literal<ast::Literals::STRING>&) {});  //
     } while(i != 0);
 }
 
@@ -1311,8 +1318,8 @@ void assamble_operator(const std::string& file,
   }
 }
 
-core::optional<ast::Operator> parse_unary_operator(const Tokens& tokens,
-                                                   size_t& token) {
+std::experimental::optional<ast::Operator>
+parse_unary_operator(const Tokens& tokens, size_t& token) {
   auto op = ast::Operation::NONE;
   auto tmp = token;
 
@@ -1336,8 +1343,8 @@ core::optional<ast::Operator> parse_unary_operator(const Tokens& tokens,
   }
   return {};
 }
-core::optional<ast::Operator> parse_binary_operator(const Tokens& tokens,
-                                                    size_t& token) {
+std::experimental::optional<ast::Operator>
+parse_binary_operator(const Tokens& tokens, size_t& token) {
   auto op = ast::Operation::NONE;
   auto tmp = token;
 
@@ -1380,10 +1387,11 @@ core::optional<ast::Operator> parse_binary_operator(const Tokens& tokens,
   return {};
 }
 
-core::optional<ast::Operator> parse_operator_internals(const Tokens& tokens,
-                                                       size_t& token) {
+std::experimental::optional<ast::Operator>
+parse_operator_internals(const Tokens& tokens, size_t& token) {
   auto tmp = token;
-  ::core::optional<ast::Operator> ret;
+
+  std::experimental::optional<ast::Operator> ret;
 
   if(auto un = parse_unary_operator(tokens, tmp)) {
     ret.emplace(std::move(*un));
@@ -1395,11 +1403,11 @@ core::optional<ast::Operator> parse_operator_internals(const Tokens& tokens,
   return ret;
 }
 
-core::optional<ast::Operator>
+std::experimental::optional<ast::Operator>
 parse_operator(const Tokens& tokens, size_t& token,
                std::vector<ast::Scope::Node>& nodes) {
   auto tmp = token;
-  core::optional<ast::Operator> ret;
+  std::experimental::optional<ast::Operator> ret;
 
   try {
     std::vector<ast::Scope::Node> workspace;
@@ -1429,8 +1437,8 @@ parse_operator(const Tokens& tokens, size_t& token,
 //////////////////////////////////////////
 /// Condition parsing
 //////////////////////////////////////////
-core::optional<ast::ValueProducer> parse_condition(const Tokens& tokens,
-                                                   size_t& token) {
+std::experimental::optional<ast::ValueProducer>
+parse_condition(const Tokens& tokens, size_t& token) {
   std::vector<ast::Scope::Node> conditions;
   auto tmp = token;
 
@@ -1532,7 +1540,8 @@ void parse_false(const Tokens& tokens, size_t& token, ast::logic::If& iff) {
   }
 }
 
-core::optional<ast::logic::If> parse_if(const Tokens& tokens, size_t& token) {
+std::experimental::optional<ast::logic::If> parse_if(const Tokens& tokens,
+                                                     size_t& token) {
   auto tmp = token;
 
   try {
@@ -1590,8 +1599,8 @@ void parse_while_scope(const Tokens& tokens, size_t& token,
   token = tmp;
 }
 
-core::optional<ast::loop::While> parse_while(const Tokens& tokens,
-                                             size_t& token) {
+std::experimental::optional<ast::loop::While> parse_while(const Tokens& tokens,
+                                                          size_t& token) {
   auto tmp = token;
 
   try {
@@ -1611,8 +1620,8 @@ core::optional<ast::loop::While> parse_while(const Tokens& tokens,
   }
   return {};
 }
-core::optional<ast::loop::DoWhile> parse_do_while(const Tokens& tokens,
-                                                  size_t& token) {
+std::experimental::optional<ast::loop::DoWhile>
+parse_do_while(const Tokens& tokens, size_t& token) {
   auto tmp = token;
 
   try {
@@ -1640,12 +1649,12 @@ void parse_for_variable(const Tokens& tokens, size_t& token,
 
   if(auto def = parse_variable_definition(tokens, tmp)) {
     std::vector<ast::Scope::Node> op_wip;
-    def->definition.match(
-        [&op_wip](ast::Variable& e) { op_wip.push_back(e); },
+    eggs::match(
+        def->definition, [&op_wip](ast::Variable& e) { op_wip.push_back(e); },
         [](ast::callable::Function&) { assert(false && "Can't happen."); });
     f.define = std::move(*def);
     if(auto op = parse_operator(tokens, tmp, op_wip)) {
-      f.variable = std::move(*op);
+      f.variable = {std::move(*op)};
     }
     token = tmp;
   } else if(auto con = parse_condition(tokens, tmp)) {
@@ -1684,7 +1693,8 @@ void parse_for_header(const Tokens& tokens, size_t& token, ast::loop::For& f) {
   token = tmp;
 }
 
-core::optional<ast::loop::For> parse_for(const Tokens& tokens, size_t& token) {
+std::experimental::optional<ast::loop::For> parse_for(const Tokens& tokens,
+                                                      size_t& token) {
   auto tmp = token;
 
   try {

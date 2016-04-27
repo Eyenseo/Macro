@@ -24,22 +24,22 @@ std::reference_wrapper<const Token> node_to_token(const ast::Scope::Node& n) {
   Token t;
   std::reference_wrapper<const Token> ret = t;
 
-  n.match([&ret](const Operator& n) { ret = n.token; },                   //
-          [&ret](const Continue& n) { ret = n.token; },                   //
-          [&ret](const Break& n) { ret = n.token; },                      //
-          [&ret](const Callable& n) { ret = n.token; },                   //
-          [&ret](const Define& n) { ret = n.token; },                     //
-          [&ret](const DoWhile& n) { ret = n.token; },                    //
-          [&ret](const For& n) { ret = n.token; },                        //
-          [&ret](const If& n) { ret = n.token; },                         //
-          [&ret](const Literal<Literals::BOOL>& n) { ret = n.token; },    //
-          [&ret](const Literal<Literals::DOUBLE>& n) { ret = n.token; },  //
-          [&ret](const Literal<Literals::INT>& n) { ret = n.token; },     //
-          [&ret](const Literal<Literals::STRING>& n) { ret = n.token; },  //
-          [&ret](const Return& n) { ret = n.token; },                     //
-          [&ret](const Scope& n) { ret = n.token; },                      //
-          [&ret](const While& n) { ret = n.token; },                      //
-          [&ret](const Variable& n) { ret = n.token; });
+  eggs::match(n, [&ret](const Operator& n) { ret = n.token; },                //
+              [&ret](const Continue& n) { ret = n.token; },                   //
+              [&ret](const Break& n) { ret = n.token; },                      //
+              [&ret](const Callable& n) { ret = n.token; },                   //
+              [&ret](const Define& n) { ret = n.token; },                     //
+              [&ret](const DoWhile& n) { ret = n.token; },                    //
+              [&ret](const For& n) { ret = n.token; },                        //
+              [&ret](const If& n) { ret = n.token; },                         //
+              [&ret](const Literal<Literals::BOOL>& n) { ret = n.token; },    //
+              [&ret](const Literal<Literals::DOUBLE>& n) { ret = n.token; },  //
+              [&ret](const Literal<Literals::INT>& n) { ret = n.token; },     //
+              [&ret](const Literal<Literals::STRING>& n) { ret = n.token; },  //
+              [&ret](const Return& n) { ret = n.token; },                     //
+              [&ret](const Scope& n) { ret = n.token; },                      //
+              [&ret](const While& n) { ret = n.token; },                      //
+              [&ret](const Variable& n) { ret = n.token; });
 
   return ret;
 }
@@ -109,35 +109,36 @@ void Analyser::analyse(State& state, const ast::callable::Function& e) {
 }
 void Analyser::analyse(State& state, const ast::Define& e) {
   def.emit(*this, SignalType::START, state, e);
-  e.definition.match(
-      [this, &state](const ast::callable::EntryFunction& e) {
-        {
-          Message m(e.token, file_);
-          m << "In the 'main' function defined here";
-          current_message_.push_back(std::move(m));
-        }
-        analyse(state, e);
-        state.stack.functions.push_back(e);
-      },
-      [this, &state](const ast::callable::Function& e) {
-        {
-          Message m(e.token, file_);
-          m << "In the '" << e.token.token << "' function defined here";
-          current_message_.push_back(std::move(m));
-        }
-        analyse(state, e);
-        state.stack.functions.push_back(e);
-      },
-      [this, &state](const ast::Variable& e) {
-        {
-          Message m(e.token, file_);
-          m << "At the variable '" << e.token.token << "' defined here";
-          current_message_.push_back(std::move(m));
-        }
-        state.stack.variables.push_back(e);
-        // We are good - if a variable is declared twice can be checked on the
-        // end signal
-      });
+  eggs::match(e.definition,
+              [this, &state](const ast::callable::EntryFunction& e) {
+                {
+                  Message m(e.token, file_);
+                  m << "In the 'main' function defined here";
+                  current_message_.push_back(std::move(m));
+                }
+                analyse(state, e);
+                state.stack.functions.push_back(e);
+              },
+              [this, &state](const ast::callable::Function& e) {
+                {
+                  Message m(e.token, file_);
+                  m << "In the '" << e.token.token << "' function defined here";
+                  current_message_.push_back(std::move(m));
+                }
+                analyse(state, e);
+                state.stack.functions.push_back(e);
+              },
+              [this, &state](const ast::Variable& e) {
+                {
+                  Message m(e.token, file_);
+                  m << "At the variable '" << e.token.token << "' defined here";
+                  current_message_.push_back(std::move(m));
+                }
+                state.stack.variables.push_back(e);
+                // We are good - if a variable is declared twice can be checked
+                // on the
+                // end signal
+              });
   current_message_.pop_back();
   def.emit(*this, SignalType::END, state, e);
 }
@@ -268,8 +269,8 @@ void Analyser::analyse(State& state, const ast::Scope& e) {
 
   sco.emit(*this, SignalType::START, state, e);
   for(const auto& n : e.nodes) {
-    n.match(
-        [this, &state](const Operator& e) { analyse(state, e); },
+    eggs::match(
+        n, [this, &state](const Operator& e) { analyse(state, e); },
         [this, &state](const loop::Continue& e) { analyse(state, e); },
         [this, &state](const loop::Break& e) { analyse(state, e); },
         [this, &state](const callable::Callable& e) { analyse(state, e); },
@@ -302,8 +303,8 @@ void Analyser::analyse(State& state, const ast::Variable& e) {
 void Analyser::analyse(State& state, const ast::ValueProducer& e) {
   using namespace ast;
 
-  e.value.match(
-      [this, &state](const Operator& e) { analyse(state, e); },
+  eggs::match(
+      e.value, [this, &state](const Operator& e) { analyse(state, e); },
       [this, &state](const callable::Callable& e) { analyse(state, e); },
       [this, &state](const Literal<Literals::BOOL>& e) { analyse(state, e); },
       [this, &state](const Literal<Literals::DOUBLE>& e) { analyse(state, e); },
@@ -593,7 +594,8 @@ void Analyser::op_assign_var() {
       [&message](Analyser& ana, SignalType t, const State&, const auto& biop) {
         if(t == SignalType::END) {
           if(biop.operation == ast::Operation::ASSIGNMENT) {
-            biop.left_operand->value.match(
+            eggs::match(
+                biop.left_operand->value,
                 [&message, &ana](const ast::Operator& e) {
                   message(ana, e.token, "operator");
                 },

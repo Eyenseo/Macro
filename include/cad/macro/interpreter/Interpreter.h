@@ -1,7 +1,7 @@
 #ifndef cad_macro_interpreter_Interpreter_h
 #define cad_macro_interpreter_Interpreter_h
 
-#include <core/any.hpp>
+#include <any.hpp>
 
 #include <iostream>
 #include <memory>
@@ -66,7 +66,7 @@ protected:
   //////////////////////////////////////////
   /// Helper
   //////////////////////////////////////////
-  bool any_to_bool(const ::core::any& any) const;
+  bool any_to_bool(const linb::any& any) const;
 
   //////////////////////////////////////////
   /// define
@@ -80,45 +80,45 @@ protected:
   //////////////////////////////////////////
   [[noreturn]] void interpret_none() const;
   // Binary helper
-  ::core::any interpret_divide(State& state, const ast::Operator& op) const;
-  ::core::any interpret_multiply(State& state, const ast::Operator& op) const;
-  ::core::any interpret_modulo(State& state, const ast::Operator& op) const;
-  ::core::any interpret_add(State& state, const ast::Operator& op) const;
-  ::core::any interpret_subtract(State& state, const ast::Operator& op) const;
-  ::core::any interpret_smaller(State& state, const ast::Operator& op) const;
-  ::core::any interpret_smaller_equal(State& state,
-                                      const ast::Operator& op) const;
-  ::core::any interpret_greater(State& state, const ast::Operator& op) const;
-  ::core::any interpret_greater_equal(State& state,
-                                      const ast::Operator& op) const;
-  ::core::any interpret_equal(State& state, const ast::Operator& op) const;
-  ::core::any interpret_not_equal(State& state, const ast::Operator& op) const;
-  ::core::any interpret_and(State& state, const ast::Operator& op) const;
-  ::core::any interpret_or(State& state, const ast::Operator& op) const;
-  ::core::any interpret_assignment(State& state, const ast::Operator& op) const;
+  linb::any interpret_divide(State& state, const ast::Operator& op) const;
+  linb::any interpret_multiply(State& state, const ast::Operator& op) const;
+  linb::any interpret_modulo(State& state, const ast::Operator& op) const;
+  linb::any interpret_add(State& state, const ast::Operator& op) const;
+  linb::any interpret_subtract(State& state, const ast::Operator& op) const;
+  linb::any interpret_smaller(State& state, const ast::Operator& op) const;
+  linb::any interpret_smaller_equal(State& state,
+                                    const ast::Operator& op) const;
+  linb::any interpret_greater(State& state, const ast::Operator& op) const;
+  linb::any interpret_greater_equal(State& state,
+                                    const ast::Operator& op) const;
+  linb::any interpret_equal(State& state, const ast::Operator& op) const;
+  linb::any interpret_not_equal(State& state, const ast::Operator& op) const;
+  linb::any interpret_and(State& state, const ast::Operator& op) const;
+  linb::any interpret_or(State& state, const ast::Operator& op) const;
+  linb::any interpret_assignment(State& state, const ast::Operator& op) const;
   // Unary helper
-  ::core::any interpret_not(State& state, const ast::Operator& op) const;
-  ::core::any interpret_typeof(State& state, const ast::Operator& op) const;
-  ::core::any interpret_print(State& state, const ast::Operator& op) const;
-  ::core::any interpret_negative(State& state, const ast::Operator& op) const;
-  ::core::any interpret_positive(State& state, const ast::Operator& op) const;
+  linb::any interpret_not(State& state, const ast::Operator& op) const;
+  linb::any interpret_typeof(State& state, const ast::Operator& op) const;
+  linb::any interpret_print(State& state, const ast::Operator& op) const;
+  linb::any interpret_negative(State& state, const ast::Operator& op) const;
+  linb::any interpret_positive(State& state, const ast::Operator& op) const;
 
-  ::core::any interpret(State& state, const ast::Operator& op) const;
+  linb::any interpret(State& state, const ast::Operator& op) const;
 
   //////////////////////////////////////////
   /// interpret fundamentals
   //////////////////////////////////////////
   void interpret(State& state, const ast::loop::Break& br) const;
   void interpret(State& state, const ast::loop::Continue& br) const;
-  ::core::any interpret(State& state, const ast::logic::If& iff) const;
-  ::core::any interpret(State& state, const ast::loop::DoWhile& whi) const;
-  ::core::any interpret(State& state, const ast::loop::For& fo) const;
-  ::core::any interpret(State& state, const ast::loop::While& whi) const;
-  ::core::any interpret(State& state, const ast::callable::Return& ret) const;
-  ::core::any interpret(State& state, const ast::Scope& scope) const;
-  ::core::any interpret_shared(State& state, const ast::Scope& scope) const;
-  SmartRef<::core::any>
-  interpret(State& state, const ast::ValueProducer& value_producer) const;
+  linb::any interpret(State& state, const ast::logic::If& iff) const;
+  linb::any interpret(State& state, const ast::loop::DoWhile& whi) const;
+  linb::any interpret(State& state, const ast::loop::For& fo) const;
+  linb::any interpret(State& state, const ast::loop::While& whi) const;
+  linb::any interpret(State& state, const ast::callable::Return& ret) const;
+  linb::any interpret(State& state, const ast::Scope& scope) const;
+  linb::any interpret_shared(State& state, const ast::Scope& scope) const;
+  SmartRef<linb::any> interpret(State& state,
+                                const ast::ValueProducer& value_producer) const;
 
   //////////////////////////////////////////
   // interpret function
@@ -135,10 +135,8 @@ protected:
   void add_arguments(State& state, Arguments& args,
                      const ast::callable::Function& fun) const;
 
-  ::core::any interpret(State& state,
-                        const ast::callable::Callable& call) const;
-  ::core::any interpret_main(State& state, Arguments args) const;
-
+  linb::any interpret(State& state, const ast::callable::Callable& call) const;
+  linb::any interpret_main(State& state, Arguments args) const;
 
 public:
   enum class E { BAD_BOOL_CAST, MISSING_FUNCTION, TAIL };
@@ -147,9 +145,8 @@ public:
               std::shared_ptr<OperatorProvider> operator_provider,
               std::ostream& out = std::cout);
 
-  ::core::any interpret(std::string macro, Arguments args,
-                        std::string scope = "",
-                        std::string file_name = "Anonymous") const;
+  linb::any interpret(std::string macro, Arguments args, std::string scope = "",
+                      std::string file_name = "Anonymous") const;
 };
 }
 }

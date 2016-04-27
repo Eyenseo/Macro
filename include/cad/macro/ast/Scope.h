@@ -16,7 +16,7 @@
 #include "cad/macro/ast/loop/For.h"
 #include "cad/macro/ast/loop/While.h"
 
-#include <core/variant.hpp>
+#include <eggs/variant.hpp>
 
 #include <vector>
 
@@ -41,10 +41,10 @@ class Scope : public AST {
 
 public:
   using Node =
-      ::core::variant<Operator, Break, Continue, Callable, Define, DoWhile, For,
-                      If, Literal<Literals::BOOL>, Literal<Literals::DOUBLE>,
-                      Literal<Literals::INT>, Literal<Literals::STRING>, Return,
-                      Scope, Variable, While>;
+      eggs::variant<Operator, Break, Continue, Callable, Define, DoWhile, For,
+                    If, Literal<Literals::BOOL>, Literal<Literals::DOUBLE>,
+                    Literal<Literals::INT>, Literal<Literals::STRING>, Return,
+                    Scope, Variable, While>;
 
 private:
   void print_internals(std::ostream& os) const;

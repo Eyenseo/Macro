@@ -2,8 +2,8 @@
 
 #include "cad/macro/interpreter/Stack.h"
 
-#include "cad/macro/ast/callable/Function.h"
 #include "cad/macro/ast/callable/Callable.h"
+#include "cad/macro/ast/callable/Function.h"
 
 using Function = cad::macro::ast::callable::Function;
 using Callable = cad::macro::ast::callable::Callable;
@@ -23,7 +23,6 @@ public:
     return functions_;
   }
 };
-
 
 CATCH_TRANSLATE_EXCEPTION(std::exception& e) {
   std::stringstream ss;
@@ -47,18 +46,18 @@ TEST_CASE("Variable") {
     REQUIRE_FALSE(stack.is_alias("foo"));
 
     SECTION("Access") {
-      stack.variable("foo", [](core::any& foo) { foo = 1; });
+      stack.variable("foo", [](linb::any& foo) { foo = 1; });
 
-      stack.variable("foo", [](core::any& foo) {
-        REQUIRE(core::any_cast<int>(foo) == 1);
+      stack.variable("foo", [](linb::any& foo) {
+        REQUIRE(linb::any_cast<int>(foo) == 1);
       });
 
       SECTION("Move") {
-        ::core::any my_foo;
+        linb::any my_foo;
         stack.variable("foo",
-                       [&my_foo](core::any& foo) { my_foo = std::move(foo); });
+                       [&my_foo](linb::any& foo) { my_foo = std::move(foo); });
 
-        int foo = ::core::any_cast<int>(my_foo);
+        int foo = linb::any_cast<int>(my_foo);
         REQUIRE(foo == 1);
       }
     }
@@ -123,14 +122,14 @@ TEST_CASE("Parent") {
 
       SECTION("Parent has") {
         stack_a->add_variable("foo");
-        stack_a->variable("foo", [](core::any& foo) { foo = 42; });
+        stack_a->variable("foo", [](linb::any& foo) { foo = 42; });
 
         REQUIRE(stack_b->has_variable("foo"));
         REQUIRE_FALSE(stack_b->owns_variable("foo"));
         REQUIRE_FALSE(stack_b->is_alias("foo"));
 
         SECTION("Add alias") {
-          stack_a->variable("foo", [&stack_b](core::any& foo) {
+          stack_a->variable("foo", [&stack_b](linb::any& foo) {
             stack_b->add_alias("bar", foo);
           });
           REQUIRE(stack_b->has_variable("bar"));
@@ -138,8 +137,8 @@ TEST_CASE("Parent") {
           REQUIRE(stack_b->is_alias("bar"));
 
           SECTION("Use alias") {
-            stack_b->variable("bar", [](core::any& bar) {
-              REQUIRE(core::any_cast<int>(bar) == 42);
+            stack_b->variable("bar", [](linb::any& bar) {
+              REQUIRE(linb::any_cast<int>(bar) == 42);
             });
           }
 

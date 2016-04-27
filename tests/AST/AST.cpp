@@ -113,7 +113,7 @@ TEST_CASE("Define Comparison") {
   SECTION("No-Definition") {
     Define a({0, 0, ""});
     Define b({0, 0, ""});
-    REQUIRE(a == b);
+    REQUIRE((a == b));
   }
   SECTION("Definition") {
     Define a({0, 0, ""});
@@ -127,7 +127,7 @@ TEST_CASE("Define Comparison") {
     a.definition = Variable({0, 0, ""});
     // We are using by default Function
     Define b({0, 0, ""});
-    REQUIRE_FALSE(a == b);
+    REQUIRE_FALSE((a == b));
   }
 }
 
@@ -450,29 +450,29 @@ TEST_CASE("For") {
       a.define = Define({0, 0, ""});
       For b({0, 0, ""});
       b.define = Define({0, 0, ""});
-      REQUIRE(a == b);
+      REQUIRE((a == b));
     }
     SECTION("N/One") {
       For a({0, 0, ""});
       Condition ac({0, 0, ""});
       a.define = Define({0, 0, ""});
       For b({0, 0, ""});
-      REQUIRE_FALSE(a == b);
+      REQUIRE_FALSE((a == b));
     }
   }
   // Variable
   SECTION("Variable") {
     SECTION("Same") {
       For a({0, 0, ""});
-      a.variable = Variable({0, 0, ""});
+      a.variable = {Variable({0, 0, ""})};
       For b({0, 0, ""});
-      b.variable = Variable({0, 0, ""});
+      b.variable = {Variable({0, 0, ""})};
       REQUIRE(a == b);
     }
     SECTION("N/One") {
       For a({0, 0, ""});
       Condition ac({0, 0, ""});
-      a.variable = Variable({0, 0, ""});
+      a.variable = {Variable({0, 0, ""})};
       For b({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
@@ -481,14 +481,14 @@ TEST_CASE("For") {
   SECTION("Variable initialization") {
     SECTION("Same") {
       For a({0, 0, ""});
-      a.variable = Operator({0, 0, ""});
+      a.variable = {Operator({0, 0, ""})};
       For b({0, 0, ""});
-      b.variable = Operator({0, 0, ""});
+      b.variable = {Operator({0, 0, ""})};
       REQUIRE(a == b);
     }
     SECTION("N/One") {
       For a({0, 0, ""});
-      a.variable = Operator({0, 0, ""});
+      a.variable = {Operator({0, 0, ""})};
       For b({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }
@@ -498,27 +498,27 @@ TEST_CASE("For") {
     SECTION("Same") {
       For a({0, 0, ""});
       Operator ac({0, 0, ""});
-      a.operation = ac;
+      a.operation = {ac};
       For b({0, 0, ""});
       Operator bc({0, 0, ""});
-      b.operation = bc;
+      b.operation = {bc};
       REQUIRE(a == b);
     }
     SECTION("Different") {
       For a({0, 0, ""});
       Operator ac({0, 0, ""});
       ac.operation = Operation::NOT;
-      a.operation = ac;
+      a.operation = {ac};
       For b({0, 0, ""});
       Operator bc({0, 0, ""});
-      b.operation = bc;
+      b.operation = {bc};
       REQUIRE_FALSE(a == b);
     }
     SECTION("N/One") {
       For a({0, 0, ""});
       Operator ac({0, 0, ""});
       ac.operation = Operation::NOT;
-      a.operation = ac;
+      a.operation = {ac};
       For b({0, 0, ""});
       REQUIRE_FALSE(a == b);
     }

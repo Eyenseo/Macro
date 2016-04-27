@@ -1,14 +1,14 @@
 #ifndef cad_macro_interpreter_Stack_h
 #define cad_macro_interpreter_Stack_h
 
-#include "cad/macro/ast/callable/Callable.h"
 #include "cad/macro/ast/ValueProducer.h"
+#include "cad/macro/ast/callable/Callable.h"
 #include "cad/macro/ast/callable/Function.h"
 
+#include <any.hpp>
 #include <exception.h>
 
-#include <core/any.hpp>
-
+#include <algorithm>
 #include <memory>
 #include <vector>
 
@@ -104,8 +104,8 @@ class Stack : public std::enable_shared_from_this<Stack> {
 protected:
   std::shared_ptr<Stack> parent_;
 
-  VecMap<std::string, ::core::any> variables_;
-  VecMap<std::string, std::reference_wrapper<::core::any>> aliases_;
+  VecMap<std::string, linb::any> variables_;
+  VecMap<std::string, std::reference_wrapper<linb::any>> aliases_;
   std::vector<FunctionRef> functions_;
 
 public:
@@ -119,7 +119,7 @@ public:
   Stack();
   Stack(std::shared_ptr<Stack> parent);
 
-  void add_alias(std::string name, ::core::any& variable);
+  void add_alias(std::string name, linb::any& variable);
   void remove_alias(std::string name);
   void add_variable(std::string name);
   void add_function(FunctionRef fun);
@@ -135,7 +135,7 @@ public:
 
   template <typename FUN,
             typename std::enable_if<
-                std::is_same<std::result_of_t<FUN(::core::any&)>, void>::value,
+                std::is_same<std::result_of_t<FUN(linb::any&)>, void>::value,
                 bool>::type = false>
   void variable(const std::string& name, FUN fun) {
     auto alias_it = find(aliases_, name);

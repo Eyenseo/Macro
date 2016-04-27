@@ -10,7 +10,7 @@
 class LCommand : public cad::core::command::Command {
   using CommandProvider = cad::core::command::CommandProvider;
 
-  std::function<::core::any(Arguments)> fun_;
+  std::function<linb::any(Arguments)> fun_;
 
 public:
   /**
@@ -22,7 +22,7 @@ public:
    */
   LCommand(std::string call_name,
            std::weak_ptr<CommandProvider> command_provider,
-           std::function<::core::any(Arguments)> fun);
+           std::function<linb::any(Arguments)> fun);
   /**
    * @brief Constructor
    *
@@ -33,7 +33,7 @@ public:
    */
   LCommand(std::string call_name,
            std::weak_ptr<CommandProvider> command_provider,
-           std::function<::core::any(Arguments)> fun, Arguments args);
+           std::function<linb::any(Arguments)> fun, Arguments args);
 
   /**
    * @brief Function to execute the function
@@ -42,7 +42,7 @@ public:
    *
    * @return Retrun values from the function
    */
-  ::core::any execute(Arguments args) override;
+  linb::any execute(Arguments args) override;
   /**
    * @brief Clones this Command
    *

@@ -10,9 +10,9 @@ Define::Define(parser::Token token)
 }
 
 void Define::print_internals(IndentStream& os) const {
-  definition.match([&os](const Function& d) { os << d; },
-                   [&os](const EntryFunction& d) { os << d; },
-                   [&os](const Variable& d) { os << d; });
+  eggs::match(definition, [&os](const Function& d) { os << d; },
+              [&os](const EntryFunction& d) { os << d; },
+              [&os](const Variable& d) { os << d; });
 }
 
 bool Define::operator==(const Define& other) const {

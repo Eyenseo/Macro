@@ -1339,7 +1339,7 @@ TEST_CASE("For") {
         op.left_operand =
             std::make_unique<ValueProducer>(Variable({1, 23, "a", line1}));
         op.right_operand = std::make_unique<ValueProducer>(std::move(lit));
-        f.variable = std::move(op);
+        f.variable = {std::move(op)};
         f.scope = std::make_unique<Scope>(Token(1, 31, "{", line1));
 
         main.scope->nodes.push_back(std::move(def_v));
@@ -1372,7 +1372,7 @@ TEST_CASE("For") {
             std::make_unique<ValueProducer>(Variable({1, 21, "a", line1}));
         op.right_operand = std::make_unique<ValueProducer>(std::move(lit));
         f.define = std::move(def_v);
-        f.variable = std::move(op);
+        f.variable = {std::move(op)};
         f.scope = std::make_unique<Scope>(Token(1, 29, "{", line1));
 
         main.scope->nodes.push_back(std::move(f));
@@ -1392,7 +1392,7 @@ TEST_CASE("For") {
         For f({1, 13, "for", line1});
 
         main.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
-        f.variable = Callable({1, 17, "fun", line1});
+        f.variable = {Callable({1, 17, "fun", line1})};
         f.scope = std::make_unique<Scope>(Token(1, 25, "{", line1));
 
         main.scope->nodes.push_back(std::move(f));
@@ -1494,7 +1494,7 @@ TEST_CASE("For") {
 
         main.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
         def_v.definition = Variable({1, 17, "a", line1});
-        f.operation = Variable({1, 26, "a", line1});
+        f.operation = {Variable({1, 26, "a", line1})};
         f.scope = std::make_unique<Scope>(Token(1, 28, "{", line1));
 
         main.scope->nodes.push_back(std::move(def_v));
@@ -1515,7 +1515,7 @@ TEST_CASE("For") {
         For f({1, 13, "for", line1});
 
         main.scope = std::make_unique<Scope>(Token(1, 12, "{", line1));
-        f.operation = Callable({1, 19, "fun", line1});
+        f.operation = {Callable({1, 19, "fun", line1})};
         f.scope = std::make_unique<Scope>(Token(1, 25, "{", line1));
 
         main.scope->nodes.push_back(std::move(f));
@@ -1552,7 +1552,7 @@ TEST_CASE("For") {
             std::make_unique<ValueProducer>(Variable({1, 25, "a", line1}));
         op_as.right_operand = std::make_unique<ValueProducer>(std::move(op_ad));
 
-        f.operation = std::move(op_as);
+        f.operation = {std::move(op_as)};
         f.scope = std::make_unique<Scope>(Token(1, 35, "{", line1));
 
         main.scope->nodes.push_back(std::move(def_v));

@@ -8,7 +8,7 @@
 
 #include "cad/macro/IndentStream.h"
 
-#include <core/variant.hpp>
+#include <eggs/variant.hpp>
 
 namespace cad {
 namespace macro {
@@ -16,7 +16,7 @@ namespace ast {
 class Define : public AST {
   using Function = callable::Function;
   using EntryFunction = callable::EntryFunction;
-  using Definition = ::core::variant<Function, EntryFunction, Variable>;
+  using Definition = eggs::variant<Function, EntryFunction, Variable>;
 
   void print_internals(IndentStream& os) const;
 

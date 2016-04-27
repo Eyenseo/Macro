@@ -1,13 +1,13 @@
 #include "cad/macro/interpreter/Interpreter.h"
 
 #include "cad/macro/ast/Scope.h"
-#include "cad/macro/interpreter/Stack.h"
 #include "cad/macro/interpreter/OperatorProvider.h"
+#include "cad/macro/interpreter/Stack.h"
 #include "cad/macro/parser/Parser.h"
 
-#include <cad/core/command/argument/Arguments.h>
-#include <cad/core/command/CommandProvider.h>
 #include <cad/core/command/CommandInvoker.h>
+#include <cad/core/command/CommandProvider.h>
+#include <cad/core/command/argument/Arguments.h>
 
 #include <cassert>
 
@@ -69,7 +69,7 @@ struct Interpreter::SmartRef {
   SmartRef()
       : ref(value) {
   }
-  operator ::core::any&() {
+  operator linb::any&() {
     return ref.get();
   }
 };
@@ -82,9 +82,9 @@ Interpreter::Interpreter(std::shared_ptr<CommandProvider> command_provider,
     , out_(out) {
 }
 
-::core::any Interpreter::interpret(std::string macro, Arguments args,
-                                   std::string command_scope,
-                                   std::string file_name) const {
+linb::any Interpreter::interpret(std::string macro, Arguments args,
+                                 std::string command_scope,
+                                 std::string file_name) const {
   auto scope = parser::parse(macro, file_name);
   State state(std::move(command_scope), file_name);
 
@@ -95,15 +95,15 @@ Interpreter::Interpreter(std::shared_ptr<CommandProvider> command_provider,
 //////////////////////////////////////////
 /// Helper
 //////////////////////////////////////////
-bool Interpreter::any_to_bool(const ::core::any& any) const {
+bool Interpreter::any_to_bool(const linb::any& any) const {
   if(any.type() == typeid(bool)) {  // no need to convert
-    return ::core::any_cast<bool>(any);
+    return linb::any_cast<bool>(any);
   } else {  // need to convert
     auto b =
         operator_provider_->eval(OperatorProvider::UnaryOperation::BOOL, any);
 
     if(b.type() == typeid(bool)) {
-      return ::core::any_cast<bool>(b);
+      return linb::any_cast<bool>(b);
     } else {  // not a bool type ...
       Exc<E, E::BAD_BOOL_CAST> e(__FILE__, __LINE__, "Bad bool cast");
       e << "Tried cast '" << any.type().name()
@@ -118,34 +118,35 @@ bool Interpreter::any_to_bool(const ::core::any& any) const {
 //////////////////////////////////////////
 void Interpreter::define_functions(State& state, const Scope& scope) const {
   for(const auto& n : scope.nodes) {
-    n.match(
-        [this, &state](const Define& def) { define_function(state, def); },  //
-        [this](const loop::Continue&) {},                                    //
-        [this](const loop::Break&) {},                                       //
-        [this](const Callable&) {},                                          //
-        [this](const DoWhile&) {},                                           //
-        [this](const For&) {},                                               //
-        [this](const If&) {},                                                //
-        [this](const Literal<Literals::BOOL>&) {},                           //
-        [this](const Literal<Literals::DOUBLE>&) {},                         //
-        [this](const Literal<Literals::INT>&) {},                            //
-        [this](const Literal<Literals::STRING>&) {},                         //
-        [this](const callable::Return&) {},                                  //
-        [this](const Scope&) {},                                             //
-        [this](const Operator&) {},                                          //
-        [this](const While&) {},                                             //
-        [this](const Variable&) {}                                           //
-        );                                                                   //
+    eggs::match(n, [this, &state](
+                       const Define& def) { define_function(state, def); },  //
+                [this](const loop::Continue&) {},                            //
+                [this](const loop::Break&) {},                               //
+                [this](const Callable&) {},                                  //
+                [this](const DoWhile&) {},                                   //
+                [this](const For&) {},                                       //
+                [this](const If&) {},                                        //
+                [this](const Literal<Literals::BOOL>&) {},                   //
+                [this](const Literal<Literals::DOUBLE>&) {},                 //
+                [this](const Literal<Literals::INT>&) {},                    //
+                [this](const Literal<Literals::STRING>&) {},                 //
+                [this](const callable::Return&) {},                          //
+                [this](const Scope&) {},                                     //
+                [this](const Operator&) {},                                  //
+                [this](const While&) {},                                     //
+                [this](const Variable&) {}                                   //
+                );                                                           //
   }
 }
 void Interpreter::define_function(State& state, const Define& def) const {
-  def.definition.match(
-      [&](const Function& fun) { state.stack->add_function(fun); },
-      [&](const EntryFunction& fun) { state.stack->add_function(fun); },
-      [&](const Variable&) {});
+  eggs::match(def.definition,
+              [&](const Function& fun) { state.stack->add_function(fun); },
+              [&](const EntryFunction& fun) { state.stack->add_function(fun); },
+              [&](const Variable&) {});
 }
 void Interpreter::define_variable(State& state, const Define& def) const {
-  def.definition.match(
+  eggs::match(
+      def.definition,
       [&](const Variable& var) { state.stack->add_variable(var.token.token); },
       [&](const Function&) {}, [&](const EntryFunction&) {});
 }
@@ -160,160 +161,157 @@ void Interpreter::interpret_none() const {
 //////////////////////////////////////////
 /// Binary
 //////////////////////////////////////////
-::core::any Interpreter::interpret_divide(State& state,
-                                          const Operator& op) const {
+linb::any Interpreter::interpret_divide(State& state,
+                                        const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::DIVIDE, lhs, rhs);
 }
-::core::any Interpreter::interpret_multiply(State& state,
-                                            const Operator& op) const {
+linb::any Interpreter::interpret_multiply(State& state,
+                                          const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::MULTIPLY, lhs, rhs);
 }
-::core::any Interpreter::interpret_modulo(State& state,
-                                          const Operator& op) const {
+linb::any Interpreter::interpret_modulo(State& state,
+                                        const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::MODULO, lhs, rhs);
 }
-::core::any Interpreter::interpret_add(State& state, const Operator& op) const {
+linb::any Interpreter::interpret_add(State& state, const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::ADD, lhs, rhs);
 }
-::core::any Interpreter::interpret_subtract(State& state,
-                                            const Operator& op) const {
+linb::any Interpreter::interpret_subtract(State& state,
+                                          const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::SUBTRACT, lhs, rhs);
 }
-::core::any Interpreter::interpret_smaller(State& state,
-                                           const Operator& op) const {
+linb::any Interpreter::interpret_smaller(State& state,
+                                         const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::SMALLER, lhs, rhs);
 }
-::core::any Interpreter::interpret_smaller_equal(State& state,
-                                                 const Operator& op) const {
+linb::any Interpreter::interpret_smaller_equal(State& state,
+                                               const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::SMALLER_EQUAL, lhs, rhs);
 }
-::core::any Interpreter::interpret_greater(State& state,
-                                           const Operator& op) const {
+linb::any Interpreter::interpret_greater(State& state,
+                                         const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::GREATER, lhs, rhs);
 }
-::core::any Interpreter::interpret_greater_equal(State& state,
-                                                 const Operator& op) const {
+linb::any Interpreter::interpret_greater_equal(State& state,
+                                               const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::GREATER_EQUAL, lhs, rhs);
 }
-::core::any Interpreter::interpret_equal(State& state,
-                                         const Operator& op) const {
+linb::any Interpreter::interpret_equal(State& state, const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::EQUAL, lhs, rhs);
 }
-::core::any Interpreter::interpret_not_equal(State& state,
-                                             const Operator& op) const {
+linb::any Interpreter::interpret_not_equal(State& state,
+                                           const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::NOT_EQUAL, lhs, rhs);
 }
-::core::any Interpreter::interpret_and(State& state, const Operator& op) const {
+linb::any Interpreter::interpret_and(State& state, const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::AND, lhs, rhs);
 }
-::core::any Interpreter::interpret_or(State& state, const Operator& op) const {
+linb::any Interpreter::interpret_or(State& state, const Operator& op) const {
   auto lhs = interpret(state, *op.left_operand);
   auto rhs = interpret(state, *op.right_operand);
 
   using BiOp = OperatorProvider::BinaryOperation;
   return operator_provider_->eval(BiOp::OR, lhs, rhs);
 }
-::core::any Interpreter::interpret_assignment(State& state,
-                                              const Operator& op) const {
-  ::core::any rh;
-  auto ret_par = [&](State& s, const auto& v) { rh = interpret(s, v); };
-  auto lit_par = [&](const auto& v) { rh = v.data; };
-  auto var_par = [&](State& s, auto v) {
-    if(s.stack->has_variable(v.token.token)) {
-      s.stack->variable(v.token.token, [&](::core::any& var) { rh = var; });
-    } else {
-      assert(false); /* analyser checked */
-    }
-  };
+linb::any Interpreter::interpret_assignment(State& state,
+                                            const Operator& op) const {
+  linb::any rh;
 
-  op.right_operand->value.match(
-      [&](const callable::Callable& o) { ret_par(state, o); },
-      [&](const Operator& o) { ret_par(state, o); },
-      [&](const Variable& o) { var_par(state, o); },
-      [&](const Literal<Literals::BOOL>& c) { lit_par(c); },
-      [&](const Literal<Literals::INT>& c) { lit_par(c); },
-      [&](const Literal<Literals::DOUBLE>& c) { lit_par(c); },
-      [&](const Literal<Literals::STRING>& c) { lit_par(c); });
+  eggs::match(op.right_operand->value,
+              [&](const callable::Callable& o) { rh = interpret(state, o); },
+              [&](const Operator& o) { rh = interpret(state, o); },
+              [&](const Variable& o) {
+                if(state.stack->has_variable(o.token.token)) {
+                  state.stack->variable(o.token.token,
+                                        [&](linb::any& var) { rh = var; });
+                } else {
+                  assert(false); /* analyser checked */
+                }
+              },
+              [&](const Literal<Literals::BOOL>& o) { rh = o.data; },
+              [&](const Literal<Literals::INT>& o) { rh = o.data; },
+              [&](const Literal<Literals::DOUBLE>& o) { rh = o.data; },
+              [&](const Literal<Literals::STRING>& o) { rh = o.data; });
 
-  op.left_operand->value.match(
-      [&](const callable::Callable&) {
-        assert(false); /* analyser checked */
-      },
-      [&](const Operator&) {
-        assert(false); /* analyser checked */
-      },
-      [&](const Variable& o) {
-        if(!state.stack->owns_variable(o.token.token)) {
-          state.stack->remove_alias(o.token.token);
-          state.stack->add_variable(o.token.token);
-        }
-        state.stack->variable(o.token.token,
-                              [&](::core::any& var) { var = rh; });
-      },
-      [&](const Literal<Literals::BOOL>&) {
-        assert(false); /* analyser checked */
-      },
-      [&](const Literal<Literals::INT>&) {
-        assert(false); /* analyser checked */
-      },
-      [&](const Literal<Literals::DOUBLE>&) {
-        assert(false); /* analyser checked */
-      },
-      [&](const Literal<Literals::STRING>&) {
-        assert(false); /* analyser checked */
-      });
+  eggs::match(op.left_operand->value,
+              [&](const callable::Callable&) {
+                assert(false); /* analyser checked */
+              },
+              [&](const Operator&) {
+                assert(false); /* analyser checked */
+              },
+              [&](const Variable& o) {
+                if(!state.stack->owns_variable(o.token.token)) {
+                  state.stack->remove_alias(o.token.token);
+                  state.stack->add_variable(o.token.token);
+                }
+                state.stack->variable(o.token.token,
+                                      [&](linb::any& var) { var = rh; });
+              },
+              [&](const Literal<Literals::BOOL>&) {
+                assert(false); /* analyser checked */
+              },
+              [&](const Literal<Literals::INT>&) {
+                assert(false); /* analyser checked */
+              },
+              [&](const Literal<Literals::DOUBLE>&) {
+                assert(false); /* analyser checked */
+              },
+              [&](const Literal<Literals::STRING>&) {
+                assert(false); /* analyser checked */
+              });
   return rh;
 }
 
-::core::any Interpreter::interpret(State& state, const Operator& op) const {
+linb::any Interpreter::interpret(State& state, const Operator& op) const {
   try {
     switch(op.operation) {
     case Operation::NONE:
@@ -370,39 +368,38 @@ void Interpreter::interpret_none() const {
 //////////////////////////////////////////
 /// Unary
 //////////////////////////////////////////
-::core::any Interpreter::interpret_not(State& state, const Operator& op) const {
+linb::any Interpreter::interpret_not(State& state, const Operator& op) const {
   auto rhs = interpret(state, *op.right_operand);
 
   using UnOp = OperatorProvider::UnaryOperation;
   return operator_provider_->eval(UnOp::NOT, rhs);
 }
-::core::any Interpreter::interpret_typeof(State& state,
-                                          const Operator& op) const {
+linb::any Interpreter::interpret_typeof(State& state,
+                                        const Operator& op) const {
   auto rhs = interpret(state, *op.right_operand);
 
   using UnOp = OperatorProvider::UnaryOperation;
   return operator_provider_->eval(UnOp::TYPEOF, rhs);
 }
-::core::any Interpreter::interpret_print(State& state,
-                                         const Operator& op) const {
+linb::any Interpreter::interpret_print(State& state, const Operator& op) const {
   auto rhs = interpret(state, *op.right_operand);
 
   using UnOp = OperatorProvider::UnaryOperation;
   auto res =
-      ::core::any_cast<std::string>(operator_provider_->eval(UnOp::PRINT, rhs));
+      linb::any_cast<std::string>(operator_provider_->eval(UnOp::PRINT, rhs));
   out_.get() << res;
   return res;
 }
-::core::any Interpreter::interpret_negative(State& state,
-                                            const Operator& op) const {
+linb::any Interpreter::interpret_negative(State& state,
+                                          const Operator& op) const {
   auto rhs = interpret(state, *op.right_operand);
 
   using UnOp = OperatorProvider::UnaryOperation;
   return operator_provider_->eval(UnOp::NEGATIVE, rhs);
 }
 
-::core::any Interpreter::interpret_positive(State& state,
-                                            const Operator& op) const {
+linb::any Interpreter::interpret_positive(State& state,
+                                          const Operator& op) const {
   auto rhs = interpret(state, *op.right_operand);
 
   using UnOp = OperatorProvider::UnaryOperation;
@@ -412,29 +409,26 @@ void Interpreter::interpret_none() const {
 //////////////////////////////////////////
 /// Helper
 //////////////////////////////////////////
-Interpreter::SmartRef<::core::any>
+Interpreter::SmartRef<linb::any>
 Interpreter::interpret(State& state, const ValueProducer& vp) const {
-  SmartRef<::core::any> f;
+  SmartRef<linb::any> f;
 
-  vp.value.match(
+  eggs::match(
+      vp.value,
       [&](const callable::Callable& o) { f.value = interpret(state, o); },
       [&](const Operator& o) { f.value = interpret(state, o); },
       [&](const Variable& o) {
         if(state.stack->has_variable(o.token.token)) {
           return state.stack->variable(o.token.token,
-                                       [&](::core::any& var) { f.ref = var; });
+                                       [&](linb::any& var) { f.ref = var; });
         } else {
           assert(false); /* analyser checked */
         }
       },
-      [&](const Literal<Literals::BOOL>& o) { f.value = ::core::any(o.data); },
-      [&](const Literal<Literals::INT>& o) { f.value = ::core::any(o.data); },
-      [&](const Literal<Literals::DOUBLE>& o) {
-        f.value = ::core::any(o.data);
-      },
-      [&](const Literal<Literals::STRING>& o) {
-        f.value = ::core::any(o.data);
-      });
+      [&](const Literal<Literals::BOOL>& o) { f.value = linb::any(o.data); },
+      [&](const Literal<Literals::INT>& o) { f.value = linb::any(o.data); },
+      [&](const Literal<Literals::DOUBLE>& o) { f.value = linb::any(o.data); },
+      [&](const Literal<Literals::STRING>& o) { f.value = linb::any(o.data); });
   return f;
 }
 
@@ -455,8 +449,8 @@ void Interpreter::interpret(State& state, const ast::loop::Continue&) const {
     assert(false); /* analyser checked */
   }
 }
-::core::any Interpreter::interpret(State& state,
-                                   const ast::logic::If& iff) const {
+linb::any Interpreter::interpret(State& state,
+                                 const ast::logic::If& iff) const {
   assert(iff.condition);
   assert(iff.true_scope);
 
@@ -483,8 +477,8 @@ void Interpreter::interpret(State& state, const ast::loop::Continue&) const {
   }
   return {};
 }
-::core::any Interpreter::interpret(State& state,
-                                   const ast::loop::DoWhile& whi) const {
+linb::any Interpreter::interpret(State& state,
+                                 const ast::loop::DoWhile& whi) const {
   assert(whi.condition);
   assert(whi.scope);
 
@@ -511,12 +505,12 @@ void Interpreter::interpret(State& state, const ast::loop::Continue&) const {
     std::throw_with_nested(e);
   }
 }
-::core::any Interpreter::interpret(State& state,
-                                   const ast::loop::For& foor) const {
+linb::any Interpreter::interpret(State& state,
+                                 const ast::loop::For& foor) const {
   try {
     State inner(state);
     inner.loopscope = true;
-    ::core::any ret;
+    linb::any ret;
 
     if(foor.define) {
       define_variable(inner, *foor.define);
@@ -544,15 +538,15 @@ void Interpreter::interpret(State& state, const ast::loop::Continue&) const {
     std::throw_with_nested(e);
   }
 }
-::core::any Interpreter::interpret(State& state,
-                                   const ast::loop::While& whi) const {
+linb::any Interpreter::interpret(State& state,
+                                 const ast::loop::While& whi) const {
   assert(whi.condition);
   assert(whi.scope);
 
   try {
     State inner(state);
     inner.loopscope = true;
-    ::core::any ret;
+    linb::any ret;
     while(!inner.returning && !inner.breaking &&
           any_to_bool(interpret(inner, *whi.condition))) {
       ret = interpret_shared(inner, *whi.scope);
@@ -571,22 +565,23 @@ void Interpreter::interpret(State& state, const ast::loop::Continue&) const {
     std::throw_with_nested(e);
   }
 }
-::core::any Interpreter::interpret(State& state,
-                                   const ast::callable::Return& ret) const {
+linb::any Interpreter::interpret(State& state,
+                                 const ast::callable::Return& ret) const {
   assert(ret.output);
 
   try {
-    ::core::any out;
-    ret.output->value.match(
+    linb::any out;
+    eggs::match(
+        ret.output->value,
         [&](const callable::Callable& o) { out = interpret(state, o); },
         [&](const Operator& o) { out = interpret(state, o); },
         [&](const Variable& o) {
           if(state.stack->owns_variable(o.token.token)) {
             state.stack->variable(
-                o.token.token, [&](::core::any& var) { out = std::move(var); });
+                o.token.token, [&](linb::any& var) { out = std::move(var); });
           } else {
             state.stack->variable(o.token.token,
-                                  [&](const ::core::any& var) { out = var; });
+                                  [&](const linb::any& var) { out = var; });
           }
         },
         [&](const Literal<Literals::BOOL>& c) { out = c.data; },
@@ -603,7 +598,7 @@ void Interpreter::interpret(State& state, const ast::loop::Continue&) const {
     std::throw_with_nested(e);
   }
 }
-::core::any Interpreter::interpret(State& state, const Scope& scope) const {
+linb::any Interpreter::interpret(State& state, const Scope& scope) const {
   State inner(state);
   auto ret = interpret_shared(inner, scope);
 
@@ -616,14 +611,14 @@ void Interpreter::interpret(State& state, const ast::loop::Continue&) const {
   }
   return ret;
 }
-::core::any Interpreter::interpret_shared(State& state,
-                                          const Scope& scope) const {
+linb::any Interpreter::interpret_shared(State& state,
+                                        const Scope& scope) const {
   define_functions(state, scope);
 
-  ::core::any ret;
+  linb::any ret;
   for(const auto& n : scope.nodes) {
-    n.match(
-        [this, &state](const Define& e) { define_variable(state, e); },
+    eggs::match(
+        n, [this, &state](const Define& e) { define_variable(state, e); },
         [this, &state](const Operator& e) { interpret(state, e); },
         [this, &state](const loop::Break& e) { interpret(state, e); },
         [this, &state](const loop::Continue& e) { interpret(state, e); },
@@ -676,22 +671,23 @@ void Interpreter::add_parameter(State& state, State& outer,
   auto ret_par = [this](State& s, State& o, const std::string& p,
                         const auto& v) {
     s.stack->add_variable(p);
-    s.stack->variable(p, [&](::core::any& var) { var = interpret(o, v); });
+    s.stack->variable(p, [&](linb::any& var) { var = interpret(o, v); });
   };
   auto lit_par = [this](State& s, const std::string& p, const auto& v) {
     s.stack->add_variable(p);
-    s.stack->variable(p, [&](::core::any& var) { var = v.data; });
+    s.stack->variable(p, [&](linb::any& var) { var = v.data; });
   };
   auto var_par = [this](State& s, State& o, const std::string& p, auto v) {
     if(o.stack->has_variable(v.token.token)) {
-      o.stack->variable(v.token.token, [&s, &p](::core::any& var) {
+      o.stack->variable(v.token.token, [&s, &p](linb::any& var) {
         s.stack->add_alias(p, var);
       });
     } else {
       assert(false); /* analyser checked */
     }
   };
-  val.value.match(
+  eggs::match(
+      val.value,
       [&](const callable::Callable& o) { ret_par(state, outer, par, o); },
       [&](const Operator& o) { ret_par(state, outer, par, o); },
       [&](const Variable& o) { var_par(state, outer, par, o); },
@@ -735,18 +731,20 @@ void Interpreter::add_arguments(State& state, Arguments& args,
   }
 }
 
-::core::any Interpreter::interpret(State& state,
-                                   const ast::callable::Callable& call) const {
-  ::core::any ret;
+linb::any Interpreter::interpret(State& state,
+                                 const ast::callable::Callable& call) const {
+  linb::any ret;
   if(state.stack->has_function(call)) {
     state.stack->function(call, [&](const Function& fun, auto stack) {
       try {
         State inner(state, std::make_shared<Stack>(std::move(stack)));
         inner.loopscope = false;
 
-        add_parameter(inner, state, call, fun);
+        // FIXME gcc 5.3 needs the this pointer...
+        this->add_parameter(inner, state, call, fun);
 
-        ret = interpret_shared(inner, *fun.scope);
+        // FIXME gcc 5.3 needs the this pointer...
+        ret = this->interpret_shared(inner, *fun.scope);
       } catch(std::exception&) {
         Exc<E, E::TAIL> e;
         add_exception_info(fun.token, state.file, e, [&e, &fun]() {
@@ -779,8 +777,8 @@ void Interpreter::add_arguments(State& state, Arguments& args,
   return ret;
 }
 
-::core::any Interpreter::interpret_main(State& state, Arguments args) const {
-  ::core::any ret;
+linb::any Interpreter::interpret_main(State& state, Arguments args) const {
+  linb::any ret;
 
   Callable call({0, 0, "main"});
   for(const auto& p : args) {
@@ -791,8 +789,10 @@ void Interpreter::add_arguments(State& state, Arguments& args,
     try {
       State inner(state, std::make_shared<Stack>(std::move(stack)));
 
-      add_arguments(inner, args, fun);
-      ret = interpret_shared(inner, *fun.scope);
+      // FIXME gcc 5.3 needs the this pointer...
+      this->add_arguments(inner, args, fun);
+      // FIXME gcc 5.3 needs the this pointer...
+      ret = this->interpret_shared(inner, *fun.scope);
     } catch(std::exception&) {
       Exc<E, E::TAIL> e;
       add_exception_info(fun.token, state.file, e, [&e, &fun]() {

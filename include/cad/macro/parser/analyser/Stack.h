@@ -1,7 +1,7 @@
 #ifndef cad_macro_parser_analyser_Stack_h
 #define cad_macro_parser_analyser_Stack_h
 
-#include <core/optional.hpp>
+#include <experimental/optional>
 
 #include <utility>
 #include <vector>
@@ -37,9 +37,10 @@ public:
   Stack* parent = nullptr;
 
 public:
-  ::core::optional<myPair<ast::Variable>> has_double_var() const;
+  std::experimental::optional<myPair<ast::Variable>> has_double_var() const;
   bool has_var(const std::string& name) const;
-  ::core::optional<myPair<ast::callable::Function>> has_double_fun() const;
+  std::experimental::optional<myPair<ast::callable::Function>>
+  has_double_fun() const;
 };
 }
 }

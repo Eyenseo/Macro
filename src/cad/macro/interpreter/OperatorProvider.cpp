@@ -3,6 +3,7 @@
 #include <exception.h>
 
 #include <cassert>
+#include <algorithm>
 
 namespace cad {
 namespace macro {
@@ -28,7 +29,7 @@ auto exists(const VecMap<T1, T2>& map, const T1& key) {
   return find(map, key) != map.end();
 }
 
-auto make_indexes(const ::core::any& lhs, const ::core::any& rhs) {
+auto make_indexes(const linb::any& lhs, const linb::any& rhs) {
   return std::make_tuple(std::type_index(lhs.type()),
                          std::type_index(rhs.type()));
 }
@@ -194,8 +195,8 @@ void OperatorProvider::add(const UnaryOperation operati, std::type_index rhs,
   }
 }
 
-bool OperatorProvider::has(const BinaryOperation op, const ::core::any& lhs,
-                           const ::core::any& rhs) const {
+bool OperatorProvider::has(const BinaryOperation op, const linb::any& lhs,
+                           const linb::any& rhs) const {
   switch(op) {
   case BinaryOperation::DIVIDE:
     return exists(divide_, make_indexes(lhs, rhs));
@@ -280,7 +281,7 @@ bool OperatorProvider::has(const UnaryOperation op,
   assert(false && "Reached by access after free and similar");
 }
 bool OperatorProvider::has(const UnaryOperation op,
-                           const ::core::any& rhs) const {
+                           const linb::any& rhs) const {
   switch(op) {
   case UnaryOperation::NOT:
     return exists(bool_, std::type_index(rhs.type()));
@@ -301,8 +302,8 @@ bool OperatorProvider::has(const UnaryOperation op,
 //////////////////////////////////////////
 /// Binary
 //////////////////////////////////////////
-::core::any OperatorProvider::eval_divide(const ::core::any& lhs,
-                                          const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_divide(const linb::any& lhs,
+                                        const linb::any& rhs) const {
   auto it = find(divide_, make_indexes(lhs, rhs));
   if(it != divide_.end()) {
     return it->second(lhs, rhs);
@@ -312,8 +313,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_multiply(const ::core::any& lhs,
-                                            const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_multiply(const linb::any& lhs,
+                                          const linb::any& rhs) const {
   auto it = find(multiply_, make_indexes(lhs, rhs));
   if(it != multiply_.end()) {
     return it->second(lhs, rhs);
@@ -323,8 +324,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_modulo(const ::core::any& lhs,
-                                          const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_modulo(const linb::any& lhs,
+                                        const linb::any& rhs) const {
   auto it = find(modulo_, make_indexes(lhs, rhs));
   if(it != modulo_.end()) {
     return it->second(lhs, rhs);
@@ -334,8 +335,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_add(const ::core::any& lhs,
-                                       const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_add(const linb::any& lhs,
+                                     const linb::any& rhs) const {
   auto it = find(add_, make_indexes(lhs, rhs));
   if(it != add_.end()) {
     return it->second(lhs, rhs);
@@ -345,8 +346,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     << "' and '" << rhs.type().name() << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_subtract(const ::core::any& lhs,
-                                            const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_subtract(const linb::any& lhs,
+                                          const linb::any& rhs) const {
   auto it = find(subtract_, make_indexes(lhs, rhs));
   if(it != subtract_.end()) {
     return it->second(lhs, rhs);
@@ -356,8 +357,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_smaller(const ::core::any& lhs,
-                                           const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_smaller(const linb::any& lhs,
+                                         const linb::any& rhs) const {
   auto it = find(smaller_, make_indexes(lhs, rhs));
   if(it != smaller_.end()) {
     return it->second(lhs, rhs);
@@ -367,8 +368,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_smaller_equal(const ::core::any& lhs,
-                                                 const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_smaller_equal(const linb::any& lhs,
+                                               const linb::any& rhs) const {
   auto it = find(smaller_equal_, make_indexes(lhs, rhs));
   if(it != smaller_equal_.end()) {
     return it->second(lhs, rhs);
@@ -378,8 +379,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_greater(const ::core::any& lhs,
-                                           const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_greater(const linb::any& lhs,
+                                         const linb::any& rhs) const {
   auto it = find(greater_, make_indexes(lhs, rhs));
   if(it != greater_.end()) {
     return it->second(lhs, rhs);
@@ -389,8 +390,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_greater_equal(const ::core::any& lhs,
-                                                 const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_greater_equal(const linb::any& lhs,
+                                               const linb::any& rhs) const {
   auto it = find(greater_equal_, make_indexes(lhs, rhs));
   if(it != greater_equal_.end()) {
     return it->second(lhs, rhs);
@@ -400,8 +401,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_equal(const ::core::any& lhs,
-                                         const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_equal(const linb::any& lhs,
+                                       const linb::any& rhs) const {
   auto it = find(equal_, make_indexes(lhs, rhs));
   if(it != equal_.end()) {
     return it->second(lhs, rhs);
@@ -411,8 +412,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_not_equal(const ::core::any& lhs,
-                                             const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_not_equal(const linb::any& lhs,
+                                           const linb::any& rhs) const {
   auto it = find(not_equal_, make_indexes(lhs, rhs));
   if(it != not_equal_.end()) {
     return it->second(lhs, rhs);
@@ -422,16 +423,16 @@ bool OperatorProvider::has(const UnaryOperation op,
     << lhs.type().name() << "' and '" << rhs.type().name() << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_and(const ::core::any& lhs,
-                                       const ::core::any& rhs) const {
-  auto to_bool = [this](const ::core::any& var) {
+linb::any OperatorProvider::eval_and(const linb::any& lhs,
+                                     const linb::any& rhs) const {
+  auto to_bool = [this](const linb::any& var) {
     if(var.type() == typeid(bool)) {  // no need to convert
-      return ::core::any_cast<bool>(var);
+      return linb::any_cast<bool>(var);
     } else {  // need to convert
       auto b = eval(UnaryOperation::BOOL, var);
 
       if(b.type() == typeid(bool)) {
-        return ::core::any_cast<bool>(b);
+        return linb::any_cast<bool>(b);
       } else {  // not a bool type ...
         Exc<E, E::BAD_BOOL_CAST> e(__FILE__, __LINE__, "Bad bool cast");
         e << "Tried cast '" << var.type().name()
@@ -443,16 +444,16 @@ bool OperatorProvider::has(const UnaryOperation op,
 
   return to_bool(lhs) && to_bool(rhs);
 }
-::core::any OperatorProvider::eval_or(const ::core::any& lhs,
-                                      const ::core::any& rhs) const {
-  auto to_bool = [this](const ::core::any& var) {
+linb::any OperatorProvider::eval_or(const linb::any& lhs,
+                                    const linb::any& rhs) const {
+  auto to_bool = [this](const linb::any& var) {
     if(var.type() == typeid(bool)) {  // no need to convert
-      return ::core::any_cast<bool>(var);
+      return linb::any_cast<bool>(var);
     } else {  // need to convert
       auto b = eval(UnaryOperation::BOOL, var);
 
       if(b.type() == typeid(bool)) {
-        return ::core::any_cast<bool>(b);
+        return linb::any_cast<bool>(b);
       } else {  // not a bool type ...
         Exc<E, E::BAD_BOOL_CAST> e(__FILE__, __LINE__, "Bad bool cast");
         e << "Tried cast '" << var.type().name()
@@ -464,9 +465,8 @@ bool OperatorProvider::has(const UnaryOperation op,
 
   return to_bool(lhs) || to_bool(rhs);
 }
-::core::any OperatorProvider::eval(const BinaryOperation op,
-                                   const ::core::any& lhs,
-                                   const ::core::any& rhs) const {
+linb::any OperatorProvider::eval(const BinaryOperation op, const linb::any& lhs,
+                                 const linb::any& rhs) const {
   switch(op) {
   case BinaryOperation::DIVIDE:
     return eval_divide(lhs, rhs);
@@ -501,17 +501,17 @@ bool OperatorProvider::has(const UnaryOperation op,
 //////////////////////////////////////////
 /// Unary
 //////////////////////////////////////////
-::core::any OperatorProvider::eval_not(const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_not(const linb::any& rhs) const {
   auto b_rhs = eval(UnaryOperation::BOOL, rhs);
   if(b_rhs.type() == typeid(bool)) {
-    return !::core::any_cast<bool>(b_rhs);
+    return !linb::any_cast<bool>(b_rhs);
   }
   Exc<E, E::MISSING_OPERATOR> e(__FILE__, __LINE__, "Missing Operator");
   e << "The operator '!'(not) is missing for the type '" << rhs.type().name()
     << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_bool(const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_bool(const linb::any& rhs) const {
   auto it = find(bool_, std::type_index(rhs.type()));
   if(it != bool_.end()) {
     return it->second(rhs);
@@ -521,7 +521,7 @@ bool OperatorProvider::has(const UnaryOperation op,
     << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_type_of(const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_type_of(const linb::any& rhs) const {
   auto it = find(type_of_, std::type_index(rhs.type()));
   if(it != type_of_.end()) {
     return it->second(rhs);
@@ -531,7 +531,7 @@ bool OperatorProvider::has(const UnaryOperation op,
     << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_print(const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_print(const linb::any& rhs) const {
   auto it = find(print_, std::type_index(rhs.type()));
   if(it != print_.end()) {
     return it->second(rhs);
@@ -541,7 +541,7 @@ bool OperatorProvider::has(const UnaryOperation op,
     << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_negative(const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_negative(const linb::any& rhs) const {
   auto it = find(negative_, std::type_index(rhs.type()));
   if(it != negative_.end()) {
     return it->second(rhs);
@@ -551,7 +551,7 @@ bool OperatorProvider::has(const UnaryOperation op,
     << rhs.type().name() << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval_positive(const ::core::any& rhs) const {
+linb::any OperatorProvider::eval_positive(const linb::any& rhs) const {
   auto it = find(positive_, std::type_index(rhs.type()));
   if(it != positive_.end()) {
     return it->second(rhs);
@@ -561,8 +561,8 @@ bool OperatorProvider::has(const UnaryOperation op,
     << rhs.type().name() << "'.";
   throw e;
 }
-::core::any OperatorProvider::eval(const UnaryOperation op,
-                                   const ::core::any& rhs) const {
+linb::any OperatorProvider::eval(const UnaryOperation op,
+                                 const linb::any& rhs) const {
   switch(op) {
   case UnaryOperation::NOT:
     return eval_not(rhs);
@@ -616,24 +616,24 @@ OperatorProvider::OperatorProvider(const bool initialize) {
     // ADD to string
     add(BiOp::ADD, std::type_index(typeid(std::string)),
         std::type_index(typeid(bool)),
-        [](const ::core::any& a, const ::core::any& b) {
+        [](const linb::any& a, const linb::any& b) {
           std::stringstream ss;
-          ss << ::core::any_cast<std::string>(a) << std::boolalpha
-             << ::core::any_cast<bool>(b);
+          ss << linb::any_cast<std::string>(a) << std::boolalpha
+             << linb::any_cast<bool>(b);
           return ss.str();
         });
     add(BiOp::ADD, std::type_index(typeid(std::string)),
         std::type_index(typeid(int)),
-        [](const ::core::any& a, const ::core::any& b) {
+        [](const linb::any& a, const linb::any& b) {
           std::stringstream ss;
-          ss << ::core::any_cast<std::string>(a) << ::core::any_cast<int>(b);
+          ss << linb::any_cast<std::string>(a) << linb::any_cast<int>(b);
           return ss.str();
         });
     add(BiOp::ADD, std::type_index(typeid(std::string)),
         std::type_index(typeid(double)),
-        [](const ::core::any& a, const ::core::any& b) {
+        [](const linb::any& a, const linb::any& b) {
           std::stringstream ss;
-          ss << ::core::any_cast<std::string>(a) << ::core::any_cast<double>(b);
+          ss << linb::any_cast<std::string>(a) << linb::any_cast<double>(b);
           return ss.str();
         });
 
@@ -643,35 +643,35 @@ OperatorProvider::OperatorProvider(const bool initialize) {
     add<double, UnOp::BOOL, UnOp::NEGATIVE, UnOp::POSITIVE>();
     // BOOL
     add(UnOp::BOOL, std::type_index(typeid(std::string)),
-        [](const ::core::any& a) {
-          return ::core::any_cast<std::string>(a).size() > 0;
+        [](const linb::any& a) {
+          return linb::any_cast<std::string>(a).size() > 0;
         });
     add(UnOp::BOOL, std::type_index(typeid(void)),
-        [](const ::core::any&) { return false; });
+        [](const linb::any&) { return false; });
 
     // TYPEOF
     add(UnOp::TYPEOF, std::type_index(typeid(bool)),
-        [](const ::core::any&) { return std::string("bool"); });
+        [](const linb::any&) { return std::string("bool"); });
     add(UnOp::TYPEOF, std::type_index(typeid(int)),
-        [](const ::core::any&) { return std::string("int"); });
+        [](const linb::any&) { return std::string("int"); });
     add(UnOp::TYPEOF, std::type_index(typeid(double)),
-        [](const ::core::any&) { return std::string("double"); });
+        [](const linb::any&) { return std::string("double"); });
     add(UnOp::TYPEOF, std::type_index(typeid(std::string)),
-        [](const ::core::any&) { return std::string("string"); });
+        [](const linb::any&) { return std::string("string"); });
     add(UnOp::TYPEOF, std::type_index(typeid(void)),
-        [](const ::core::any&) { return std::string("none"); });
+        [](const linb::any&) { return std::string("none"); });
 
     // PRINT
     add(UnOp::PRINT, std::type_index(typeid(bool)),
-        [this](const ::core::any& a) { return eval_add(std::string(), a); });
+        [this](const linb::any& a) { return eval_add(std::string(), a); });
     add(UnOp::PRINT, std::type_index(typeid(int)),
-        [this](const ::core::any& a) { return eval_add(std::string(), a); });
+        [this](const linb::any& a) { return eval_add(std::string(), a); });
     add(UnOp::PRINT, std::type_index(typeid(double)),
-        [this](const ::core::any& a) { return eval_add(std::string(), a); });
+        [this](const linb::any& a) { return eval_add(std::string(), a); });
     add(UnOp::PRINT, std::type_index(typeid(std::string)),
-        [](const ::core::any& a) { return a; });
+        [](const linb::any& a) { return a; });
     add(UnOp::PRINT, std::type_index(typeid(void)),
-        [this](const ::core::any&) { return std::string("none"); });
+        [this](const linb::any&) { return std::string("none"); });
   }
 }
 }

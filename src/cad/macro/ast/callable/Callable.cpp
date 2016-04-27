@@ -39,14 +39,14 @@ void Callable::print_internals(IndentStream& os) const {
     os.indent();
     for(const auto& v : parameter) {
       os << v.first.token.token << ": ";
-      v.second.value.match(
-          [&os](const callable::Callable& o) { os << o; },
-          [&os](const Variable& o) { os << o; },
-          [&os](const Operator& o) { os << o; },
-          [&os](const Literal<Literals::BOOL>& c) { os << c; },
-          [&os](const Literal<Literals::INT>& c) { os << c; },
-          [&os](const Literal<Literals::DOUBLE>& c) { os << c; },
-          [&os](const Literal<Literals::STRING>& c) { os << c; });
+      eggs::match(v.second.value,
+                  [&os](const callable::Callable& o) { os << o; },
+                  [&os](const Variable& o) { os << o; },
+                  [&os](const Operator& o) { os << o; },
+                  [&os](const Literal<Literals::BOOL>& c) { os << c; },
+                  [&os](const Literal<Literals::INT>& c) { os << c; },
+                  [&os](const Literal<Literals::DOUBLE>& c) { os << c; },
+                  [&os](const Literal<Literals::STRING>& c) { os << c; });
     }
     os.dedent();
   }

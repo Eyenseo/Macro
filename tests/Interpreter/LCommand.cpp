@@ -6,20 +6,20 @@ using Command = cad::core::command::Command;
 
 LCommand::LCommand(std::string call_name,
                    std::weak_ptr<CommandProvider> command_provider,
-                   std::function<::core::any(Arguments)> fun)
+                   std::function<linb::any(Arguments)> fun)
     : LCommand(std::move(call_name), std::move(command_provider),
                std::move(fun), Arguments()) {
 }
 
 LCommand::LCommand(std::string call_name,
                    std::weak_ptr<CommandProvider> command_provider,
-                   std::function<::core::any(Arguments)> fun, Arguments args)
+                   std::function<linb::any(Arguments)> fun, Arguments args)
     : Command(std::move(call_name), command_provider)
     , fun_(std::move(fun)) {
   set_arguments(std::move(args));
 }
 
-::core::any LCommand::execute(Arguments args) {
+linb::any LCommand::execute(Arguments args) {
   auto ret = fun_(args);
   active_signal().emit(false);
   return ret;

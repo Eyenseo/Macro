@@ -5,10 +5,10 @@
 #include "cad/macro/interpreter/Interpreter.h"
 #include "cad/macro/interpreter/OperatorProvider.h"
 
-#include <cad/core/command/CommandProvider.h>
-#include <cad/core/command/argument/Arguments.h>
-#include <cad/core/command/MenuAdder.h>
 #include <cad/core/ApplicationSettingsProvider.h>
+#include <cad/core/command/CommandProvider.h>
+#include <cad/core/command/MenuAdder.h>
+#include <cad/core/command/argument/Arguments.h>
 
 #include <exception.h>
 
@@ -26,7 +26,6 @@ public:
   }
 };
 
-
 CATCH_TRANSLATE_EXCEPTION(std::exception& e) {
   std::stringstream ss;
   exception::print_exception(e, ss);
@@ -41,32 +40,32 @@ TEST_CASE("Main literal return") {
   SECTION("int") {
     SECTION("positive") {
       auto ret = in.interpret("def main(){return 1;}", Arguments());
-      REQUIRE(core::any_cast<int>(ret) == 1);
+      REQUIRE(linb::any_cast<int>(ret) == 1);
     }
     SECTION("negative") {
       auto ret = in.interpret("def main(){return -1;}", Arguments());
-      REQUIRE(core::any_cast<int>(ret) == -1);
+      REQUIRE(linb::any_cast<int>(ret) == -1);
     }
   }
   SECTION("double") {
     SECTION("long") {
       SECTION("positive") {
         auto ret = in.interpret("def main(){return 1.1;}", Arguments());
-        REQUIRE(core::any_cast<double>(ret) == Approx(1.1).epsilon(0.01));
+        REQUIRE(linb::any_cast<double>(ret) == Approx(1.1).epsilon(0.01));
       }
       SECTION("negative") {
         auto ret = in.interpret("def main(){return -1.1;}", Arguments());
-        REQUIRE(core::any_cast<double>(ret) == Approx(-1.1).epsilon(0.01));
+        REQUIRE(linb::any_cast<double>(ret) == Approx(-1.1).epsilon(0.01));
       }
     }
     SECTION("short") {
       SECTION("positive") {
         auto ret = in.interpret("def main(){return .1;}", Arguments());
-        REQUIRE(core::any_cast<double>(ret) == Approx(0.1).epsilon(0.01));
+        REQUIRE(linb::any_cast<double>(ret) == Approx(0.1).epsilon(0.01));
       }
       SECTION("negative") {
         auto ret = in.interpret("def main(){return -.1;}", Arguments());
-        REQUIRE(core::any_cast<double>(ret) == Approx(-0.1).epsilon(0.01));
+        REQUIRE(linb::any_cast<double>(ret) == Approx(-0.1).epsilon(0.01));
       }
     }
   }
@@ -74,27 +73,27 @@ TEST_CASE("Main literal return") {
     SECTION("true") {
       SECTION("positive") {
         auto ret = in.interpret("def main(){return true;}", Arguments());
-        REQUIRE(core::any_cast<bool>(ret));
+        REQUIRE(linb::any_cast<bool>(ret));
       }
       SECTION("negative") {
         auto ret = in.interpret("def main(){return -true;}", Arguments());
-        REQUIRE(core::any_cast<int>(ret) == -1);
+        REQUIRE(linb::any_cast<int>(ret) == -1);
       }
     }
     SECTION("false") {
       SECTION("positive") {
         auto ret = in.interpret("def main(){return false;}", Arguments());
-        REQUIRE_FALSE(core::any_cast<bool>(ret));
+        REQUIRE_FALSE(linb::any_cast<bool>(ret));
       }
       SECTION("negative") {
         auto ret = in.interpret("def main(){return -false;}", Arguments());
-        REQUIRE(core::any_cast<int>(ret) == 0);
+        REQUIRE(linb::any_cast<int>(ret) == 0);
       }
     }
   }
   SECTION("string") {
     auto ret = in.interpret("def main(){return \"herbert\";}", Arguments());
-    REQUIRE(core::any_cast<std::string>(ret) == "herbert");
+    REQUIRE(linb::any_cast<std::string>(ret) == "herbert");
   }
 }
 
@@ -103,7 +102,7 @@ TEST_CASE("Return global") {
   Interpreter in(cp, nullptr);
 
   auto ret = in.interpret("var a = 1; def main(){return a;}", Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 1);
+  REQUIRE(linb::any_cast<int>(ret) == 1);
 }
 
 TEST_CASE("Main arguments") {
@@ -124,7 +123,7 @@ TEST_CASE("Main arguments") {
   args.add("foo", "Foos", foo);
 
   auto ret = in.interpret("def main(foo){return foo;}", args);
-  REQUIRE(core::any_cast<Foo>(ret) == foo);
+  REQUIRE(linb::any_cast<Foo>(ret) == foo);
 }
 
 TEST_CASE("Function return") {
@@ -133,7 +132,7 @@ TEST_CASE("Function return") {
 
   auto ret = in.interpret("def fun(){return 1;} def main(){return fun();}",
                           Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 1);
+  REQUIRE(linb::any_cast<int>(ret) == 1);
 }
 
 TEST_CASE("Function named parameter") {
@@ -142,7 +141,7 @@ TEST_CASE("Function named parameter") {
 
   auto ret = in.interpret(
       "def fun(foo){return foo;} def main(){return fun(foo:1);}", Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 1);
+  REQUIRE(linb::any_cast<int>(ret) == 1);
 }
 
 TEST_CASE("Parameter assign in Scope") {
@@ -152,11 +151,11 @@ TEST_CASE("Parameter assign in Scope") {
   auto ret = in.interpret("def fun(bar){do{{{{{bar = 42;}}}}}while(false); "
                           "return bar;} def main(){return fun(bar:1);}",
                           Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 42);
+  REQUIRE(linb::any_cast<int>(ret) == 42);
   ret = in.interpret("def fun(bar){bar=2;do{{{{{bar = 42;}}}}}while(false); "
                      "return bar;} def main(){return fun(bar:1);}",
                      Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 42);
+  REQUIRE(linb::any_cast<int>(ret) == 42);
 }
 
 TEST_CASE("Return global variable from function parameter") {
@@ -166,7 +165,7 @@ TEST_CASE("Return global variable from function parameter") {
   auto ret = in.interpret(
       "var a = 1; def fun(foo){return foo;} def main(){return fun(foo:a);}",
       Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 1);
+  REQUIRE(linb::any_cast<int>(ret) == 1);
 }
 
 TEST_CASE("CommandPrvider fall through") {
@@ -180,7 +179,7 @@ TEST_CASE("CommandPrvider fall through") {
                                           [](Arguments) { return 10; });
 
     auto ret = in.interpret("def main(){return fun();}", Arguments());
-    REQUIRE(core::any_cast<int>(ret) == 10);
+    REQUIRE(linb::any_cast<int>(ret) == 10);
   }
 
   SECTION("Return") {
@@ -194,7 +193,7 @@ TEST_CASE("CommandPrvider fall through") {
 
     auto ret =
         in.interpret("var a = 40; def main(){return gun(foo:a);}", Arguments());
-    REQUIRE(core::any_cast<int>(ret) == 42);
+    REQUIRE(linb::any_cast<int>(ret) == 42);
   }
 }
 
@@ -204,35 +203,35 @@ TEST_CASE("Operator") {
   Interpreter in(cp, op);
 
   auto ret = in.interpret("def main(){return 1 == 1;}", Arguments());
-  REQUIRE(core::any_cast<bool>(ret));
+  REQUIRE(linb::any_cast<bool>(ret));
 
   ret = in.interpret("def main(){return 4 / 2;}", Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 2);
+  REQUIRE(linb::any_cast<int>(ret) == 2);
 
   ret = in.interpret("def main(){return 1 + 4 * 2 - 1;}", Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 8);
+  REQUIRE(linb::any_cast<int>(ret) == 8);
 
   ret = in.interpret("def main(){return 1 + 4 * (2 - 1);}", Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 5);
+  REQUIRE(linb::any_cast<int>(ret) == 5);
 
   ret = in.interpret("def main(){return 1 + 1 + 1;}", Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 3);
+  REQUIRE(linb::any_cast<int>(ret) == 3);
 
   // TODO if increment is implemented this ought to throw an error
   ret = in.interpret("def main(){return 1---1;}", Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 0);
+  REQUIRE(linb::any_cast<int>(ret) == 0);
   ret = in.interpret("def main(){return 1 - - - 1;}", Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 0);
+  REQUIRE(linb::any_cast<int>(ret) == 0);
   ret = in.interpret("def main(){return 1+++1;}", Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 2);
+  REQUIRE(linb::any_cast<int>(ret) == 2);
   // TODO if increment is implemented this ought to throw an error
   ret = in.interpret("def main(){return 1 + + + 1;}", Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 2);
+  REQUIRE(linb::any_cast<int>(ret) == 2);
 
   ret = in.interpret("def main(){return 1 + - + 1;}", Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 0);
+  REQUIRE(linb::any_cast<int>(ret) == 0);
   ret = in.interpret("def main(){return 1 + + - 1;}", Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 0);
+  REQUIRE(linb::any_cast<int>(ret) == 0);
 }
 
 TEST_CASE("If") {
@@ -243,11 +242,11 @@ TEST_CASE("If") {
 
   auto ret = in.interpret(
       "def main(){if(true){return true;}else{return false;}}", Arguments());
-  REQUIRE(core::any_cast<bool>(ret));
+  REQUIRE(linb::any_cast<bool>(ret));
 
   ret = in.interpret("def main(){if(false){return true;}else{return false;}}",
                      Arguments());
-  REQUIRE_FALSE(core::any_cast<bool>(ret));
+  REQUIRE_FALSE(linb::any_cast<bool>(ret));
 }
 
 TEST_CASE("While") {
@@ -258,23 +257,23 @@ TEST_CASE("While") {
   auto ret =
       in.interpret("def main(){var i = 0; while(i < 3){ i = i + 1;} return i;}",
                    Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 3);
+  REQUIRE(linb::any_cast<int>(ret) == 3);
 
 
   ret = in.interpret("def main(){var i = 0; while(i < 3){ i = i + 1; if(i == "
                      "2){break;}} return i;}",
                      Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 2);
+  REQUIRE(linb::any_cast<int>(ret) == 2);
 
   ret = in.interpret(
       "def main(){var i = 0; while(i < 3){ i = i +1; return i;} return i;}",
       Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 1);
+  REQUIRE(linb::any_cast<int>(ret) == 1);
 
   ret = in.interpret(
       "def main(){var i = 0; while(i < 3){ i = i +1; return 42;} return i;}",
       Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 42);
+  REQUIRE(linb::any_cast<int>(ret) == 42);
 }
 
 TEST_CASE("Print") {
@@ -304,18 +303,18 @@ TEST_CASE("Typeof") {
   SECTION("Integer") {
     auto ret =
         in.interpret("def main(){return typeof 1 == \"int\";}", Arguments());
-    REQUIRE(core::any_cast<bool>(ret));
+    REQUIRE(linb::any_cast<bool>(ret));
   }
   SECTION("String") {
     auto ret = in.interpret("def main(){return typeof \"\" == \"string\";}",
                             Arguments());
-    REQUIRE(core::any_cast<bool>(ret));
+    REQUIRE(linb::any_cast<bool>(ret));
   }
   SECTION("Var") {
     auto ret =
         in.interpret("def main(){var a = true; return typeof a != \"string\";}",
                      Arguments());
-    REQUIRE(core::any_cast<bool>(ret));
+    REQUIRE(linb::any_cast<bool>(ret));
   }
 }
 
@@ -327,7 +326,7 @@ TEST_CASE("DoWhile") {
   auto ret = in.interpret(
       "def main(){var i = 0; do{ i = i +1;}while(i < 3); return i;}",
       Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 3);
+  REQUIRE(linb::any_cast<int>(ret) == 3);
 }
 
 TEST_CASE("Missing Function") {
@@ -357,14 +356,14 @@ TEST_CASE("Assign in Condition") {
   auto ret = in.interpret(
       "def main(){var i = 0; if(i = 1){ return 1;} else {return 0;}}",
       Arguments());
-  REQUIRE(core::any_cast<int>(ret) == 1);
+  REQUIRE(linb::any_cast<int>(ret) == 1);
 }
 
 TEST_CASE("For") {
   auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
   auto op = std::make_shared<OperatorProvider>();
   std::stringstream ss;
-  Interpreter in(cp, op,ss);
+  Interpreter in(cp, op, ss);
 
   auto ret = in.interpret("def main(){"
                           "  for(var i = 0; i < 4; i = i + 1) {"
@@ -380,7 +379,7 @@ TEST_CASE("Continue") {
   auto cp = std::make_shared<CommandProvider>(nullptr, nullptr);
   auto op = std::make_shared<OperatorProvider>();
   std::stringstream ss;
-  Interpreter in(cp, op,ss);
+  Interpreter in(cp, op, ss);
 
   auto ret = in.interpret("def main(){"
                           "  for(var i = 0; i < 4; i = i + 1) {"

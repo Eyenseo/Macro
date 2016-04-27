@@ -6,16 +6,16 @@
 #include "cad/macro/ast/Operator.h"
 #include "cad/macro/ast/Variable.h"
 
-#include <core/variant.hpp>
+#include <eggs/variant.hpp>
 
 namespace cad {
 namespace macro {
 namespace ast {
 class ValueProducer {
   using ValueVariant =
-      ::core::variant<callable::Callable, Variable, Literal<Literals::BOOL>,
-                      Literal<Literals::INT>, Literal<Literals::DOUBLE>,
-                      Literal<Literals::STRING>, Operator>;
+      eggs::variant<callable::Callable, Variable, Literal<Literals::BOOL>,
+                    Literal<Literals::INT>, Literal<Literals::DOUBLE>,
+                    Literal<Literals::STRING>, Operator>;
 
 public:
   ValueVariant value;
@@ -35,13 +35,13 @@ public:
   bool operator!=(const ValueProducer& other) const;
 
   friend std::ostream& operator<<(std::ostream& os, const ValueProducer& op) {
-    op.value.match([&os](const callable::Callable& o) { os << o; },
-                   [&os](const Variable& o) { os << o; },
-                   [&os](const Operator& o) { os << o; },
-                   [&os](const Literal<Literals::BOOL>& c) { os << c; },
-                   [&os](const Literal<Literals::INT>& c) { os << c; },
-                   [&os](const Literal<Literals::DOUBLE>& c) { os << c; },
-                   [&os](const Literal<Literals::STRING>& c) { os << c; });
+    eggs::match(op.value, [&os](const callable::Callable& o) { os << o; },
+                [&os](const Variable& o) { os << o; },
+                [&os](const Operator& o) { os << o; },
+                [&os](const Literal<Literals::BOOL>& c) { os << c; },
+                [&os](const Literal<Literals::INT>& c) { os << c; },
+                [&os](const Literal<Literals::DOUBLE>& c) { os << c; },
+                [&os](const Literal<Literals::STRING>& c) { os << c; });
     return os;
   }
 };
