@@ -304,15 +304,23 @@ void add_exception_info(const Token& token, const std::string& file, UserExc& e,
 template <typename FUN>
 void add_exception_info_end(const Token& token, const std::string& file,
                             UserExc& e, FUN fun) {
-  add_exception_info(token, file, e, fun,
-                     token.column + token.token.size() - 1);
+  add_exception_info(token, file, e, fun, token.column + token.token.size());
 }
 
 template <typename FUN>
+void add_exception_info_end(const Tokens& tokens, const size_t token,
+                            UserExc& e, FUN fun) {
+  if(token >= tokens.size()) {
+    add_exception_info_end(tokens.at(tokens.size() - 1), tokens.file, e, fun);
+  } else {
+    add_exception_info_end(tokens.at(token), tokens.file, e, fun);
+  }
+}
+template <typename FUN>
 void add_exception_info(const Tokens& tokens, const size_t token, UserExc& e,
                         FUN fun) {
-  if(token == tokens.size()) {
-    add_exception_info_end(tokens.at(token - 1), tokens.file, e, fun);
+  if(token >= tokens.size()) {
+    add_exception_info_end(tokens.at(tokens.size() - 1), tokens.file, e, fun);
   } else {
     add_exception_info(tokens.at(token), tokens.file, e, fun);
   }
@@ -348,8 +356,8 @@ void expect_token(const Tokens& tokens, size_t& token,
                   const char* const token_literal) {
   if(token >= tokens.size() || tokens.at(token).token != token_literal) {
     UserSourceExc e;
-    add_exception_info(tokens, token, e,
-                       [&] { e << "Missing '" << token_literal << "'"; });
+    add_exception_info_end(tokens, token, e,
+                           [&] { e << "Missing '" << token_literal << "'"; });
     throw e;
   }
   ++token;
