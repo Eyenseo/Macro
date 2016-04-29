@@ -6,10 +6,7 @@
 namespace cad {
 namespace macro {
 namespace macro_initializer {
-enum class STEPS {
-  DUMMY,  // FIXME
-  SIZE
-};
+enum class STEPS { OPERATOR_PROVIDER, MACRO_COMMAND, SIZE };
 }
 
 /**

@@ -1,6 +1,8 @@
 #ifndef cad_macro_interpreter_OperatorProvider_h
 #define cad_macro_interpreter_OperatorProvider_h
 
+#include <p3/common/module_system/BaseProvider.h>
+
 #include <functional>
 
 #include <any.hpp>
@@ -10,7 +12,7 @@
 namespace cad {
 namespace macro {
 namespace interpreter {
-class OperatorProvider {
+class OperatorProvider : public p3::common::module_system::BaseProvider {
 public:
   enum class UnaryOperation { NOT, BOOL, PRINT, TYPEOF, NEGATIVE, POSITIVE };
   enum class BinaryOperation {
