@@ -39,13 +39,21 @@ public:
 
 public:
   /**
-   * @brief  Determine if it has var.
+   * @brief  Determine if it has var
    *
    * @param  name  The name of the variable to check
    *
-   * @return true if has var, false otherwise.
+   * @return true if has the variable, false otherwise
    */
   bool has_var(const std::string& name) const;
+  /**
+   * @brief  Determine if it has fucntion
+   *
+   * @param  name  The name of the fucntion to check
+   *
+   * @return true if has the fcuntion, false otherwise.
+   */
+  bool has_fun(const std::string& name) const;
   /**
    * @return an optional pair where the first instance is the variable that was
    *         first declared and the second the variable that was declared last

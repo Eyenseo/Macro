@@ -22,15 +22,15 @@ bool Token::operator==(const Token& other) const {
   if(this == &other) {
     return true;
   } else {
-    if(source_line && other.source_line) {
-      return line == other.line && column == other.column &&
-             token == other.token && *source_line == *other.source_line;
-    } else if(!source_line && !other.source_line) {
+    // if(source_line && other.source_line) {
       return line == other.line && column == other.column &&
              token == other.token;
-    }
+    // } else if(!source_line && !other.source_line) {
+    //   return line == other.line && column == other.column &&
+    //          token == other.token;
+    // }
   }
-  return false;
+  // return false;
 }
 
 bool Token::operator!=(const Token& other) const {

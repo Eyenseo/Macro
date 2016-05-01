@@ -37,6 +37,18 @@ bool Stack::has_var(const std::string& name) const {
   return false;
 }
 
+bool Stack::has_fun(const std::string& name) const {
+  if(functions.end() !=
+     std::find_if(functions.begin(), functions.end(), [&name](const auto& fun) {
+       return fun.get().token.token == name;
+     })) {
+    return true;
+  } else if(parent) {
+    return parent->has_var(name);
+  }
+  return false;
+}
+
 std::experimental::optional<std::pair<Stack::RF, Stack::RF>>
 Stack::has_double_fun() const {
   if(functions.size() > 1) {

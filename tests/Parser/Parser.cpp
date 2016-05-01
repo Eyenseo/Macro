@@ -19,10 +19,28 @@ CATCH_TRANSLATE_EXCEPTION(std::exception& e) {
   return ss.str();
 }
 
+void add_main_to_root_end(Scope& scope, std::shared_ptr<std::string>& line) {
+  auto main_line = [&]() {
+    auto n = std::count_if(line->begin(), line->end(),
+                           [](char i) { return i == '\n'; });
+    assert(n >= 0);
+    return static_cast<size_t>(n) + 2;
+  }();
+
+  auto line1 = std::make_shared<std::string>("def main() {}");
+  line->append("\n");
+  line->append(*line1);
+
+  Define def({main_line, 1, "def", line1});
+  EntryFunction fun({main_line, 5, "main", line1});
+  fun.scope = std::make_unique<Scope>(Token(main_line, 12, "{", line1));
+  def.definition = std::move(fun);
+  scope.nodes.push_back(std::move(def));
+}
+
 TEST_CASE("Define") {
   SECTION("EntryFunction") {
     auto line1 = std::make_shared<std::string>("def main() {}");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -33,12 +51,12 @@ TEST_CASE("Define") {
       expected.nodes.push_back(std::move(def));
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 
   SECTION("Function") {
     auto line1 = std::make_shared<std::string>("def fun() {}");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -47,14 +65,15 @@ TEST_CASE("Define") {
       fun.scope = std::make_unique<Scope>(Token(1, 11, "{", line1));
       def.definition = std::move(fun);
       expected.nodes.push_back(std::move(def));
+      add_main_to_root_end(expected, line1);
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 
   SECTION("Variable") {
     auto line1 = std::make_shared<std::string>("var foo;");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -62,14 +81,15 @@ TEST_CASE("Define") {
       Variable var({1, 5, "foo", line1});
       def.definition = std::move(var);
       expected.nodes.push_back(std::move(def));
+      add_main_to_root_end(expected, line1);
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 
   SECTION("Parameter") {
     auto line1 = std::make_shared<std::string>("def fun(herbert) {}");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -82,14 +102,15 @@ TEST_CASE("Define") {
       fun.scope = std::make_unique<Scope>(scope);
       def.definition = std::move(fun);
       expected.nodes.push_back(std::move(def));
+      add_main_to_root_end(expected, line1);
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 
   SECTION("Multiple Parameter") {
     auto line1 = std::make_shared<std::string>("def fun(herbert, berta) {}");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -104,8 +125,10 @@ TEST_CASE("Define") {
       fun.scope = std::make_unique<Scope>(scope);
       def.definition = std::move(fun);
       expected.nodes.push_back(std::move(def));
+      add_main_to_root_end(expected, line1);
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 }
@@ -113,26 +136,26 @@ TEST_CASE("Define") {
 TEST_CASE("Callable") {
   SECTION("Parameterless") {
     auto line1 = std::make_shared<std::string>("fun();");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
       Callable fun({1, 1, "fun", line1});
 
       expected.nodes.push_back(std::move(fun));
+      add_main_to_root_end(expected, line1);
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 
   SECTION("Space after function name") {
-    REQUIRE_THROWS_AS(parse("fun ();"), ExceptionBase<UserE>);
+    REQUIRE_THROWS_AS(parse("fun ();def main() {}"), ExceptionBase<UserE>);
   }
 
   SECTION("Parameter") {
     auto line1 =
         std::make_shared<std::string>("var herbert; fun(foo:herbert);");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -145,20 +168,21 @@ TEST_CASE("Callable") {
       fun.parameter.emplace_back(var1, var2);
       expected.nodes.push_back(std::move(def));
       expected.nodes.push_back(std::move(fun));
+      add_main_to_root_end(expected, line1);
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 
   SECTION("Parameter") {
-    REQUIRE_THROWS_AS(parse("var herbert; fun(herbert);"),
+    REQUIRE_THROWS_AS(parse("var herbert; fun(herbert); def main(){}"),
                       ExceptionBase<UserE>);
   }
 
   SECTION("Multiple Parameter") {
     auto line1 = std::make_shared<std::string>(
         "var herbert; var berta; fun(foo:herbert, bar:berta);");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -178,14 +202,15 @@ TEST_CASE("Callable") {
       expected.nodes.push_back(std::move(def1));
       expected.nodes.push_back(std::move(def2));
       expected.nodes.push_back(std::move(fun));
-    }
 
+      add_main_to_root_end(expected, line1);
+    }
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 
   SECTION("Function Parameter") {
     auto line1 = std::make_shared<std::string>("fun(foo:gun());");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -195,14 +220,15 @@ TEST_CASE("Callable") {
 
       fun.parameter.emplace_back(var1, gun);
       expected.nodes.push_back(std::move(fun));
+      add_main_to_root_end(expected, line1);
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 
   SECTION("Multiple Function Parameter") {
     auto line1 = std::make_shared<std::string>("fun(foo:gun(), bar:hun());");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -215,8 +241,10 @@ TEST_CASE("Callable") {
       fun.parameter.emplace_back(var1, gun);
       fun.parameter.emplace_back(var2, hun);
       expected.nodes.push_back(std::move(fun));
+      add_main_to_root_end(expected, line1);
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 }
@@ -224,7 +252,6 @@ TEST_CASE("Callable") {
 TEST_CASE("Return") {
   SECTION("Variable") {
     auto line1 = std::make_shared<std::string>("def main() {return 1;}");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -240,12 +267,12 @@ TEST_CASE("Return") {
       expected.nodes.push_back(std::move(def));
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 
   SECTION("Function") {
     auto line1 = std::make_shared<std::string>("def main() {return fun();}");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -261,12 +288,14 @@ TEST_CASE("Return") {
       expected.nodes.push_back(std::move(def));
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 
   SECTION("Function") {
     // TODO better error message
-    REQUIRE_THROWS_AS(parse("retrun fun();"), ExceptionBase<UserE>);
+    REQUIRE_THROWS_AS(parse("retrun fun(); def main(){}"),
+                      ExceptionBase<UserE>);
     //                          ^
   }
 }
@@ -275,7 +304,6 @@ TEST_CASE("If") {
   SECTION("Input") {
     SECTION("Variable") {
       auto line1 = std::make_shared<std::string>("if(true){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -285,14 +313,15 @@ TEST_CASE("If") {
         iff.condition = std::make_unique<ValueProducer>(std::move(lit));
         iff.true_scope = std::make_unique<Scope>(Token(1, 9, "{", line1));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
 
     SECTION("Function") {
       auto line1 = std::make_shared<std::string>("if(fun()){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -301,13 +330,14 @@ TEST_CASE("If") {
             std::make_unique<ValueProducer>(Callable({1, 4, "fun", line1}));
         iff.true_scope = std::make_unique<Scope>(Token(1, 10, "{", line1));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
     SECTION("Literal") {
       auto line1 = std::make_shared<std::string>("if(true){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -317,8 +347,10 @@ TEST_CASE("If") {
         iff.condition = std::make_unique<ValueProducer>(lit);
         iff.true_scope = std::make_unique<Scope>(Token(1, 9, "{", line1));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
   }
@@ -326,7 +358,6 @@ TEST_CASE("If") {
   SECTION("Operator") {
     SECTION("Equal") {
       auto line1 = std::make_shared<std::string>("if(true == true){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -344,14 +375,15 @@ TEST_CASE("If") {
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 17, "{", line1));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
 
     SECTION("Not Equal") {
       auto line1 = std::make_shared<std::string>("if(true != true){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -369,14 +401,15 @@ TEST_CASE("If") {
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 17, "{", line1));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
 
     SECTION("Greater") {
       auto line1 = std::make_shared<std::string>("if(true > true){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -394,14 +427,15 @@ TEST_CASE("If") {
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 16, "{", line1));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
 
     SECTION("Greater Equal") {
       auto line1 = std::make_shared<std::string>("if(true >= true){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -419,14 +453,15 @@ TEST_CASE("If") {
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 17, "{", line1));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
 
     SECTION("Smaller") {
       auto line1 = std::make_shared<std::string>("if(true < true){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -444,14 +479,15 @@ TEST_CASE("If") {
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 16, "{", line1));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
 
     SECTION("Smaller Equal") {
       auto line1 = std::make_shared<std::string>("if(true <= true){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -469,14 +505,15 @@ TEST_CASE("If") {
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 17, "{", line1));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
 
     SECTION("Not var") {
       auto line1 = std::make_shared<std::string>("if(!true){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -490,14 +527,15 @@ TEST_CASE("If") {
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 10, "{", line1));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
 
     SECTION("Not operator") {
       auto line1 = std::make_shared<std::string>("if(!(true == true)){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -517,20 +555,21 @@ TEST_CASE("If") {
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 20, "{", line1));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
 
     SECTION("Missing Operator") {
-      REQUIRE_THROWS_AS(parse("if(a b){}"), ExceptionBase<UserE>);
+      REQUIRE_THROWS_AS(parse("if(a b){} def main(){}"), ExceptionBase<UserE>);
     }
   }
 
   SECTION("Literals") {
     SECTION("Boolean") {
       auto line1 = std::make_shared<std::string>("if(true == false){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -547,14 +586,15 @@ TEST_CASE("If") {
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 18, "{", line1));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
 
     SECTION("Integer") {
       auto line1 = std::make_shared<std::string>("if(1 == 1){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -571,14 +611,15 @@ TEST_CASE("If") {
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 11, "{", line1));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
 
     SECTION("Double") {
       auto line1 = std::make_shared<std::string>("if(.1 == .1){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -595,15 +636,16 @@ TEST_CASE("If") {
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 13, "{", line1));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
 
     SECTION("String") {
       // The escaped " counts one!
       auto line1 = std::make_shared<std::string>("if(\"a\" == \"a\"){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -620,8 +662,10 @@ TEST_CASE("If") {
         iff.condition = std::make_unique<ValueProducer>(op);
         iff.true_scope = std::make_unique<Scope>(Token(1, 15, "{", line1));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
   }
@@ -630,7 +674,6 @@ TEST_CASE("If") {
     SECTION("Brackets") {
       auto line1 = std::make_shared<std::string>(
           "var a;var b;var c;if(a == b && (a == c || c == b)){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -677,15 +720,16 @@ TEST_CASE("If") {
         expected.nodes.push_back(std::move(def2));
         expected.nodes.push_back(std::move(def3));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
 
     SECTION("Bracketless") {
       auto line1 = std::make_shared<std::string>(
           "var a;var b;var c;if(a == b && a == c || c == b){}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -731,14 +775,15 @@ TEST_CASE("If") {
         expected.nodes.push_back(std::move(def2));
         expected.nodes.push_back(std::move(def3));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
 
     SECTION("Else") {
       auto line1 = std::make_shared<std::string>("var a; if(a){}else{}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -751,8 +796,10 @@ TEST_CASE("If") {
         iff.false_scope = std::make_unique<Scope>(Token(1, 19, "{", line1));
         expected.nodes.push_back(std::move(def));
         expected.nodes.push_back(std::move(iff));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
   }
@@ -761,7 +808,6 @@ TEST_CASE("If") {
 TEST_CASE("While") {  // Basically an if
   SECTION("default") {
     auto line1 = std::make_shared<std::string>("var a; while(a){}");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -773,15 +819,16 @@ TEST_CASE("While") {  // Basically an if
       w.scope = std::make_unique<Scope>(Token(1, 16, "{", line1));
       expected.nodes.push_back(std::move(def));
       expected.nodes.push_back(std::move(w));
+      add_main_to_root_end(expected, line1);
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 }
 TEST_CASE("DoWhile") {
   SECTION("default") {
     auto line1 = std::make_shared<std::string>("var a; do{}while(a);");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -793,8 +840,10 @@ TEST_CASE("DoWhile") {
       w.scope = std::make_unique<Scope>(Token(1, 10, "{", line1));
       expected.nodes.push_back(std::move(def));
       expected.nodes.push_back(std::move(w));
+      add_main_to_root_end(expected, line1);
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 }
@@ -802,7 +851,6 @@ TEST_CASE("DoWhile") {
 TEST_CASE("Variable define and assign") {
   SECTION("define and assign") {
     auto line1 = std::make_shared<std::string>("var foo = foo + 1;");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -827,47 +875,59 @@ TEST_CASE("Variable define and assign") {
 
       expected.nodes.push_back(std::move(def));
       expected.nodes.push_back(std::move(op_as));
+      add_main_to_root_end(expected, line1);
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 
   SECTION("Missing right operand") {
-    REQUIRE_THROWS_AS(parse("var foo = foo + ;"), ExceptionBase<UserE>);
+    REQUIRE_THROWS_AS(parse("def main(){} var foo = foo + ;"),
+                      ExceptionBase<UserE>);
   }
   SECTION("Missing operator") {
-    REQUIRE_THROWS_AS(parse("var foo = foo  1;"), ExceptionBase<UserE>);
+    REQUIRE_THROWS_AS(parse("def main(){} var foo = foo  1;"),
+                      ExceptionBase<UserE>);
   }
   SECTION("Missing left operand") {
-    REQUIRE_NOTHROW(parse("var foo =  + 1;"));  // This is valid!
+    REQUIRE_NOTHROW(parse("def main(){} var foo =  + 1;"));  // This is valid!
   }
   SECTION("Missing both operands") {
-    REQUIRE_THROWS_AS(parse("var foo =  + ;"), ExceptionBase<UserE>);
+    REQUIRE_THROWS_AS(parse("def main(){} var foo =  + ;"),
+                      ExceptionBase<UserE>);
   }
   SECTION("Missing everything") {
-    REQUIRE_THROWS_AS(parse("var foo =  ;"), ExceptionBase<UserE>);
+    REQUIRE_THROWS_AS(parse("def main(){} var foo =  ;"), ExceptionBase<UserE>);
   }
   SECTION("Missing everything and var") {
-    REQUIRE_THROWS_AS(parse("var foo =  ; foo"), ExceptionBase<UserE>);
+    REQUIRE_THROWS_AS(parse("def main(){} var foo =  ; foo"),
+                      ExceptionBase<UserE>);
   }
 
   SECTION("Missing semicolon") {
-    REQUIRE_THROWS_AS(parse("var foo = foo + 1"), ExceptionBase<UserE>);
+    REQUIRE_THROWS_AS(parse("def main(){} var foo = foo + 1"),
+                      ExceptionBase<UserE>);
 
     SECTION("Missing right operand") {
-      REQUIRE_THROWS_AS(parse("var foo = foo + "), ExceptionBase<UserE>);
+      REQUIRE_THROWS_AS(parse("def main(){} var foo = foo + "),
+                        ExceptionBase<UserE>);
     }
     SECTION("Missing operator") {
-      REQUIRE_THROWS_AS(parse("var foo = foo  1"), ExceptionBase<UserE>);
+      REQUIRE_THROWS_AS(parse("def main(){} var foo = foo  1"),
+                        ExceptionBase<UserE>);
     }
     SECTION("Missing left operand") {
-      REQUIRE_THROWS_AS(parse("var foo =  + 1"), ExceptionBase<UserE>);
+      REQUIRE_THROWS_AS(parse("def main(){} var foo =  + 1"),
+                        ExceptionBase<UserE>);
     }
     SECTION("Missing both operands") {
-      REQUIRE_THROWS_AS(parse("var foo =  +"), ExceptionBase<UserE>);
+      REQUIRE_THROWS_AS(parse("def main(){} var foo =  +"),
+                        ExceptionBase<UserE>);
     }
     SECTION("Missing everything") {
-      REQUIRE_THROWS_AS(parse("var foo =  "), ExceptionBase<UserE>);
+      REQUIRE_THROWS_AS(parse("def main(){} var foo =  "),
+                        ExceptionBase<UserE>);
     }
   }
 }
@@ -876,7 +936,6 @@ TEST_CASE("\"free\" operators") {
   SECTION("free assign") {
     SECTION("define and assign") {
       auto line1 = std::make_shared<std::string>("var foo; foo = foo + 1;");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -899,47 +958,61 @@ TEST_CASE("\"free\" operators") {
 
         expected.nodes.push_back(std::move(def));
         expected.nodes.push_back(std::move(op_as));
+        add_main_to_root_end(expected, line1);
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
 
     SECTION("Missing right operand") {
-      REQUIRE_THROWS_AS(parse("var foo; foo = foo + ;"), ExceptionBase<UserE>);
+      REQUIRE_THROWS_AS(parse("def main(){} var foo; foo = foo + ;"),
+                        ExceptionBase<UserE>);
     }
     SECTION("Missing operator") {
-      REQUIRE_THROWS_AS(parse("var foo; foo = foo  1;"), ExceptionBase<UserE>);
+      REQUIRE_THROWS_AS(parse("def main(){} var foo; foo = foo  1;"),
+                        ExceptionBase<UserE>);
     }
     SECTION("Missing left operand") {
-      REQUIRE_NOTHROW(parse("var foo; foo =  + 1;"));  // This is valid!
+      REQUIRE_NOTHROW(
+          parse(" def main(){} var foo; foo =  + 1;"));  // This is valid!
     }
     SECTION("Missing both operands") {
-      REQUIRE_THROWS_AS(parse("var foo; foo =  + ;"), ExceptionBase<UserE>);
+      REQUIRE_THROWS_AS(parse("def main(){} var foo; foo =  + ;"),
+                        ExceptionBase<UserE>);
     }
     SECTION("Missing everything") {
-      REQUIRE_THROWS_AS(parse("var foo; foo =  ;"), ExceptionBase<UserE>);
+      REQUIRE_THROWS_AS(parse("def main(){} var foo; foo =  ;"),
+                        ExceptionBase<UserE>);
     }
     SECTION("Missing everything and var") {
-      REQUIRE_THROWS_AS(parse("var foo; foo =  ; foo"), ExceptionBase<UserE>);
+      REQUIRE_THROWS_AS(parse("def main(){} var foo; foo =  ; foo"),
+                        ExceptionBase<UserE>);
     }
 
     SECTION("Missing semicolon") {
-      REQUIRE_THROWS_AS(parse("var foo; foo = foo + 1"), ExceptionBase<UserE>);
+      REQUIRE_THROWS_AS(parse("def main(){} var foo; foo = foo + 1"),
+                        ExceptionBase<UserE>);
 
       SECTION("Missing right operand") {
-        REQUIRE_THROWS_AS(parse("var foo; foo = foo + "), ExceptionBase<UserE>);
+        REQUIRE_THROWS_AS(parse("def main(){} var foo; foo = foo + "),
+                          ExceptionBase<UserE>);
       }
       SECTION("Missing operator") {
-        REQUIRE_THROWS_AS(parse("var foo; foo = foo  1"), ExceptionBase<UserE>);
+        REQUIRE_THROWS_AS(parse("def main(){} var foo; foo = foo  1"),
+                          ExceptionBase<UserE>);
       }
       SECTION("Missing left operand") {
-        REQUIRE_THROWS_AS(parse("var foo; foo =  + 1"), ExceptionBase<UserE>);
+        REQUIRE_THROWS_AS(parse("def main(){} var foo; foo =  + 1"),
+                          ExceptionBase<UserE>);
       }
       SECTION("Missing both operands") {
-        REQUIRE_THROWS_AS(parse("var foo; foo =  +"), ExceptionBase<UserE>);
+        REQUIRE_THROWS_AS(parse("def main(){} var foo; foo =  +"),
+                          ExceptionBase<UserE>);
       }
       SECTION("Missing everything") {
-        REQUIRE_THROWS_AS(parse("var foo; foo = "), ExceptionBase<UserE>);
+        REQUIRE_THROWS_AS(parse("def main(){} var foo; foo = "),
+                          ExceptionBase<UserE>);
       }
     }
   }
@@ -948,7 +1021,6 @@ TEST_CASE("\"free\" operators") {
 TEST_CASE("break") {
   SECTION("While") {
     auto line1 = std::make_shared<std::string>("var a; while(a){break;}");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -961,8 +1033,10 @@ TEST_CASE("break") {
       w.scope->nodes.emplace_back(Break(Token(1, 17, "break", line1)));
       expected.nodes.push_back(std::move(def));
       expected.nodes.push_back(std::move(w));
+      add_main_to_root_end(expected, line1);
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 }
@@ -970,7 +1044,6 @@ TEST_CASE("break") {
 TEST_CASE("contine") {
   SECTION("While") {
     auto line1 = std::make_shared<std::string>("var a; while(a){continue;}");
-    auto ast = parse(*line1);
 
     Scope expected({0, 0, ""});
     {
@@ -983,8 +1056,10 @@ TEST_CASE("contine") {
       w.scope->nodes.emplace_back(Continue(Token(1, 17, "continue", line1)));
       expected.nodes.push_back(std::move(def));
       expected.nodes.push_back(std::move(w));
+      add_main_to_root_end(expected, line1);
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 }
@@ -993,7 +1068,6 @@ TEST_CASE("Number Literals") {
   SECTION("Integer") {
     SECTION("positive") {
       auto line1 = std::make_shared<std::string>("def main() {return 1;}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1009,11 +1083,11 @@ TEST_CASE("Number Literals") {
         expected.nodes.push_back(std::move(def));
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
     SECTION("negative") {
       auto line1 = std::make_shared<std::string>("def main() {return -1;}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1032,11 +1106,11 @@ TEST_CASE("Number Literals") {
         expected.nodes.push_back(std::move(def));
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
     SECTION("negative operator") {
       auto line1 = std::make_shared<std::string>("def main() {return 1 - 1;}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1058,11 +1132,11 @@ TEST_CASE("Number Literals") {
         expected.nodes.push_back(std::move(def));
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
     SECTION("negative operator nospace") {
       auto line1 = std::make_shared<std::string>("def main() {return 1-1;}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1084,11 +1158,11 @@ TEST_CASE("Number Literals") {
         expected.nodes.push_back(std::move(def));
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
     SECTION("negativ leading literal") {
       auto line1 = std::make_shared<std::string>("def main() {1; -1;}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1108,13 +1182,13 @@ TEST_CASE("Number Literals") {
         expected.nodes.push_back(std::move(def));
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
   }
   SECTION("Double") {
     SECTION("positive") {
       auto line1 = std::make_shared<std::string>("def main() {return .1;}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1130,11 +1204,11 @@ TEST_CASE("Number Literals") {
         expected.nodes.push_back(std::move(def));
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
     SECTION("negative") {
       auto line1 = std::make_shared<std::string>("def main() {return -.1;}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1153,12 +1227,12 @@ TEST_CASE("Number Literals") {
         expected.nodes.push_back(std::move(def));
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
     SECTION("negative operator") {
       auto line1 =
           std::make_shared<std::string>("def main() {return .1 - .1;}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1180,11 +1254,11 @@ TEST_CASE("Number Literals") {
         expected.nodes.push_back(std::move(def));
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
     SECTION("negative operator nospace") {
       auto line1 = std::make_shared<std::string>("def main() {return .1-.1;}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1206,11 +1280,11 @@ TEST_CASE("Number Literals") {
         expected.nodes.push_back(std::move(def));
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
     SECTION("negativ leading literal") {
       auto line1 = std::make_shared<std::string>("def main() {.1; -.1;}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1230,13 +1304,14 @@ TEST_CASE("Number Literals") {
         expected.nodes.push_back(std::move(def));
       }
 
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
   }
   // TODO this section should be in a test case for operators
   SECTION("Operator substracht one negative") {
     auto line1 = std::make_shared<std::string>("def main() {return 1--1;}");
-    auto ast = parse(*line1);
+
 
     Scope expected({0, 0, ""});
     {
@@ -1261,11 +1336,12 @@ TEST_CASE("Number Literals") {
       expected.nodes.push_back(std::move(def));
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
   SECTION("Operator substracht two negative") {
     auto line1 = std::make_shared<std::string>("def main() {return 1---1;}");
-    auto ast = parse(*line1);
+
 
     Scope expected({0, 0, ""});
     {
@@ -1293,6 +1369,7 @@ TEST_CASE("Number Literals") {
       expected.nodes.push_back(std::move(def));
     }
 
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
 }
@@ -1300,7 +1377,7 @@ TEST_CASE("Number Literals") {
 TEST_CASE("For") {
   SECTION("Empty header") {
     auto line1 = std::make_shared<std::string>("def main() {for(;;){}}");
-    auto ast = parse(*line1);
+
 
     Scope expected({0, 0, ""});
     {
@@ -1314,13 +1391,13 @@ TEST_CASE("For") {
       def_m.definition = std::move(main);
       expected.nodes.push_back(std::move(def_m));
     }
+    auto ast = parse(*line1);
     REQUIRE(ast == expected);
   }
   SECTION("First header place") {
     SECTION("Pre defined variable") {
       auto line1 =
           std::make_shared<std::string>("def main() {var a;for(a = 0;;){}}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1347,12 +1424,13 @@ TEST_CASE("For") {
         def_m.definition = std::move(main);
         expected.nodes.push_back(std::move(def_m));
       }
+
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
     SECTION("Defined variable") {
       auto line1 =
           std::make_shared<std::string>("def main() {for(var a = 0;;){}}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1379,11 +1457,12 @@ TEST_CASE("For") {
         def_m.definition = std::move(main);
         expected.nodes.push_back(std::move(def_m));
       }
+
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
     SECTION("Function") {
       auto line1 = std::make_shared<std::string>("def main() {for(fun();;){}}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1399,6 +1478,8 @@ TEST_CASE("For") {
         def_m.definition = std::move(main);
         expected.nodes.push_back(std::move(def_m));
       }
+
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
   }
@@ -1406,7 +1487,6 @@ TEST_CASE("For") {
     SECTION("Variable") {
       auto line1 =
           std::make_shared<std::string>("def main() {var a; for(;a;){}}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1426,11 +1506,12 @@ TEST_CASE("For") {
         def_m.definition = std::move(main);
         expected.nodes.push_back(std::move(def_m));
       }
+
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
     SECTION("Function") {
       auto line1 = std::make_shared<std::string>("def main() {for(;fun();){}}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1447,12 +1528,13 @@ TEST_CASE("For") {
         def_m.definition = std::move(main);
         expected.nodes.push_back(std::move(def_m));
       }
+
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
     SECTION("Operator") {
       auto line1 =
           std::make_shared<std::string>("def main() {for(;true == fun();){}}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1476,6 +1558,8 @@ TEST_CASE("For") {
         def_m.definition = std::move(main);
         expected.nodes.push_back(std::move(def_m));
       }
+
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
   }
@@ -1483,7 +1567,6 @@ TEST_CASE("For") {
     SECTION("Variable") {
       auto line1 =
           std::make_shared<std::string>("def main() {var a; for(;;a){}}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1502,11 +1585,12 @@ TEST_CASE("For") {
         def_m.definition = std::move(main);
         expected.nodes.push_back(std::move(def_m));
       }
+
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
     SECTION("Function") {
       auto line1 = std::make_shared<std::string>("def main() {for(;;fun()){}}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1522,12 +1606,13 @@ TEST_CASE("For") {
         def_m.definition = std::move(main);
         expected.nodes.push_back(std::move(def_m));
       }
+
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
     SECTION("Operator") {
       auto line1 = std::make_shared<std::string>(
           "def main() {var a;for(;;a = a + 1){}}");
-      auto ast = parse(*line1);
 
       Scope expected({0, 0, ""});
       {
@@ -1560,6 +1645,8 @@ TEST_CASE("For") {
         def_m.definition = std::move(main);
         expected.nodes.push_back(std::move(def_m));
       }
+
+      auto ast = parse(*line1);
       REQUIRE(ast == expected);
     }
   }

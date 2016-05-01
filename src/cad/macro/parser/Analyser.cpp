@@ -485,8 +485,7 @@ void Analyser::main_in_root() {
   enfun.connect(
       [](Analyser& ana, SignalType t, const State& s, const auto& enfun) {
         if(t == SignalType::START) {
-          // We get the extra parent through the analyse scope method
-          if(!s.root_scope) {
+          if(!s.root_scope || s.stack.parent) {
             auto stack = ana.current_message_;
             Message m(enfun.token, ana.file_);
             m << "The main function has to be in the root scope";
@@ -495,6 +494,17 @@ void Analyser::main_in_root() {
           }
         }
       });
+  sco.connect([](Analyser& ana, SignalType t, const State& s, const auto& sco) {
+    if(t == SignalType::END) {
+      if(!s.stack.parent && !s.stack.has_fun("main")) {
+        auto stack = ana.current_message_;
+        Message m(sco.token, ana.file_);
+        m << "There has to be a main function in the root scope";
+        stack.push_back(std::move(m));
+        ana.messages_.push_back(std::move(stack));
+      }
+    }
+  });
 }
 void Analyser::variable_available() {
   var.connect([](Analyser& ana, SignalType t, const State& s, const auto& var) {
