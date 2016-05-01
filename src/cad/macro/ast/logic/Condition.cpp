@@ -22,6 +22,7 @@ Condition::Condition(parser::Token token)
 }
 Condition::~Condition() {
 }
+
 Condition& Condition::operator=(Condition other) {
   swap(*this, other);
   return *this;

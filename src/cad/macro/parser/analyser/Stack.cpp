@@ -9,8 +9,7 @@ namespace cad {
 namespace macro {
 namespace parser {
 namespace analyser {
-
-std::experimental::optional<Stack::myPair<ast::Variable>>
+std::experimental::optional<std::pair<Stack::RV, Stack::RV>>
 Stack::has_double_var() const {
   if(variables.size() > 1) {
     const auto& back = variables.back().get();
@@ -38,7 +37,7 @@ bool Stack::has_var(const std::string& name) const {
   return false;
 }
 
-std::experimental::optional<Stack::myPair<ast::callable::Function>>
+std::experimental::optional<std::pair<Stack::RF, Stack::RF>>
 Stack::has_double_fun() const {
   if(functions.size() > 1) {
     auto& back = functions.back().get();

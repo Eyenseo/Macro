@@ -33,6 +33,10 @@ template <typename T>
 using is_Operator =
     typename std::enable_if<std::is_same<T, ast::Operator>::value, bool>;
 
+/**
+ * @brief  Helper struct that keeps track of the Tokens and the file that is
+ *         being parsed
+ */
 struct Tokens {
   const std::vector<Token>& tokens;
   const std::string file;
@@ -53,167 +57,679 @@ static std::vector<std::string> keywords{
 //////////////////////////////////////////
 /// Exception
 //////////////////////////////////////////
+/**
+ * @brief  Converts a Node to a Token
+ *
+ * @param  node  The node
+ *
+ * @return Token of the Node
+ */
 Token node_to_token(const ast::Scope::Node& node);
+/**
+ * @brief  Adds info to an Exception
+ *
+ * @param  token           The token that is being reported
+ * @param  file            The file name / macro name
+ * @param  e               The Exception that information is added to
+ * @param  fun             The function to be executed after file:line:column
+ * @param  arrow_position  The arrow position - normally under the given token
+ */
 template <typename FUN>
 void add_exception_info(const Token& token, const std::string& file, UserExc& e,
                         FUN fun, const size_t arrow_position);
+/**
+ * @brief  Adds info to an Exception the arrow will be at the begin of the given
+ *         token
+ *
+ * @param  token  The token that is being reported
+ * @param  file   The file name / macro name
+ * @param  e      The Exception that information is added to
+ * @param  fun    The function to be executed after file:line:column
+ */
 template <typename FUN>
 void add_exception_info(const Token& token, const std::string& file, UserExc& e,
                         FUN fun);
+/**
+ * @brief  Adds info to an Exception the arrow will be at the end of the given
+ *         token
+ *
+ * @param  token  The token that is being reported
+ * @param  file   The file name / macro name
+ * @param  e      The Exception that information is added to
+ * @param  fun    The function to be executed after file:line:column
+ */
 template <typename FUN>
 void add_exception_info_end(const Token& token, const std::string& file,
                             UserExc& e, FUN fun);
+/**
+ * @brief  Adds info to an Exception the arrow will be at the begin of the given
+ *         token
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ * @param  e       The Exception that information is added to
+ * @param  fun     The function to be executed after file:line:column
+ */
 template <typename FUN>
 void add_exception_info(const Tokens& tokens, const size_t token, UserExc& e,
                         FUN fun);
+/**
+ * @brief  Throws an Exception with the reason of an unexpected Token
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ *
+ * @throws UserSourceExc
+ */
 [[noreturn]] void throw_unexprected_token(const Tokens& tokens,
                                           const size_t token);
+/**
+ * @brief  Throws an Exception with the reason of an unexpected Token
+ *
+ * @param  token  The token that is being reported
+ * @param  file   The file name / macro name
+ *
+ * @throws UserSourceExc
+ */
 [[noreturn]] void throw_unexprected_token(const Token& token,
                                           const std::string& file);
+/**
+ * @brief  Throws an Exception with the reason of an conversation error
+ *
+ * @param  file    The file name / macro name
+ * @param  line    The line
+ * @param  prefix  The prefix - describing what was not convertible to a
+ *                 ValueProducer
+ *
+ * @throws ConversionExc
+ */
 [[noreturn]] void throw_conversion(const char* const file, const size_t line,
                                    const char* const prefix);
-[[noreturn]] void throw_conversion(const char* const file, const size_t line,
-                                   const char* const prefix);
+/**
+ * @brief  Checks that no extra space is in between the brackets and the
+ *         function identifier
+ *
+ * @param  tokens         The tokens that are being parsed
+ * @param  token          The current token that is being reported
+ *
+ * @throws UserSourceExc
+ */
 void expect_no_space_between_bracket(const Tokens& tokens, const size_t token);
 
 //////////////////////////////////////////
 /// Token reading
 //////////////////////////////////////////
+/**
+ * @brief  Expects to find the given Token, else it throws
+ *
+ * @param  tokens         The tokens that are being parsed
+ * @param  token          The current token that is being reported
+ * @param  token_literal  The token literal that is expected
+ *
+ * @throws UserSourceExc
+ */
 void expect_token(const Tokens& tokens, size_t& token,
                   const char* const token_literal);
-
+/**
+ * @brief  Expects to find the given Token
+ *
+ * @param  tokens         The tokens that are being parsed
+ * @param  token          The current token that is being reported
+ * @param  token_literal  The token literal that is expected
+ *
+ * @returns true if the expected token was found, else false
+ */
 bool read_token(const Tokens& tokens, size_t& token,
                 const char* const token_literal);
-
+/**
+ * @brief  Expects to find the given Token, else it throws
+ *
+ * @param  tokens       The tokens that are being parsed
+ * @param  token        The current token that is being reported
+ * @param  token_regex  The regex that matches the token that is expected
+ *
+ * @return true if the regex had a match, else false
+ */
 bool read_token(const Tokens& tokens, size_t& token,
                 const std::regex& token_regex);
 
 //////////////////////////////////////////
 /// Literal parsing
 //////////////////////////////////////////
+/**
+ * @brief  Unescapes the parsed string Literal
+ */
+void unescape_string(std::string& s);
+/**
+ * @brief  Tries to parse the current token as a bool literal
+ *
+ * @return The optional parsed bool literal
+ */
 std::experimental::optional<ast::Literal<ast::Literals::BOOL>>
 parse_literal_bool(const Tokens& tokens, size_t& token);
-
+/**
+ * @brief  Tries to parse the current token as a int literal
+ *
+ * @return The optional parsed int literal
+ */
 std::experimental::optional<ast::Literal<ast::Literals::INT>>
 parse_literal_int(const Tokens& tokens, size_t& token);
-
+/**
+ * @brief  Tries to parse the current token as a double literal
+ *
+ * @return The optional parsed double literal
+ */
 std::experimental::optional<ast::Literal<ast::Literals::DOUBLE>>
 parse_literal_double(const Tokens& tokens, size_t& token);
-
-void unescape_string(std::string& s);
-
+/**
+ * @brief  Tries to parse the current token as a string literal
+ *
+ * @return The optional parsed string literal
+ */
 std::experimental::optional<ast::Literal<ast::Literals::STRING>>
 parse_literal_string(const Tokens& tokens, size_t& token);
 
 //////////////////////////////////////////
 /// Definition parsing
 //////////////////////////////////////////
+/**
+ * @param  token  The token
+ *
+ * @return True if keyword, False otherwise.
+ */
 bool is_keyword(const std::string& token);
+/**
+ * @brief  Expects that the current token is not a keyword
+ *
+ * @param  tokens         The tokens that are being parsed
+ * @param  token          The current token that is being reported
+ *
+ * @throws UserSourceExc
+ */
 void expect_not_keyword(const Tokens& tokens, const size_t token);
+/**
+ * @brief  Parses function parameters ((foo,bar,...))
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ * @param  fun     The ast::Function object the parameters are added to
+ */
 template <typename T, typename is_Function<T>::type = false>
 void parse_function_parameter(const Tokens& tokens, size_t& token, T& fun);
-template <typename T, typename is_Function<T>::type = true>
-std::experimental::optional<T> parse_function_internals(const Tokens& tokens,
-                                                        size_t& token, T&& fun);
+/**
+ * @brief  Tries to parse the function internals (foo,bar ...){...})
+ *
+ * @param  tokens         The tokens that are being parsed
+ * @param  token          The current token that is being reported
+ * @param  fun            The ast::Function object the parameters are added to
+ *
+ * @return The parsed Function
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
+template <typename T, typename is_Function<T>::type = false>
+T parse_function_internals(const Tokens& tokens, size_t& token, T&& fun);
+/**
+ * @brief  Tries to parse a entry function (main(...){...})
+ *
+ * @param  tokens       The tokens that are being parsed
+ * @param  token        The current token that is being reported
+ *
+ * @return The optional parsed function
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 std::experimental::optional<ast::callable::EntryFunction>
 parse_entry_function(const Tokens& tokens, size_t& token);
+/**
+ * @brief  Tries to parse a entry function (fun(...){...})
+ *
+ * @param  tokens       The tokens that are being parsed
+ * @param  token        The current token that is being reported
+ *
+ * @return The optional parsed function
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 std::experimental::optional<ast::callable::Function>
 parse_function(const Tokens& tokens, size_t& token);
+/**
+ * @brief  Tries to parse a function definition  (def fun(...){...} / def
+ *         main(...) {...})
+ *
+ * @param  tokens       The tokens that are being parsed
+ * @param  token        The current token that is being reported
+ *
+ * @return The optional parsed definition
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 std::experimental::optional<ast::Define>
 parse_function_definition(const Tokens& tokens, size_t& token);
+/**
+ * @brief  Tries to parse a variable definition (var foo)
+ *
+ * @param  tokens       The tokens that are being parsed
+ * @param  token        The current token that is being reported
+ *
+ * @return The optional parsed definition
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 std::experimental::optional<ast::Define>
 parse_variable_definition(const Tokens& tokens, size_t& token);
 
 //////////////////////////////////////////
 /// Callable parsing
 //////////////////////////////////////////
+/**
+ * @brief  Expects a named parameter (foo:bar)
+ *
+ * @param  tokens         The tokens that are being parsed
+ * @param  token          The current token that is being reported
+ *
+ * @throws UserSourceExc
+ */
 void expect_named_parameter(const Tokens& tokens, size_t& token);
+/**
+ * @brief  Tries to parse a named parameter list (foo:bar, baz:gun(), ...)
+ *
+ * @param  tokens       The tokens that are being parsed
+ * @param  token        The current token that is being reported
+ *
+ * @return The optional parsed named parameter list
+ *
+ * @throws UserTailExc
+ */
 std::experimental::optional<std::pair<ast::Variable, ast::ValueProducer>>
 parse_callable_parameter(const Tokens& tokens, size_t& token);
+/**
+ * @brief  Tries to parse a function call (fun(foo:bar))
+ *
+ * @param  tokens       The tokens that are being parsed
+ * @param  token        The current token that is being reported
+ *
+ * @return The optional parsed function call
+ *
+ * @throws UserTailExc
+ */
 std::experimental::optional<ast::callable::Callable>
 parse_callable(const Tokens& tokens, size_t& token);
 
 //////////////////////////////////////////
 /// Scope parsing
 //////////////////////////////////////////
+/**
+ * @brief  Tries to parses a ast::Scope::Node
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ * @param  nodes   The nodes from the ast::Scope
+ *
+ * @return true if a ast::Scope::Node was parsed, else false
+
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 bool parse_scope_internals(const Tokens& tokens, size_t& token,
                            std::vector<ast::Scope::Node>& nodes);
+/**
+ * @brief  Tries to parses all ast::Scope::Node available
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ * @param  scope   The ast::Scope to parse the nodes  for
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 void parse_scope_internals(const Tokens& tokens, size_t& token,
                            ast::Scope& scope);
+/**
+ * @brief  Tries to parse a ast::Scope
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ *
+ * @return the optional parsed ast::Scope
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 std::experimental::optional<ast::Scope> parse_scope(const Tokens& tokens,
                                                     size_t& token);
 
 //////////////////////////////////////////
 /// Variable parsing
 //////////////////////////////////////////
+/**
+ * @brief  Tries to parse a ast::Variable
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ *
+ * @return The optional parsed ast::Variable
+ *
+ * @throws UserTailExc
+ */
 std::experimental::optional<ast::Variable> parse_variable(const Tokens& tokens,
                                                           size_t& token);
 
 //////////////////////////////////////////
 /// Return parsing
 //////////////////////////////////////////
+/**
+ * @brief  Tries to parse a ast::callable;;Return
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ *
+ * @return The optional parsed ast::callable::Return
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 std::experimental::optional<ast::callable::Return>
 parse_return(const Tokens& tokens, size_t& token);
 
 //////////////////////////////////////////
 /// Break parsing
 //////////////////////////////////////////
+/**
+ * @brief  Tries to parse a ast::loop::Break
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ *
+ * @return The optional parsed ast::loop::break
+ */
 std::experimental::optional<ast::loop::Break> parse_break(const Tokens& tokens,
                                                           size_t& token);
 //////////////////////////////////////////
 /// Continue parsing
 //////////////////////////////////////////
+/**
+ * @brief  Tries to parse a ast::loop::Continue
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ *
+ * @return The optional parsed ast::loop::Continue
+ */
 std::experimental::optional<ast::loop::Continue>
 parse_continue(const Tokens& tokens, size_t& token);
 
 //////////////////////////////////////////
 /// Operator parsing
 //////////////////////////////////////////
+/**
+ * @brief  Expects that the ast:.Operator has a type
+ *
+ * @param  file           The file name / macro name
+ * @param  line           The line
+ * @param  op             The ast::Operator to check
+ *
+ * @throws OperatorExc
+ */
 template <typename T, typename is_Operator<T>::type = false>
 void expect_operator_type(const char* const file, const size_t line,
                           const T& op);
+/**
+ * @brief  Determine if the given node is a ValueProducer
+ *
+ * @param  node  The node to check
+ *
+ * @return true if value, false otherwise.
+ *
+ * @throws UserSourceExc
+ */
 bool is_value(const ast::Scope::Node& node);
+/**
+ * @brief  Converts the given node to a ast::ValueProducer
+ *
+ * @param  node  The node to convert
+ *
+ * @return The converted node
+ *
+ * @throws ConversionExc
+ */
 ast::ValueProducer node_to_value(ast::Scope::Node& node);
+/**
+ * @brief  Converts the given ValueProducer instance to a ast::Scope::Node
+ *
+ * @param  producer  The ValueProducer instance to convert
+ *
+ * @return The converted ValueProducer instance
+ */
 ast::Scope::Node value_to_node(ast::ValueProducer& producer);
+/**
+ * @brief  Converts the given node to an ast::Operator
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  node    The node to convert
+ *
+ * @return The converted node
+ *
+ * @throws ConversionExc
+ */
 ast::Operator node_to_operator(const Tokens& tokens, ast::Scope::Node& node);
+/**
+ * @brief  Extracts the defined ast::Variable from a ast::Definition
+ *
+ * @param  node  The node that may be a ast::Definition
+ *
+ * @return The optional ast::Definition
+ */
 std::experimental::optional<ast::Variable>
 extract_var_def(ast::Scope::Node& node);
+/**
+ * @brief   Sets up the operator assemble workspace
+ *
+ * @details This method tries to extract a variable from a definition previously
+ *          parsed or a previously parsed ast::ValueProducer and pushes it into
+ *          the workspace vector, that way the operator can consume the
+ *          ast::ValueProducer if needed.
+ *
+ * @param   workspace  The workspace that will be set up
+ * @param   nodes      The previously parsed nodes
+ * @param   op         The operator that will be assembled
+ *
+ *
+ * @throws OperatorExc
+ */
 void setup_operator_wokespace(std::vector<ast::Scope::Node>& workspace,
                               std::vector<ast::Scope::Node>& nodes,
                               ast::Operator& op);
+/**
+ * @brief  Expects that the operator has enough operands to be assembled
+ *
+ * @param  token          The token of the Operator
+ * @param  file           The file name / macro name
+ * @param  previous       The previous node
+ * @param  next           The next node
+ * @param  end            The end end of the nodes vector
+ *
+ * @throws UserSourceExc
+ */
 void expect_operatees(const Token& token, const std::string& file,
                       const std::vector<ast::Scope::Node>::iterator& previous,
                       const std::vector<ast::Scope::Node>::iterator& next,
                       const std::vector<ast::Scope::Node>::iterator& end);
+/**
+ * @brief  Assembles the unary Operators
+ *
+ * @param  file      The file name / macro name
+ * @param  nodes     The nodes that have to be assembled
+ * @param  previous  The previous node
+ * @param  next      The next node
+ * @param  op        The current ast:.Operator that is about to be assembled
+ *
+ * @return true if the operator was assembled, else false
+ */
 bool assamble_unary(const std::string& file,
                     std::vector<ast::Scope::Node>& nodes,
                     std::vector<ast::Scope::Node>::iterator& previous,
                     std::vector<ast::Scope::Node>::iterator& next,
                     ast::Operator& op);
+/**
+ * @brief  Assembles the binary Operators
+ *
+ * @param  file      The file name / macro name
+ * @param  nodes     The nodes that have to be assembled
+ * @param  index     The index that marks the current position in the nodes
+ *                   vector, after the assembly of a binary operator it will be
+ *                   decremented. That __will__ invalidate all iterators!
+ * @param  previous  The previous node
+ * @param  next      The next node
+ * @param  op        The current ast:.Operator that is about to be assembled
+ *
+ * @return true if the operator was assembled, else false
+ */
 void assamble_binary(const std::string& file,
                      std::vector<ast::Scope::Node>& nodes, size_t& index,
                      std::vector<ast::Scope::Node>::iterator& previous,
                      std::vector<ast::Scope::Node>::iterator& next,
                      ast::Operator& op);
+/**
+ * @brief  Assembles the given Operator with the given nodes
+ *
+ * @param  file   The file name / macro name
+ * @param  nodes  The nodes that have to be assembled
+ * @param  index  The index that marks the current position in the nodes vector,
+ *                after the assembly of a binary operator it will be
+ *                decremented. That __will__ invalidate all iterators!
+ * @param  op     The current ast:.Operator that is about to be assembled
+ */
 void assamble_operator(const std::string& file,
                        std::vector<ast::Scope::Node>& nodes, size_t& index,
                        ast::Operator& op);
+/**
+ * @brief  Calls the given function with the nodes read from left to right (from
+ *         top to bottom)
+ *
+ * @param  file   The file name / macro name
+ * @param  nodes  The nodes that have to be assembled
+ * @param  fun    The function to be executed at each ast::Operator to indicate
+ *                if the operator should be assembled ([](ast::Operator& op) ->
+ *                bool)
+ */
 template <typename FUN>
 void assamble_operators_left_to_right(const std::string& file,
                                       std::vector<ast::Scope::Node>& nodes,
                                       FUN fun);
+/**
+ * @brief  Calls the given function with the nodes read from right to left (from
+ *         bottom to top)
+ *
+ * @param  file   The file name / macro name
+ * @param  nodes  The nodes that have to be assembled
+ * @param  fun    The function to be executed at each ast::Operator to indicate
+ *                if the operator should be assembled ([](ast::Operator& op) ->
+ *                bool)
+ */
 template <typename FUN>
 void assamble_operators_right_to_left(const std::string& file,
                                       std::vector<ast::Scope::Node>& nodes,
                                       FUN fun);
+/**
+ * @brief  Assembles all ast::Operator instances in the nodes vector
+ *
+ * @param  file   The file name / macro name
+ * @param  nodes  The nodes that have to be assembled
+ */
 void assamble_operator(const std::string& file,
                        std::vector<ast::Scope::Node>& nodes);
+
+/**
+ * @brief  Tries to parse a unary ast::Operator
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ *
+ * @return The optional parsed ast::Operator
+ */
 std::experimental::optional<ast::Operator>
 parse_unary_operator(const Tokens& tokens, size_t& token);
+/**
+ * @brief  Parses the operantees
+ *
+ * @param  tokens     The tokens that are being parsed
+ * @param  token      The current token that is being reported
+ * @param  workspace  The workspace
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
+void parse_operants(const Tokens& tokens, size_t& token,
+                    std::vector<ast::Scope::Node>& workspace);
+/**
+ * @brief  Tries to parse a binary ast::Operator
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ *
+ * @return The optional parsed ast::Operator
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 std::experimental::optional<ast::Operator>
 parse_binary_operator(const Tokens& tokens, size_t& token);
+/**
+ * @brief  Tries to parse the internal ast::Operator (unary or binary)
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ *
+ * @return The optional parsed ast::Operator
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 std::experimental::optional<ast::Operator>
 parse_operator_internals(const Tokens& tokens, size_t& token);
+/**
+ * @brief  Tries to parse and assemble the ast::Operators
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ *
+ * @return The optional parsed ast::Operator
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 std::experimental::optional<ast::Operator>
 parse_operator(const Tokens& tokens, size_t& token,
                std::vector<ast::Scope::Node>& nodes);
@@ -221,35 +737,214 @@ parse_operator(const Tokens& tokens, size_t& token,
 //////////////////////////////////////////
 /// Condition parsing
 //////////////////////////////////////////
+/**
+ * @brief  Tries to parse a ast::Condition (An (binary) operator were the left
+ *         hand side is not yet parsed )
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ *
+ * @return The optional parsed ast::Condition
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 std::experimental::optional<ast::ValueProducer>
 parse_condition(const Tokens& tokens, size_t& token);
 
 //////////////////////////////////////////
 /// If parsing
 //////////////////////////////////////////
+/**
+ * @brief  Parses the if condition
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ * @param  iff     The if the condition is parsed for
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 void parse_if_condition(const Tokens& tokens, size_t& token,
                         ast::logic::If& iff);
+/**
+ * @brief  Parsed the true scope
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ * @param  iff     The if the condition is parsed for
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 void parse_true(const Tokens& tokens, size_t& token, ast::logic::If& iff);
+/**
+ * @brief  Parsed the false scope
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ * @param  iff     The if the condition is parsed for
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 void parse_false(const Tokens& tokens, size_t& token, ast::logic::If& iff);
+/**
+ * @brief  Tries to parse a ast::If (if/else)
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ *
+ * @return The optional parsed ast::logic::If
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 std::experimental::optional<ast::logic::If> parse_if(const Tokens& tokens,
                                                      size_t& token);
 
 //////////////////////////////////////////
 /// While parsing
 //////////////////////////////////////////
+/**
+ * @brief  Parses the while condition
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ * @param  whi     The while the condition was parsed for
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 void parse_while_condition(const Tokens& tokens, size_t& token,
                            ast::loop::While& whi);
+/**
+ * @brief  Parses the ast::While ast::Scope
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ * @param  whi     The while the condition was parsed for
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 void parse_while_scope(const Tokens& tokens, size_t& token,
                        ast::loop::While& whi);
+/**
+ * @brief  Tries to parse a do-while
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ *
+ * @return The optional parsed ast::loop::While
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 std::experimental::optional<ast::loop::While> parse_while(const Tokens& tokens,
                                                           size_t& token);
+/**
+ * @brief  Tries to parse a do-while
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ *
+ * @return The optional parsed ast::loop::DoWhile
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 std::experimental::optional<ast::loop::DoWhile>
 parse_do_while(const Tokens& tokens, size_t& token);
+
+//////////////////////////////////////////
+/// For parsing
+//////////////////////////////////////////
+/**
+ * @brief  Parses the variable / definition for the ast::For (for(x;y;z) x)
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ * @param  f       The for the variable / definition was parsed for
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 void parse_for_variable(const Tokens& tokens, size_t& token, ast::loop::For& f);
+/**
+ * @brief  Parses the condition for the ast::For (for(x;y;z) y)
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ * @param  f       The for the condition was parsed for
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 void parse_for_conditon(const Tokens& tokens, size_t& token, ast::loop::For& f);
+/**
+ * @brief  Parses the operation for the ast::For (for(x;y;z) z)
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ * @param  f       The for the operation was parsed for
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 void parse_for_operation(const Tokens& tokens, size_t& token,
                          ast::loop::For& f);
+/**
+ * @brief  Parses the header for the ast::For - definition/variable (x),
+ *         condition (y), operation (z) (for(x;y;z))
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ * @param  f       The for the operation was parsed for
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 void parse_for_header(const Tokens& tokens, size_t& token, ast::loop::For& f);
+/**
+ * @brief  Tries to parse a ast::For
+ *
+ * @param  tokens  The tokens that are being parsed
+ * @param  token   The current token that is being reported
+ *
+ * @return The optional parsed ast::For
+ *
+ * @throws UserSourceExc
+ * @throws UserTailExc
+ * @throws OperatorExc
+ * @throws ConversionExc
+ */
 std::experimental::optional<ast::loop::For> parse_for(const Tokens& tokens,
                                                       size_t& token);
 
@@ -347,6 +1042,18 @@ void add_exception_info(const Tokens& tokens, const size_t token, UserExc& e,
   ConversionExc e(file, line, "Bad conversion");
   e << prefix << " is not convertible to a ValueProducer.";
   throw e;
+}
+
+void expect_no_space_between_bracket(const Tokens& tokens, const size_t token) {
+  if(tokens.at(token).column + tokens.at(token).token.length() !=
+     tokens.at(token + 1).column) {
+    UserSourceExc e;
+    add_exception_info(tokens, token, e, [&] {
+      e << "There my not be any space between the function identifier and "
+           "parentheses.";
+    });
+    throw e;
+  }
 }
 
 //////////////////////////////////////////
@@ -512,8 +1219,7 @@ void parse_function_parameter(const Tokens& tokens, size_t& token, T& fun) {
 }
 
 template <typename T, typename is_Function<T>::type>
-std::experimental::optional<T>
-parse_function_internals(const Tokens& tokens, size_t& token, T&& fun) {
+T parse_function_internals(const Tokens& tokens, size_t& token, T&& fun) {
   auto tmp = token;
 
   parse_function_parameter(tokens, tmp, fun);
@@ -629,18 +1335,6 @@ void expect_named_parameter(const Tokens& tokens, size_t& token) {
     add_exception_info(tokens, token, e, [&] {
       e << "Expected a ':' after '" << tokens.at(token - 1).token
         << "' followed by an expression as value.";
-    });
-    throw e;
-  }
-}
-
-void expect_no_space_between_bracket(const Tokens& tokens, const size_t token) {
-  if(tokens.at(token).column + tokens.at(token).token.length() !=
-     tokens.at(token + 1).column) {
-    UserSourceExc e;
-    add_exception_info(tokens, token, e, [&] {
-      e << "There my not be any space between the function identifier and "
-           "parentheses.";
     });
     throw e;
   }

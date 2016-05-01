@@ -19,8 +19,6 @@ Return::Return(Return&& other) {
 Return::Return(parser::Token token)
     : AST(std::move(token)) {
 }
-Return::~Return() {
-}
 Return& Return::operator=(Return other) {
   swap(*this, other);
   return *this;

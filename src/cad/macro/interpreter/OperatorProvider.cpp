@@ -580,99 +580,95 @@ linb::any OperatorProvider::eval(const UnaryOperation op,
   assert(false && "Reached by access after free and similar");
 }
 
-OperatorProvider::OperatorProvider(const bool initialize) {
+OperatorProvider::OperatorProvider() {
   using BiOp = BinaryOperation;
   using UnOp = UnaryOperation;
 
-  if(initialize) {
-    // BINARY
-    add<int, int, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::MODULO, BiOp::ADD,
-        BiOp::SUBTRACT, BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER,
-        BiOp::GREATER_EQUAL, BiOp::EQUAL, BiOp::NOT_EQUAL>();
-    add<bool, int, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::MODULO, BiOp::ADD,
-        BiOp::SUBTRACT, BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER,
-        BiOp::GREATER_EQUAL, BiOp::EQUAL, BiOp::NOT_EQUAL>();
-    add<int, bool, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::ADD, BiOp::SUBTRACT,
-        BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER, BiOp::GREATER_EQUAL,
-        BiOp::EQUAL, BiOp::NOT_EQUAL>();
-    add<double, double, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::ADD, BiOp::SUBTRACT,
-        BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER, BiOp::GREATER_EQUAL,
-        BiOp::EQUAL, BiOp::NOT_EQUAL>();
-    add<bool, double, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::ADD, BiOp::SUBTRACT,
-        BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER, BiOp::GREATER_EQUAL,
-        BiOp::EQUAL, BiOp::NOT_EQUAL>();
-    add<double, bool, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::ADD, BiOp::SUBTRACT,
-        BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER, BiOp::GREATER_EQUAL,
-        BiOp::EQUAL, BiOp::NOT_EQUAL>();
-    add<int, double, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::ADD, BiOp::SUBTRACT,
-        BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER, BiOp::GREATER_EQUAL,
-        BiOp::EQUAL, BiOp::NOT_EQUAL>();
-    add<double, int, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::ADD, BiOp::SUBTRACT,
-        BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER, BiOp::GREATER_EQUAL,
-        BiOp::EQUAL, BiOp::NOT_EQUAL>();
-    add<std::string, std::string, BiOp::ADD, BiOp::SMALLER, BiOp::SMALLER_EQUAL,
-        BiOp::GREATER, BiOp::GREATER_EQUAL, BiOp::EQUAL, BiOp::NOT_EQUAL>();
+  // BINARY
+  add<int, int, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::MODULO, BiOp::ADD,
+      BiOp::SUBTRACT, BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER,
+      BiOp::GREATER_EQUAL, BiOp::EQUAL, BiOp::NOT_EQUAL>();
+  add<bool, int, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::MODULO, BiOp::ADD,
+      BiOp::SUBTRACT, BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER,
+      BiOp::GREATER_EQUAL, BiOp::EQUAL, BiOp::NOT_EQUAL>();
+  add<int, bool, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::ADD, BiOp::SUBTRACT,
+      BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER, BiOp::GREATER_EQUAL,
+      BiOp::EQUAL, BiOp::NOT_EQUAL>();
+  add<double, double, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::ADD, BiOp::SUBTRACT,
+      BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER, BiOp::GREATER_EQUAL,
+      BiOp::EQUAL, BiOp::NOT_EQUAL>();
+  add<bool, double, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::ADD, BiOp::SUBTRACT,
+      BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER, BiOp::GREATER_EQUAL,
+      BiOp::EQUAL, BiOp::NOT_EQUAL>();
+  add<double, bool, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::ADD, BiOp::SUBTRACT,
+      BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER, BiOp::GREATER_EQUAL,
+      BiOp::EQUAL, BiOp::NOT_EQUAL>();
+  add<int, double, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::ADD, BiOp::SUBTRACT,
+      BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER, BiOp::GREATER_EQUAL,
+      BiOp::EQUAL, BiOp::NOT_EQUAL>();
+  add<double, int, BiOp::DIVIDE, BiOp::MULTIPLY, BiOp::ADD, BiOp::SUBTRACT,
+      BiOp::SMALLER, BiOp::SMALLER_EQUAL, BiOp::GREATER, BiOp::GREATER_EQUAL,
+      BiOp::EQUAL, BiOp::NOT_EQUAL>();
+  add<std::string, std::string, BiOp::ADD, BiOp::SMALLER, BiOp::SMALLER_EQUAL,
+      BiOp::GREATER, BiOp::GREATER_EQUAL, BiOp::EQUAL, BiOp::NOT_EQUAL>();
 
-    // ADD to string
-    add(BiOp::ADD, std::type_index(typeid(std::string)),
-        std::type_index(typeid(bool)),
-        [](const linb::any& a, const linb::any& b) {
-          std::stringstream ss;
-          ss << linb::any_cast<std::string>(a) << std::boolalpha
-             << linb::any_cast<bool>(b);
-          return ss.str();
-        });
-    add(BiOp::ADD, std::type_index(typeid(std::string)),
-        std::type_index(typeid(int)),
-        [](const linb::any& a, const linb::any& b) {
-          std::stringstream ss;
-          ss << linb::any_cast<std::string>(a) << linb::any_cast<int>(b);
-          return ss.str();
-        });
-    add(BiOp::ADD, std::type_index(typeid(std::string)),
-        std::type_index(typeid(double)),
-        [](const linb::any& a, const linb::any& b) {
-          std::stringstream ss;
-          ss << linb::any_cast<std::string>(a) << linb::any_cast<double>(b);
-          return ss.str();
-        });
+  // ADD to string
+  add(BiOp::ADD, std::type_index(typeid(std::string)),
+      std::type_index(typeid(bool)),
+      [](const linb::any& a, const linb::any& b) {
+        std::stringstream ss;
+        ss << linb::any_cast<std::string>(a) << std::boolalpha
+           << linb::any_cast<bool>(b);
+        return ss.str();
+      });
+  add(BiOp::ADD, std::type_index(typeid(std::string)),
+      std::type_index(typeid(int)), [](const linb::any& a, const linb::any& b) {
+        std::stringstream ss;
+        ss << linb::any_cast<std::string>(a) << linb::any_cast<int>(b);
+        return ss.str();
+      });
+  add(BiOp::ADD, std::type_index(typeid(std::string)),
+      std::type_index(typeid(double)),
+      [](const linb::any& a, const linb::any& b) {
+        std::stringstream ss;
+        ss << linb::any_cast<std::string>(a) << linb::any_cast<double>(b);
+        return ss.str();
+      });
 
-    // UNARY
-    add<bool, UnOp::BOOL, UnOp::NEGATIVE, UnOp::POSITIVE>();
-    add<int, UnOp::BOOL, UnOp::NEGATIVE, UnOp::POSITIVE>();
-    add<double, UnOp::BOOL, UnOp::NEGATIVE, UnOp::POSITIVE>();
-    // BOOL
-    add(UnOp::BOOL, std::type_index(typeid(std::string)),
-        [](const linb::any& a) {
-          return linb::any_cast<std::string>(a).size() > 0;
-        });
-    add(UnOp::BOOL, std::type_index(typeid(void)),
-        [](const linb::any&) { return false; });
+  // UNARY
+  add<bool, UnOp::BOOL, UnOp::NEGATIVE, UnOp::POSITIVE>();
+  add<int, UnOp::BOOL, UnOp::NEGATIVE, UnOp::POSITIVE>();
+  add<double, UnOp::BOOL, UnOp::NEGATIVE, UnOp::POSITIVE>();
+  // BOOL
+  add(UnOp::BOOL, std::type_index(typeid(std::string)), [](const linb::any& a) {
+    return linb::any_cast<std::string>(a).size() > 0;
+  });
+  add(UnOp::BOOL, std::type_index(typeid(void)),
+      [](const linb::any&) { return false; });
 
-    // TYPEOF
-    add(UnOp::TYPEOF, std::type_index(typeid(bool)),
-        [](const linb::any&) { return std::string("bool"); });
-    add(UnOp::TYPEOF, std::type_index(typeid(int)),
-        [](const linb::any&) { return std::string("int"); });
-    add(UnOp::TYPEOF, std::type_index(typeid(double)),
-        [](const linb::any&) { return std::string("double"); });
-    add(UnOp::TYPEOF, std::type_index(typeid(std::string)),
-        [](const linb::any&) { return std::string("string"); });
-    add(UnOp::TYPEOF, std::type_index(typeid(void)),
-        [](const linb::any&) { return std::string("none"); });
+  // TYPEOF
+  add(UnOp::TYPEOF, std::type_index(typeid(bool)),
+      [](const linb::any&) { return std::string("bool"); });
+  add(UnOp::TYPEOF, std::type_index(typeid(int)),
+      [](const linb::any&) { return std::string("int"); });
+  add(UnOp::TYPEOF, std::type_index(typeid(double)),
+      [](const linb::any&) { return std::string("double"); });
+  add(UnOp::TYPEOF, std::type_index(typeid(std::string)),
+      [](const linb::any&) { return std::string("string"); });
+  add(UnOp::TYPEOF, std::type_index(typeid(void)),
+      [](const linb::any&) { return std::string("none"); });
 
-    // PRINT
-    add(UnOp::PRINT, std::type_index(typeid(bool)),
-        [this](const linb::any& a) { return eval_add(std::string(), a); });
-    add(UnOp::PRINT, std::type_index(typeid(int)),
-        [this](const linb::any& a) { return eval_add(std::string(), a); });
-    add(UnOp::PRINT, std::type_index(typeid(double)),
-        [this](const linb::any& a) { return eval_add(std::string(), a); });
-    add(UnOp::PRINT, std::type_index(typeid(std::string)),
-        [](const linb::any& a) { return a; });
-    add(UnOp::PRINT, std::type_index(typeid(void)),
-        [this](const linb::any&) { return std::string("none"); });
-  }
+  // PRINT
+  add(UnOp::PRINT, std::type_index(typeid(bool)),
+      [this](const linb::any& a) { return eval_add(std::string(), a); });
+  add(UnOp::PRINT, std::type_index(typeid(int)),
+      [this](const linb::any& a) { return eval_add(std::string(), a); });
+  add(UnOp::PRINT, std::type_index(typeid(double)),
+      [this](const linb::any& a) { return eval_add(std::string(), a); });
+  add(UnOp::PRINT, std::type_index(typeid(std::string)),
+      [](const linb::any& a) { return a; });
+  add(UnOp::PRINT, std::type_index(typeid(void)),
+      [this](const linb::any&) { return std::string("none"); });
 }
 }
 }

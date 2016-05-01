@@ -12,6 +12,9 @@ namespace macro {
 namespace parser {
 namespace tokenizer {
 namespace {
+/**
+ * @brief  Helper struct that tracks the position information in the string
+ */
 struct Position {
   size_t line;
   size_t column;
@@ -20,6 +23,12 @@ struct Position {
   std::shared_ptr<std::string> source_line;
 };
 
+/**
+ * @brief  The functions finds the begin of a token - it eats all whitespace
+ *
+ * @param  macro     The macro
+ * @param  position  The position
+ */
 void token_begin(Macro macro, Position& position) {
   auto end = macro.size();
 
@@ -50,6 +59,14 @@ void token_begin(Macro macro, Position& position) {
   }
 }
 
+/**
+ * @brief  The function finds the end of a floating point number
+ *
+ * @param  macro     The macro
+ * @param  position  The position
+ *
+ * @return true if the token was indeed a floating point number
+ */
 bool float_token_end(Macro macro, Position& position) {
   // TODO see http://en.cppreference.com/w/cpp/string/basic_string/stof
   const static std::regex regex("^(\\d*\\.\\d+)");
@@ -63,6 +80,13 @@ bool float_token_end(Macro macro, Position& position) {
   }
   return false;
 }
+/**
+ * @brief  The function find the end of a normal Token, that can be a integer
+ *         number
+ *
+ * @param  macro     The macro
+ * @param  position  The position
+ */
 void normal_token_end(Macro macro, Position& position) {
   // TODO see http://en.cppreference.com/w/cpp/string/basic_string/stol
   const static std::regex regex("([^a-zA-Z0-9_])");
@@ -83,6 +107,12 @@ void normal_token_end(Macro macro, Position& position) {
   }
 }
 
+/**
+ * @brief  The function finds the end of the Token
+ *
+ * @param  macro     The macro
+ * @param  position  The position
+ */
 void token_end(Macro macro, Position& position) {
   const auto current = macro[position.string];
   const auto next =
@@ -98,7 +128,14 @@ void token_end(Macro macro, Position& position) {
     normal_token_end(macro, position);
   }
 }
-
+/**
+ * @brief  The function tokenizes a string
+ *
+ * @param  macro     The macro
+ * @param  position  The position
+ *
+ * @return String Token
+ */
 Token next_string_token(Macro macro, Position& position) {
   auto start = position;
   char last_token = '\0';
@@ -157,6 +194,14 @@ Token next_string_token(Macro macro, Position& position) {
   return ret;
 }
 
+/**
+ * @brief  The function reads over an in-line comment
+ *
+ * @param  macro     The macro
+ * @param  position  The position
+ *
+ * @return true if it read a in-line comment
+ */
 bool ignore_in_line_comment(Macro macro, Position& position) {
   auto end = macro.size();
   auto current = macro[position.string];
@@ -191,6 +236,14 @@ bool ignore_in_line_comment(Macro macro, Position& position) {
   return false;
 }
 
+/**
+ * @brief  The function reads a line comment
+ *
+ * @param  macro     The macro
+ * @param  position  The position
+ *
+ * @return true if it read a line comment
+ */
 bool ignore_line_comment(Macro macro, Position& position) {
   auto end = macro.size();
   const auto current = macro[position.string];
@@ -218,6 +271,14 @@ bool ignore_line_comment(Macro macro, Position& position) {
   return false;
 }
 
+/**
+ * @brief  Tokenizes the next Token
+ *
+ * @param  macro     The macro
+ * @param  position  The position
+ *
+ * @return Tokenized token
+ */
 Token next_token(Macro macro, Position& position) {
   if(macro[position.string] == '\"') {
     return next_string_token(macro, position);

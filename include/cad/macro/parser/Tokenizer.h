@@ -18,6 +18,13 @@ namespace parser {
 namespace tokenizer {
 using Macro = const std::string&;
 
+/**
+ * @brief  Tokenizes a string
+ *
+ * @param  macro  The macro
+ *
+ * @return vector of Token instances the parser::parse method will consume
+ */
 std::vector<Token> tokenize(Macro macro);
 }
 }

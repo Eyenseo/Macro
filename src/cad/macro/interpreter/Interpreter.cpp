@@ -61,15 +61,14 @@ struct Interpreter::State {
   }
 };
 
-template <typename T>
 struct Interpreter::SmartRef {
-  T value;
+  linb::any value;
 
-  std::reference_wrapper<T> ref;
+  std::reference_wrapper<const linb::any> ref;
   SmartRef()
       : ref(value) {
   }
-  operator linb::any&() {
+  operator const linb::any&() {
     return ref.get();
   }
 };
@@ -289,6 +288,9 @@ linb::any Interpreter::interpret_assignment(State& state,
                 assert(false); /* analyser checked */
               },
               [&](const Variable& o) {
+                // TODO improve check for owning. at the moment we check if this
+                // scope owns the variable. But we should check if any stack up
+                // to the point where the returning stops owns the variable
                 if(!state.stack->owns_variable(o.token.token)) {
                   state.stack->remove_alias(o.token.token);
                   state.stack->add_variable(o.token.token);
@@ -409,9 +411,9 @@ linb::any Interpreter::interpret_positive(State& state,
 //////////////////////////////////////////
 /// Helper
 //////////////////////////////////////////
-Interpreter::SmartRef<linb::any>
+Interpreter::SmartRef
 Interpreter::interpret(State& state, const ValueProducer& vp) const {
-  SmartRef<linb::any> f;
+  SmartRef f;
 
   eggs::match(
       vp.value,

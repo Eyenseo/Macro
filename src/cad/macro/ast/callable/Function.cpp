@@ -23,6 +23,7 @@ Function::Function(parser::Token token)
 }
 Function::~Function() {
 }
+
 Function& Function::operator=(Function other) {
   swap(*this, other);
   return *this;

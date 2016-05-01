@@ -9,9 +9,9 @@
 namespace cad {
 namespace macro {
 namespace ast {
-class Variable;
+struct Variable;
 namespace callable {
-class Function;
+struct Function;
 }
 }
 }
@@ -21,26 +21,41 @@ namespace cad {
 namespace macro {
 namespace parser {
 namespace analyser {
+/**
+ * @brief   The Stack struct is a helper for the Analyser.
+ *
+ * @details This Stack is very similar to the one used by the Interpreter. The
+ *          difference is that this Stack does not allocate memory for variables
+ *          but only stores the names.
+ */
 struct Stack {
   using RV = std::reference_wrapper<const ast::Variable>;
-
-  // FIXME
-  template <typename T>
-  struct myPair {  // optional doesn't like std::pair or std::tuple ...
-    std::reference_wrapper<const T> first;
-    std::reference_wrapper<const T> second;
-  };
+  using RF = std::reference_wrapper<const ast::callable::Function>;
 
 public:
-  std::vector<std::reference_wrapper<const ast::Variable>> variables;
-  std::vector<std::reference_wrapper<const ast::callable::Function>> functions;
+  std::vector<RV> variables;
+  std::vector<RF> functions;
   Stack* parent = nullptr;
 
 public:
-  std::experimental::optional<myPair<ast::Variable>> has_double_var() const;
+  /**
+   * @brief  Determine if it has var.
+   *
+   * @param  name  The name of the variable to check
+   *
+   * @return true if has var, false otherwise.
+   */
   bool has_var(const std::string& name) const;
-  std::experimental::optional<myPair<ast::callable::Function>>
-  has_double_fun() const;
+  /**
+   * @return an optional pair where the first instance is the variable that was
+   *         first declared and the second the variable that was declared last
+   */
+  std::experimental::optional<std::pair<RV, RV>> has_double_var() const;
+  /**
+   * @return an optional pair where the first instance is the function that was
+   *         first declared and the second the function that was declared last
+   */
+  std::experimental::optional<std::pair<RF, RF>> has_double_fun() const;
 };
 }
 }

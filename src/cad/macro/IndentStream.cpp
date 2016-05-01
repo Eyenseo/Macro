@@ -2,8 +2,9 @@
 
 namespace cad {
 namespace macro {
-IndentStream::IndentStream(std::ostream& os)
-    : buf(os.rdbuf()) {
+IndentStream::IndentStream(std::ostream& os, const long step,
+                           const long indention)
+    : buf(os.rdbuf(), step, indention) {
   rdbuf(&buf);
 }
 

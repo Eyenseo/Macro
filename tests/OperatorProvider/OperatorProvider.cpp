@@ -1,5 +1,8 @@
 #include <Catch/catch.hpp>
 
+// Yes this is a __bad__ hack, but for testing it is white magic!
+#define private public
+
 #include "cad/macro/interpreter/OperatorProvider.h"
 
 #include <exception.h>
@@ -10,8 +13,26 @@ using UnOp = OperatorProvider::UnaryOperation;
 
 class TestOperatorProvider : public cad::macro::interpreter::OperatorProvider {
 public:
-  TestOperatorProvider()
-      : OperatorProvider(false) {
+  TestOperatorProvider(const bool initialize = false)
+      : OperatorProvider() {
+    if(!initialize) {
+      divide_.clear();         // Deinit everything
+      multiply_.clear();       // Deinit everything
+      modulo_.clear();         // Deinit everything
+      add_.clear();            // Deinit everything
+      subtract_.clear();       // Deinit everything
+      smaller_.clear();        // Deinit everything
+      smaller_equal_.clear();  // Deinit everything
+      greater_.clear();        // Deinit everything
+      greater_equal_.clear();  // Deinit everything
+      equal_.clear();          // Deinit everything
+      not_equal_.clear();      // Deinit everything
+      bool_.clear();           // Deinit everything
+      print_.clear();          // Deinit everything
+      type_of_.clear();        // Deinit everything
+      negative_.clear();       // Deinit everything
+      positive_.clear();       // Deinit everything
+    }
   }
 };
 

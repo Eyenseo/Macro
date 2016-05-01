@@ -7,8 +7,8 @@ namespace macro {
 namespace ast {
 AST::AST() {
 }
-AST::AST(parser::Token token)
-    : token(std::move(token)) {
+AST::AST(parser::Token t)
+    : token(std::move(t)) {
 }
 
 bool AST::operator==(const AST& other) const {
@@ -25,6 +25,10 @@ bool AST::operator!=(const AST& other) const {
 std::ostream& AST::operator<<(std::ostream& os) {
   print_token(os, "AST");
   return os;
+}
+
+void AST::print_token(std::ostream& os, std::string prefix) const {
+  print_token(os, std::move(prefix), [](IndentStream&) {});
 }
 }
 }

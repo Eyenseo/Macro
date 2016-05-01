@@ -18,19 +18,9 @@ Callable::Callable(Callable&& other) {
 Callable::Callable(parser::Token token)
     : AST(std::move(token)) {
 }
-Callable::~Callable() {
-}
 Callable& Callable::operator=(Callable other) {
   swap(*this, other);
   return *this;
-}
-
-void swap(Callable& first, Callable& second) {
-  // enable ADL
-  using std::swap;
-
-  swap(static_cast<AST&>(first), static_cast<AST&>(second));
-  swap(first.parameter, second.parameter);
 }
 
 void Callable::print_internals(IndentStream& os) const {
@@ -63,6 +53,13 @@ bool Callable::operator==(const Callable& other) const {
 
 bool Callable::operator!=(const Callable& other) const {
   return !(*this == other);
+}
+void swap(Callable& first, Callable& second) {
+  // enable ADL
+  using std::swap;
+
+  swap(static_cast<AST&>(first), static_cast<AST&>(second));
+  swap(first.parameter, second.parameter);
 }
 }
 }

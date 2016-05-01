@@ -29,7 +29,14 @@ class IndentStream;
 namespace cad {
 namespace macro {
 namespace ast {
-class Scope : public AST {
+/**
+ * @brief   The Scope represents all scopes that are in the macro.
+ * @details A all elements that are in between curly brackets ('{' and '}') are
+ *          in a Scope. The interpreter::Stack realises this class, which means
+ *          that these scopes work like C scopes.
+ */
+struct Scope : public AST {
+private:
   using Callable = callable::Callable;
   using Return = callable::Return;
   using If = logic::If;
@@ -47,18 +54,52 @@ public:
                     Scope, Variable, While>;
 
 private:
+  /**
+   * @brief  Pretty prints the internals of this struct
+   *
+   * @param  os    stream to print the internals to
+   */
   void print_internals(std::ostream& os) const;
-  void print_var(IndentStream& os, const Node& var) const;
 
 public:
   std::vector<Node> nodes;
 
+  /**
+   * @brief  Ctor
+   */
   Scope() = default;
+  /**
+   * @brief  Ctor
+   *
+   * @param  token  The token this node represents
+   */
   Scope(parser::Token token);
 
+  /**
+   * @brief  Equality comparison
+   *
+   * @param  other  The node to compare against
+   *
+   * @return true if the two objects are same
+   */
   bool operator==(const Scope& other) const;
+  /**
+   * @brief  Equality comparison
+   *
+   * @param  other  The node to compare against
+   *
+   * @return false if the two objects are same
+   */
   bool operator!=(const Scope& other) const;
 
+  /**
+   * @brief  Stream operator that will pretty print the node
+   *
+   * @param  os    The stream to print the node into
+   * @param  ast   The node to print
+   *
+   * @return the input stream
+   */
   friend std::ostream& operator<<(std::ostream& os, const Scope& ast) {
     ast.print_token(os, "Scope",
                     [&ast](IndentStream& os) { ast.print_internals(os); });
