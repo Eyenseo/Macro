@@ -20,20 +20,19 @@ CATCH_TRANSLATE_EXCEPTION(std::exception& e) {
 }
 
 void add_main_to_root_end(Scope& scope, std::shared_ptr<std::string>& line) {
-  auto main_line = [&]() {
-    auto n = std::count_if(line->begin(), line->end(),
-                           [](char i) { return i == '\n'; });
+  const auto main_line = [&]() {
+    const auto n = std::count_if(line->begin(), line->end(),
+                                 [](char i) { return i == '\n'; });
     assert(n >= 0);
-    return static_cast<size_t>(n) + 2;
+    return static_cast<size_t>(n) + 1;
   }();
+  const auto main_column = line->size() + 1;
+  line->append(" def main() {}");
 
-  auto line1 = std::make_shared<std::string>("def main() {}");
-  line->append("\n");
-  line->append(*line1);
-
-  Define def({main_line, 1, "def", line1});
-  EntryFunction fun({main_line, 5, "main", line1});
-  fun.scope = std::make_unique<Scope>(Token(main_line, 12, "{", line1));
+  Define def({main_line, main_column + 1, "def", line});
+  EntryFunction fun({main_line, main_column + 5, "main", line});
+  fun.scope =
+      std::make_unique<Scope>(Token(main_line, main_column + 12, "{", line));
   def.definition = std::move(fun);
   scope.nodes.push_back(std::move(def));
 }
