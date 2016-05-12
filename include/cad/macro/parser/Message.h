@@ -3,9 +3,9 @@
 
 #include "cad/macro/parser/Token.h"
 
-#include <vector>
-#include <string>
 #include <sstream>
+#include <string>
+#include <vector>
 
 namespace cad {
 namespace macro {

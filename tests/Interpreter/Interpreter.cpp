@@ -187,9 +187,9 @@ TEST_CASE("CommandPrvider fall through") {
     args.add("foo", "int", 1);
 
     cad::core::command::MenuAdder m(cp, [] {});
-    m.name("gun").scope("").add<LCommand>("gun", cp, [](Arguments args) {
-      return *args.get<int>("foo") + 2;
-    }, args);
+    m.name("gun").scope("").add<LCommand>(
+        "gun", cp, [](Arguments args) { return *args.get<int>("foo") + 2; },
+        args);
 
     auto ret =
         in.interpret("var a = 40; def main(){return gun(foo:a);}", Arguments());

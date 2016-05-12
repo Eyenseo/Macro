@@ -1,9 +1,9 @@
 #include <Catch/catch.hpp>
 
-#include "cad/macro/ast/Scope.h"
-#include "cad/macro/ast/logic/Condition.h"
 #include "cad/macro/ast/Literal.h"
+#include "cad/macro/ast/Scope.h"
 #include "cad/macro/ast/ValueProducer.h"
+#include "cad/macro/ast/logic/Condition.h"
 
 using namespace cad::macro::parser;
 using namespace cad::macro::ast;

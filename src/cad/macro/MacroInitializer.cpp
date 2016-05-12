@@ -1,7 +1,7 @@
 #include "cad/macro/MacroInitializer.h"
 
-#include "cad/macro/interpreter/OperatorProvider.h"
 #include "cad/macro/MacroCommand.h"
+#include "cad/macro/interpreter/OperatorProvider.h"
 
 #include <cad/core/command/CommandProvider.h>
 #include <cad/core/command/MenuFilter.h>

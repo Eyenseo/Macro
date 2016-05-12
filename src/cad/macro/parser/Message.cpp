@@ -14,7 +14,8 @@ std::string Message::message() const {
   ss << file_ << ':' << token_.get().line << ':' << token_.get().column << ": "
      << message_;
   if(token_.get().source_line) {
-    ss << '\n' << *token_.get().source_line << '\n'
+    ss << '\n'
+       << *token_.get().source_line << '\n'
        << std::string(token_.get().column - 1, ' ') << "^\n";
   }
 

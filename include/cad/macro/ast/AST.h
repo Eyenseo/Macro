@@ -1,8 +1,8 @@
 #ifndef cad_macro_ast_AST_h
 #define cad_macro_ast_AST_h
 
-#include "cad/macro/parser/Token.h"
 #include "cad/macro/IndentStream.h"
+#include "cad/macro/parser/Token.h"
 
 #include <ostream>
 

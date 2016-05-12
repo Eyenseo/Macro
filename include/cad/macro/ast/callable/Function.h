@@ -3,8 +3,8 @@
 
 #include "cad/macro/ast/AST.h"
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 namespace cad {
 namespace macro {

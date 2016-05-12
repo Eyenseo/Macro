@@ -18,10 +18,7 @@ class Arguments;
 namespace macro {
 namespace ast {
 struct Define;
-struct Define;
 struct Operator;
-struct Scope;
-struct Scope;
 struct Scope;
 struct ValueProducer;
 namespace callable {

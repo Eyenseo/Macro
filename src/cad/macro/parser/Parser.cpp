@@ -1,18 +1,18 @@
 #include "cad/macro/parser/Parser.h"
 
-#include "cad/macro/ast/Scope.h"
 #include "cad/macro/ast/Literal.h"
+#include "cad/macro/ast/Scope.h"
 #include "cad/macro/ast/ValueProducer.h"
-#include "cad/macro/parser/Tokenizer.h"
 #include "cad/macro/parser/Analyser.h"
 #include "cad/macro/parser/Message.h"
+#include "cad/macro/parser/Tokenizer.h"
 
 #include <exception.h>
 
-#include <experimental/optional>
-#include <string>
-#include <regex>
 #include <cassert>
+#include <experimental/optional>
+#include <regex>
+#include <string>
 
 namespace cad {
 namespace macro {
@@ -985,8 +985,9 @@ void add_exception_info(const Token& token, const std::string& file, UserExc& e,
   e << file << ':' << token.line << ':' << token.column << ": ";
   fun();
   if(token.source_line) {
-    e << '\n' << *token.source_line << '\n' << std::string(arrow_position, ' ')
-      << "^";
+    e << '\n'
+      << *token.source_line << '\n'
+      << std::string(arrow_position, ' ') << "^";
   }
 }
 

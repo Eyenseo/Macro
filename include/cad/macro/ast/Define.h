@@ -3,8 +3,8 @@
 
 #include "cad/macro/ast/AST.h"
 #include "cad/macro/ast/Variable.h"
-#include "cad/macro/ast/callable/Function.h"
 #include "cad/macro/ast/callable/EntryFunction.h"
+#include "cad/macro/ast/callable/Function.h"
 
 #include "cad/macro/IndentStream.h"
 

@@ -2,8 +2,8 @@
 
 #include "cad/macro/parser/Token.h"
 
-#include <regex>
 #include <cassert>
+#include <regex>
 
 #include <iostream>
 

@@ -26,7 +26,8 @@ void add_exception_info(const parser::Token& token, const std::string& file,
   e << file << ':' << token.line << ':' << token.column << ": ";
   fun();
   if(token.source_line) {
-    e << '\n' << *token.source_line << '\n'
+    e << '\n'
+      << *token.source_line << '\n'
       << std::string(token.column - 1, ' ') << "^";
   }
 }
@@ -411,8 +412,8 @@ linb::any Interpreter::interpret_positive(State& state,
 //////////////////////////////////////////
 /// Helper
 //////////////////////////////////////////
-Interpreter::SmartRef
-Interpreter::interpret(State& state, const ValueProducer& vp) const {
+Interpreter::SmartRef Interpreter::interpret(State& state,
+                                             const ValueProducer& vp) const {
   SmartRef f;
 
   eggs::match(

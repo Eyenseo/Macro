@@ -53,7 +53,7 @@ public:
    * @param  token  The token this node represents
    */
   While(parser::Token token);
-   /**
+  /**
    * @brief  Dtor
    */
   ~While();

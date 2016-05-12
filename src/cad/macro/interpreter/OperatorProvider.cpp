@@ -2,8 +2,8 @@
 
 #include <exception.h>
 
-#include <cassert>
 #include <algorithm>
+#include <cassert>
 
 namespace cad {
 namespace macro {

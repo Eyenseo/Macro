@@ -1,7 +1,7 @@
 #include <Catch/catch.hpp>
 
-#include "cad/macro/parser/Tokenizer.h"
 #include "cad/macro/parser/Token.h"
+#include "cad/macro/parser/Tokenizer.h"
 
 using namespace cad::macro::parser;
 

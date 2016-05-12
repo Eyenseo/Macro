@@ -5,8 +5,8 @@
 
 #include <p3/common/signal/Signal.h>
 
-#include <string>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace cad {
@@ -66,36 +66,30 @@ class Analyser {
 public:
   enum class SignalType { START, END };
 
+private:
+  template <typename T>
+  using ASTSignal = Signal<void(Analyser&, SignalType, const State&, const T&)>;
+
+public:
   // TODO store as static
-  Signal<void(Analyser&, SignalType, const State&, const ast::Operator&)> biop;
-  Signal<void(Analyser&, SignalType, const State&, const ast::loop::Break&)> br;
-  Signal<void(Analyser&, SignalType, const State&, const ast::loop::Continue&)>
-      con;
-  Signal<void(Analyser&, SignalType, const State&,
-              const ast::callable::Callable&)> call;
-  Signal<void(Analyser&, SignalType, const State&,
-              const ast::callable::EntryFunction&)> enfun;
-  Signal<void(Analyser&, SignalType, const State&,
-              const ast::callable::Function&)> fun;
-  Signal<void(Analyser&, SignalType, const State&, const ast::Define&)> def;
-  Signal<void(Analyser&, SignalType, const State&,
-              const ast::Literal<ast::Literals::BOOL>&)> bo;
-  Signal<void(Analyser&, SignalType, const State&,
-              const ast::Literal<ast::Literals::DOUBLE>&)> dou;
-  Signal<void(Analyser&, SignalType, const State&,
-              const ast::Literal<ast::Literals::INT>&)> intt;
-  Signal<void(Analyser&, SignalType, const State&,
-              const ast::Literal<ast::Literals::STRING>&)> str;
-  Signal<void(Analyser&, SignalType, const State&, const ast::logic::If&)> iff;
-  Signal<void(Analyser&, SignalType, const State&, const ast::loop::DoWhile&)>
-      dowhile;
-  Signal<void(Analyser&, SignalType, const State&, const ast::loop::For&)> forr;
-  Signal<void(Analyser&, SignalType, const State&, const ast::loop::While&)>
-      whi;
-  Signal<void(Analyser&, SignalType, const State&,
-              const ast::callable::Return&)> ret;
-  Signal<void(Analyser&, SignalType, const State&, const ast::Scope&)> sco;
-  Signal<void(Analyser&, SignalType, const State&, const ast::Variable&)> var;
+  ASTSignal<ast::Operator> biop;
+  ASTSignal<ast::loop::Break> br;
+  ASTSignal<ast::loop::Continue> con;
+  ASTSignal<ast::callable::Callable> call;
+  ASTSignal<ast::callable::EntryFunction> enfun;
+  ASTSignal<ast::callable::Function> fun;
+  ASTSignal<ast::Define> def;
+  ASTSignal<ast::Literal<ast::Literals::BOOL>> bo;
+  ASTSignal<ast::Literal<ast::Literals::DOUBLE>> dou;
+  ASTSignal<ast::Literal<ast::Literals::INT>> intt;
+  ASTSignal<ast::Literal<ast::Literals::STRING>> str;
+  ASTSignal<ast::logic::If> iff;
+  ASTSignal<ast::loop::DoWhile> dowhile;
+  ASTSignal<ast::loop::For> forr;
+  ASTSignal<ast::loop::While> whi;
+  ASTSignal<ast::callable::Return> ret;
+  ASTSignal<ast::Scope> sco;
+  ASTSignal<ast::Variable> var;
 
 private:
   MessageStack current_message_;

@@ -1,10 +1,10 @@
 #ifndef cad_macro_ast_ValueProducer_h
 #define cad_macro_ast_ValueProducer_h
 
-#include "cad/macro/ast/callable/Callable.h"
 #include "cad/macro/ast/Literal.h"
 #include "cad/macro/ast/Operator.h"
 #include "cad/macro/ast/Variable.h"
+#include "cad/macro/ast/callable/Callable.h"
 
 #include <eggs/variant.hpp>
 
